@@ -1,6 +1,6 @@
 ################################################################################
 
-# Persistent precarious employment and health - Understanding Society
+# Precarious employment and health - Understanding Society
 # 1-04 - Create paired and three-wave clean master raw dataframes for causal analysis
 # Andrew Pulford
 
