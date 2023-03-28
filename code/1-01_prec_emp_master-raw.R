@@ -1,6 +1,6 @@
 ################################################################################
 
-# Persistent precarious employment and health - Understanding Society
+# Precarious employment and health - Understanding Society
 # 1-01 - Create master raw data and variable spine for causal analysis
 # Andrew Pulford
 
