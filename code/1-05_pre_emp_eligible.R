@@ -1,6 +1,6 @@
 ################################################################################
 
-# Persistent precarious employment and health - Understanding Society
+# Precarious employment and health - Understanding Society
 # 1-05 - Create paired analytic sample dataframes
 # Andrew Pulford
 
@@ -36,6 +36,10 @@ library(janitor) # cleaning up
 
 pair_cc_raw <- readRDS("./working_data/pair_cc_raw.rds")
 
+weight_spine_pair <- readRDS("./look_ups/weight_spine_pair.rds")
+
+pair_cc_raw <- pair_cc_raw %>% 
+  left_join(weight_spine_pair)
 
 ################################################################################
 #####                             job retention                            #####
@@ -43,23 +47,39 @@ pair_cc_raw <- readRDS("./working_data/pair_cc_raw.rds")
 
 
 #### apply inclusion criteria ---------------------------------------------------
+# 16-64 t0
+
 # in employment t0
 # valid employment response at t1
-# 16-64 t0
 # not in full-time education at t0 or t1
 # not retired at t0 or t1
-
+# valid weight at t1
 
 ### create df and exclusions df
+## 16-64 t0
+# include
+working_age <- pair_cc_raw  %>% 
+  filter(age_dv_t0>=16 &age_dv_t0<=64)
+
+# exclude
+temp_df <- pair_cc_raw  %>% filter(age_dv_t0<16 | age_dv_t0>64) 
+temp2 <- temp_df %>% summarise(n=n()) %>% 
+  mutate(exc_reason = "not working age (16-64 years) at t0")
+pair_cc_exc <- temp2
+
+
 ## in employment t0
 # include
-in_emp_t0 <- pair_cc_raw %>% 
+in_emp_t0 <-  working_age %>% 
   filter(employ_t0=="yes") 
 
 # exclude
-temp_df <- pair_cc_raw %>% filter(employ_t0!="yes") 
-pair_cc_exc <- temp_df %>% summarise(n=n()) %>% 
+temp_df <- working_age %>% filter(employ_t0!="yes") 
+temp2 <- temp_df %>% summarise(n=n()) %>% 
   mutate(exc_reason = "not in employment t0")
+pair_cc_exc <- pair_cc_exc %>% 
+  bind_rows(temp2)
+
 
 ## valid employment response at t1
 # include
@@ -74,27 +94,14 @@ pair_cc_exc <- pair_cc_exc %>%
   bind_rows(temp2)
 
 
-## 16-64 t0
-# include
-working_age <- valid_emp_t1 %>% 
-  filter(age_dv_t0>=16 &age_dv_t0<=64)
-
-# exclude
-temp_df <- valid_emp_t1 %>% filter(age_dv_t0<16 | age_dv_t0>64) 
-temp2 <- temp_df %>% summarise(n=n()) %>% 
-  mutate(exc_reason = "not working age (16-64 years) at t0")
-pair_cc_exc <- pair_cc_exc %>% 
-  bind_rows(temp2)
-
-
 ## not in full-time education at t0 or t1
 # inclue
-not_fe <- working_age %>% 
+not_fe <- valid_emp_t1 %>% 
   filter(fenow_t0!="At college/university" |
            fenow_t1!="At college/university")
 
 # exclude
-temp_df <- working_age %>%  filter(fenow_t0=="At college/university" |
+temp_df <- valid_emp_t1 %>%  filter(fenow_t0=="At college/university" |
                                  fenow_t1=="At college/university")
 temp2 <- temp_df %>% summarise(n=n()) %>% 
   mutate(exc_reason = "at college/university at t0 or t1")
@@ -113,10 +120,24 @@ temp2 <- temp_df %>% summarise(n=n()) %>%
 pair_cc_exc <- pair_cc_exc %>% 
   bind_rows(temp2)
 
+## valid weight at t1
+# include
+valid_wt <- not_retired %>% 
+  filter(wt_valid_flag==1)
+
+# exclude
+temp_df <- not_retired %>% filter(wt_valid_flag!=1)
+temp2 <- temp_df %>% summarise(n=n()) %>% 
+  mutate(exc_reason = "no valid weight")
+pair_cc_exc <- pair_cc_exc %>% 
+  bind_rows(temp2)
+
 
 #### final df's
-pair_cc_eligible <- not_retired
+pair_cc_eligible <- valid_wt
 
 ##save
 
 write_rds(pair_cc_eligible, "./working_data/pair_cc_eligible.rds")
+
+write_rds(pair_cc_exc, "./working_data/pair_cc_exc.rds")
