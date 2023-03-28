@@ -1,6 +1,6 @@
 ################################################################################
 
-# Persistent precarious employment and health - Understanding Society
+# Precarious employment and health - Understanding Society
 # 1-03 - Clean and recode master raw data for causal analysis
 # Andrew Pulford
 
@@ -81,6 +81,7 @@ master_raw1 <- master_raw1 %>%
                                                 "Not available for IEMB"),
                                  "missing", 
                            ifelse(marstat %in% c("single and never married or never in a legally recognised ci",
+                                                "single & never married or in legally recog'd civil p'ship",
                                                 "single, nvr marr/civ p",                                      
                                                 "Single, nvr marr/civ p"),
                                  "single",
@@ -88,7 +89,8 @@ master_raw1 <- master_raw1 %>%
                                                 "a civil partner in a legally recognised civil partnership",   
                                                 "civil partner (legal)",                                       
                                                 "Married",                                                     
-                                                "Civil Partner (legal)"),
+                                                "Civil Partner (legal)",
+                                                "in a registered same-sex civil partnership"),
                                   "married/civil partnership",
                            ifelse(marstat %in% c("separated but legally married",                               
                                                  "divorced",                                                    
@@ -105,11 +107,30 @@ master_raw1 <- master_raw1 %>%
                                                  "Widowed",                                                     
                                                  "Sep from Civil Partner",                                      
                                                  "A former Civil Partner",                                      
-                                                 "Surviving Civil Partner"),
+                                                 "Surviving Civil Partner",
+                                                 "an ex-civil partner,civil p'ship legally dissolved",
+                                                 "surviving civil partner (partner died)",
+                                  "separated from civil partner"),
                                   "divorced/separated/widowed",
                                   "check")))))
                                       
 
+### educational attainment
+
+master_raw1$hiqual_dv <- as.character(master_raw1$hiqual_dv)
+
+master_raw1 <- master_raw1 %>% 
+  mutate(hiqual_dv = ifelse(hiqual_dv=="Other higher","Other higher degree",
+                  ifelse(hiqual_dv=="Other qual","Other qualification",
+                         ifelse(hiqual_dv=="No qual","No qualification",
+                                ifelse(hiqual_dv=="A level etc","A-level etc",
+                                       hiqual_dv)))))
+
+  
+### region
+master_raw1 <- master_raw1 %>% 
+  mutate(gor_dv = tolower(gor_dv))
+           
 ### perceived job security
 master_raw1 <- master_raw1 %>% 
   mutate(jbsec_dv = ifelse(jbsec %in% c("missing",                 
@@ -149,6 +170,14 @@ master_raw1 <- master_raw1 %>%
 
 
  
+### long-standing condition
+master_raw1 <- master_raw1 %>% 
+  mutate(health = ifelse(health %in% c("yes","Yes"),"yes",
+                  ifelse(health %in% c("no","No"),"no",
+                  ifelse(health %in% c("missing","refusal",
+                                       "don't know","inapplicable"),"missing",
+                         "check"))))
+
 ################################################################################
 #####                            exposure variables                        #####
 ################################################################################
@@ -313,7 +342,33 @@ master_raw1 <- master_raw1 %>%
 
 
 #### recode GHQ-12 caseness for analysis
-## calculate caseness (cut point = 3)
+## calculate caseness for main analysis (cut point = 4)
+master_raw1 <- master_raw1 %>% 
+  mutate(ghq_case4 = ifelse(grepl("0",as.character(scghq2_dv)),0,
+                          ifelse(grepl("1",as.character(scghq2_dv)),0,
+                                 ifelse(grepl("2",as.character(scghq2_dv)),0,
+                                        ifelse(grepl("3",as.character(scghq2_dv)),0,
+                                               ifelse(grepl("4",as.character(scghq2_dv)),1,
+                                                      ifelse(grepl("5",as.character(scghq2_dv)),1,
+                                                             ifelse(grepl("6",as.character(scghq2_dv)),1,
+                                                                    ifelse(grepl("7",as.character(scghq2_dv)),1,
+                                                                           ifelse(grepl("8",as.character(scghq2_dv)),1,
+                                                                                  ifelse(grepl("9",as.character(scghq2_dv)),1,
+                                                                                         ifelse(grepl("10",as.character(scghq2_dv)),1,
+                                                                                                ifelse(grepl("11",as.character(scghq2_dv)),1,
+                                                                                                       ifelse(grepl("12",as.character(scghq2_dv)),1,
+                                                                                                              as.character(scghq2_dv))))))))))))))) 
+
+master_raw1 <- master_raw1 %>% 
+  mutate(ghq_case4 = ifelse(ghq_case4=="0","0-3",
+                            ifelse(ghq_case4=="1","4 or more",
+                                   ifelse(ghq_case4 %in% c("inapplicable", 
+                                                           "missing", 
+                                                           "proxy"),
+                                          "missing",
+                                          ghq_case4))))
+
+## calculate caseness for sensitivity analysis (cut point = 3)
 master_raw1 <- master_raw1 %>% mutate(ghq_case3 = ifelse(grepl("0",as.character(scghq2_dv)),0,
                                                          ifelse(grepl("1",as.character(scghq2_dv)),0,
                                                                 ifelse(grepl("2",as.character(scghq2_dv)),0,
@@ -331,13 +386,12 @@ master_raw1 <- master_raw1 %>% mutate(ghq_case3 = ifelse(grepl("0",as.character(
 
 master_raw1 <- master_raw1 %>% 
   mutate(ghq_case3 = ifelse(ghq_case3=="0","0-2",
-                          ifelse(ghq_case3=="1","3 or more",
-                                 ifelse(ghq_case3 %in% c("inapplicable", 
-                                                         "missing", 
-                                                         "proxy"),
-                                        "missing",
-                                        ghq_case3))))
-
+                            ifelse(ghq_case3=="1","3 or more",
+                                   ifelse(ghq_case3 %in% c("inapplicable", 
+                                                           "missing", 
+                                                           "proxy"),
+                                          "missing",
+                                          ghq_case3))))
 ################################################################################
 #####                         save cleaned dataframe                       #####
 ################################################################################
