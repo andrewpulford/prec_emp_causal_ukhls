@@ -1,6 +1,6 @@
 ################################################################################
 
-# Persistent precarious employment and health - Understanding Society
+# Precarious employment and health - Understanding Society
 # 1-02 - Create weight spine for causal analysis
 # Andrew Pulford
 
@@ -56,14 +56,16 @@ weight_spine <- master_raw1 %>%
   mutate(wt_valid_flag = ifelse(wt_value!=0,1,0))
 
 ### create paired wave weight spine
-weight_spine_pair <- weight_spine %>%   filter(wt_flag_pair==1)
+weight_spine_pair <- weight_spine %>%   filter(wt_flag_pair==1) %>% 
+  rename("wv_n_t1"="wv_end")
 
 table(weight_spine_pair$wt_flag_pair)
 
 write_rds(weight_spine_pair, "./look_ups/weight_spine_pair.rds")
 
 ### create three-wave weight spine
-weight_spine_trio <- weight_spine %>%   filter(wt_flag_trio==1)
+weight_spine_trio <- weight_spine %>%   filter(wt_flag_trio==1) %>% 
+  rename("wv_n_t2"="wv_end")
 
 table(weight_spine_trio$wt_flag_trio)
 
