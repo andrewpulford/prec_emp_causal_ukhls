@@ -1,0 +1,287 @@
+################################################################################
+
+# Precarious employment and health - Understanding Society
+# 3-02 - Paired unweighted descriptives 
+# Andrew Pulford
+
+# Data source:
+# University of Essex, Institute for Social and Economic Research. (2021). 
+# Understanding Society: Waves 1-10, 2009-2019 and Harmonised BHPS: Waves 1-18, 
+# 1991-2009. [data collection]. 13th Edition. UK Data Service. SN: 6614, 
+# http://doi.org/10.5255/UKDA-SN-6614-14
+
+#### What this script does:
+# (a) produces unweighted descriptive analysis for complete case paired data
+
+
+################################################################################
+
+## remove any existing objects from global environment
+rm(list=ls()) 
+
+
+################################################################################
+#####                            install packages                          #####
+################################################################################
+
+library(tidyverse) # all kinds of stuff 
+
+################################################################################
+#####                         load and prepare data                        #####
+################################################################################
+
+####load eligible cases --------------------------------------------------------
+pair_cc_eligible <- readRDS("./working_data/pair_cc_eligible.rds")
+
+
+################################################################################
+##### descriptives ######
+################################################################################
+
+#####----------------------------------------------------------------------#####
+#####                     Personal characteristics                         #####
+#####----------------------------------------------------------------------#####
+
+#### sex -----------------------------------------------------------------------
+#pair_cc_eligible$sex_dv <- droplevels(pair_cc_eligible$sex_dv)
+
+sex <- pair_cc_eligible %>% group_by(sex_dv_t0) %>% summarise(n=n()) %>% 
+  mutate(est = n/sum(n)*100) %>% 
+  mutate(var="Sex") %>% 
+  rename("measure"= "sex_dv_t0") %>% 
+  dplyr::select(var, measure, n, est) %>% 
+  arrange(factor(measure, levels = c("Female","Male")))
+
+sample_chars <- sex
+
+#### age -----------------------------------------------------------------------
+age_mean <- pair_cc_eligible %>%  
+  summarise(est = mean(as.numeric(as.numeric(age_dv_t0)), na.rm = TRUE)) %>% 
+  mutate(var="Age", measure="Mean", n=NA) %>% 
+  dplyr::select(var, measure, n, est)
+
+sample_chars <- sample_chars %>% bind_rows(age_mean)
+
+
+#### ethnicity -----------------------------------------------------------------
+## full ethnicity coding
+ethnicity <- pair_cc_eligible %>% group_by(ethn_dv_t0) %>% 
+  summarise(n=n()) %>% 
+  mutate(est = n/sum(n)*100) %>% 
+  mutate(var="Ethnicity") %>% 
+  rename("measure"= "ethn_dv_t0") %>% 
+  dplyr::select(var, measure, n, est)
+
+## white/non-white
+white_non <- pair_cc_eligible %>% group_by(non_white_t0) %>% 
+  summarise(n=n()) %>%  
+  mutate(est = n/sum(n)*100) %>% 
+  mutate(var="Ethnicity") %>% 
+  rename("measure"= "non_white_t0") %>% 
+  dplyr::select(var, measure, n, est) %>% 
+  arrange(factor(measure, levels = c("White","Non-white","Missing")))
+
+
+sample_chars <- sample_chars %>% bind_rows(white_non)
+
+#### Marital status -------------------------------------------------------------
+marital <- pair_cc_eligible %>% group_by(marital_status_t0) %>% summarise(n=n()) %>%  
+  mutate(est = n/sum(n)*100) %>% 
+  mutate(var="Marital status") %>% 
+  rename("measure"= "marital_status_t0") %>% 
+  dplyr::select(var, measure, n, est) %>% 
+  arrange(factor(measure, levels = c("married/civil partnership","divorced/separated/widowed","single","missing")))
+
+
+sample_chars <- sample_chars %>% bind_rows(marital)
+
+#### Educational attainment ----------------------------------------------------
+ed_attain <- pair_cc_eligible %>% group_by(hiqual_dv_t0) %>% summarise(n=n()) %>% 
+  mutate(est = n/sum(n)*100) %>% 
+  mutate(var="Educational attainment") %>% 
+  rename("measure"= "hiqual_dv_t0") %>% 
+  dplyr::select(var, measure, n, est) %>% 
+  arrange(factor(measure, levels = c("degree",
+                                           "other higher degree",
+                                           "a-level etc",
+                                           "gcse etc",
+                                           "other qualification",
+                                           "no qualification")))
+
+
+sample_chars <- sample_chars %>% bind_rows(ed_attain)
+
+#### Region --------------------------------------------------------------------
+region <- pair_cc_eligible %>% group_by(gor_dv_t0) %>% summarise(n=n()) %>% 
+  mutate(est = n/sum(n)*100) %>% 
+  mutate(var="Region") %>% 
+  rename("measure"= "gor_dv_t0") %>% 
+  dplyr::select(var, measure, n, est)
+
+sample_chars <- sample_chars %>% bind_rows(region)
+
+#####----------------------------------------------------------------------#####
+#####               Employment and income characteristics                  #####
+#####----------------------------------------------------------------------#####
+
+#### Current job: Three Class NS-SEC -------------------------------------------
+nssec3 <- pair_cc_eligible %>% group_by(jbnssec3_dv_t0) %>% summarise(n=n()) %>% 
+  mutate(est = n/sum(n)*100) %>% 
+  mutate(var="NS-SEC3") %>% 
+  rename("measure"= "jbnssec3_dv_t0") %>% 
+  select(var, measure, n, est)
+# recode inapplicable based on emp status? <<<<<<<<<
+
+sample_chars <- sample_chars %>% bind_rows(nssec3)
+
+#### RG Social Class: present job ----------------------------------------------
+#rg_class <- pair_cc_eligible %>% group_by(jbrgsc_dv_t0) %>% summarise(n=n()) %>% 
+#  mutate(pc = n/sum(n)*100)
+
+# don't add for now
+
+#### permanent or temporary ----------------------------------------------------
+perm_emp <- pair_cc_eligible %>% group_by(emp_contract_t0) %>% summarise(n=n()) %>% 
+  mutate(est = n/sum(n)*100) %>% 
+  mutate(var="Employment contract") %>% 
+  rename("measure"= "emp_contract_t0") %>% 
+  dplyr::select(var, measure, n, est) %>% 
+  arrange(factor(measure, levels = c("fixed-term",
+                                           "permanent",
+                                           "unemployed/not in employment")))
+
+
+
+sample_chars <- sample_chars %>% bind_rows(perm_emp)
+
+
+#### Employment spells since last interview ------------------------------------
+
+emp_broken <- pair_cc_eligible %>% group_by(broken_emp_t0) %>% 
+  summarise(n=n()) %>%  
+  mutate(est = n/sum(n)*100) %>% 
+  mutate(var="Broken employment") %>% 
+  rename("measure"= "broken_emp_t0") %>% 
+  dplyr::select(var, measure, n, est)  %>% 
+  arrange(factor(measure, levels = c("Unbroken employment",
+                                           "Broken employment",
+                                           "No employment spells")))
+
+
+sample_chars <- sample_chars %>% bind_rows(emp_broken)
+
+
+#### Multiple jobs -------------------------------------------------------------
+### has a 2nd job ----
+emp_2nd <- pair_cc_eligible %>% group_by(j2has_dv_t0) %>% summarise(n=n()) %>%
+  mutate(est = n/sum(n)*100) %>% 
+  mutate(var="Multiple jobs") %>% 
+  rename("measure"= "j2has_dv_t0") %>% 
+  dplyr::select(var, measure, n, est)  %>% 
+  arrange(factor(measure, levels = c("no",
+                                           "yes")))
+
+
+
+sample_chars <- sample_chars %>% bind_rows(emp_2nd)
+
+#### income --------------------------------------------------------------------
+## total net personal income (check what used in COVID modelling)
+# check monthly?
+pair_cc_eligible$fimnnet_dv_t0 <- as.numeric(as.character(pair_cc_eligible$fimnnet_dv_t0))
+
+
+inc_quantile <- pair_cc_eligible %>%  
+  summarise(enframe(quantile(fimnnet_dv_t0, c(0.25, 0.5, 0.75)), "measure", "est")) %>%
+  #  mutate(measure=factor(measure)) %>% 
+  mutate(measure = ifelse(measure=="25%","25% quantile", 
+                          ifelse(measure=="50%","Median","75% quantile"))) %>% 
+  mutate(var="Monthly net income (£)",
+         n=NA) %>% 
+  dplyr::select(var, measure, n, est)
+
+sample_chars <- sample_chars %>% bind_rows(inc_quantile)
+
+
+#####----------------------------------------------------------------------#####
+#####                        Health characteristics                        #####
+#####----------------------------------------------------------------------#####
+
+#### long-standing illness or impairment ---------------------------------------
+ltc <- pair_cc_eligible %>% group_by(health_t0) %>% summarise(n=n()) %>%  
+  mutate(pc = n/sum(n)*100) %>%
+  mutate(est = n/sum(n)*100) %>% 
+  mutate(var="Long-standing illness or impairment") %>% 
+  rename("measure"= "health_t0") %>% 
+  dplyr::select(var, measure, n, est)  %>% 
+  arrange(factor(measure, levels = c("no",
+                                     "yes")))
+
+sample_chars <- sample_chars %>% bind_rows(ltc)
+
+#### self-rated health ---------------------------------------------------------
+
+pair_cc_eligible$srh_dv_t0 <- factor(pair_cc_eligible$srh_dv_t0, 
+                           levels = c("excellent", "very good", "good",
+                                      "fair", "poor"))
+
+srh <- pair_cc_eligible %>% 
+  group_by(srh_dv_t0) %>% summarise(n=n()) %>%  
+  mutate(est = n/sum(n)*100) %>% 
+  mutate(var="Self-rated health") %>% 
+  rename("measure"= "srh_dv_t0") %>% 
+  dplyr::select(var, measure, n, est)
+
+sample_chars <- sample_chars %>% bind_rows(srh)
+
+
+#### GHQ-12 --------------------------------------------------------------------
+
+ghq4 <- pair_cc_eligible %>% group_by(ghq_case4_t0) %>% summarise(n=n()) %>%  
+  mutate(est = n/sum(n)*100) %>% 
+  mutate(var="GHQ12 score") %>% 
+  rename("measure"= "ghq_case4_t0") %>% 
+  dplyr::select(var, measure, n, est) %>% 
+  arrange(factor(measure, levels = c("0-3",
+                                           "4 or more")))
+
+
+sample_chars <- sample_chars %>% bind_rows(ghq4)
+
+#### SF-12 physical component summary -------------------------------------------- 
+
+# convert to numeric (to character stirng first to actual value is retained)
+pair_cc_eligible$sf12pcs_dv_t0 <- as.character(pair_cc_eligible$sf12pcs_dv_t0)
+pair_cc_eligible$sf12pcs_dv_t0 <- as.numeric(pair_cc_eligible$sf12pcs_dv_t0)
+
+# distribution measures
+mean(pair_cc_eligible$sf12pcs_dv_t0, na.rm = TRUE)
+median(pair_cc_eligible$sf12pcs_dv_t0, na.rm = TRUE)
+min(pair_cc_eligible$sf12pcs_dv_t0, na.rm = TRUE)
+max(pair_cc_eligible$sf12pcs_dv_t0, na.rm = TRUE)
+sf12pcs_quantile <- quantile(pair_cc_eligible$sf12pcs_dv_t0, na.rm = TRUE)
+
+# add to df
+
+#### SF-12 mental component summary -------------------------------------------- 
+
+# convert to numeric (to character stirng first to actual value is retained)
+pair_cc_eligible$sf12mcs_dv_t0 <- as.character(pair_cc_eligible$sf12mcs_dv_t0)
+pair_cc_eligible$sf12mcs_dv_t0 <- as.numeric(pair_cc_eligible$sf12mcs_dv_t0)
+
+# distribution measures
+mean(pair_cc_eligible$sf12mcs_dv_t0, na.rm = TRUE)
+median(pair_cc_eligible$sf12mcs_dv_t0, na.rm = TRUE)
+min(pair_cc_eligible$sf12mcs_dv_t0, na.rm = TRUE)
+max(pair_cc_eligible$sf12mcs_dv_t0, na.rm = TRUE)
+sf12mcs_quantile <- quantile(pair_cc_eligible$sf12mcs_dv_t0, na.rm = TRUE)
+
+# add to df
+
+
+#####----------------------------------------------------------------------#####
+#####                     Save sample endpoint chars data                  #####
+#####----------------------------------------------------------------------#####
+
+## as dataframe
+write_rds(sample_chars, "./working_data/sample_chars.rds")
