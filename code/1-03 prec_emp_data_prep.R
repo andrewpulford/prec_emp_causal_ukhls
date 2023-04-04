@@ -54,6 +54,11 @@ master_raw1 <- master_raw1 %>%
 #####                                covariates                            #####
 ################################################################################
 
+### recode inconsistent sex as missing
+master_raw1 <- master_raw1 %>% 
+  mutate(sex_dv = as.character(sex_dv)) %>% 
+  mutate(sex_dv = ifelse(sex_dv=="inconsistent","missing",sex_dv))
+
 ### recode age as numeric
 master_raw1 <- master_raw1 %>% 
   mutate(age_dv=as.character(age_dv)) %>% 
@@ -124,7 +129,8 @@ master_raw1 <- master_raw1 %>%
                   ifelse(hiqual_dv=="Other qual","Other qualification",
                          ifelse(hiqual_dv=="No qual","No qualification",
                                 ifelse(hiqual_dv=="A level etc","A-level etc",
-                                       hiqual_dv)))))
+                                       ifelse(hiqual_dv=="inapplicable","missing",
+                                       hiqual_dv))))))
 
   
 ### region
@@ -304,6 +310,9 @@ master_raw1 <- master_raw1 %>%
                                             emp_contract=="unemployed/not in employment",
                                    "unemployed/not in employment",
                                    "missing")))))
+
+
+
 
 ################################################################################
 #####                            health outcomes                           #####
