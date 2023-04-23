@@ -35,7 +35,7 @@ library(tidyverse) # all kinds of stuff
 vars <- readRDS("./variables/vars_master.rds")
   
 analytic_vars <- vars %>% 
-  filter(jr_analytic_var==1) %>% 
+  filter(type %in% c("exp","cov")) %>% 
   mutate(variable_t0 = paste0(variable,"_t0"),
          variable_t1 = paste0(variable,"_t1"))
 
@@ -80,7 +80,6 @@ pair_cc_eligible_na <- pair_cc_eligible_na %>%
                    .fns = ~sum(.x))) %>% 
   pivot_longer(cols=1:120, names_to = "variable", values_to = "n_NA") %>% 
   mutate(pc_NA = n_NA/n_row*100)
-
 
 ################################################################################
 #####                     create final complete case df                    #####
