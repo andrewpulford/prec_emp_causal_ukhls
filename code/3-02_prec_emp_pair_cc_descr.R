@@ -127,21 +127,23 @@ sample_chars <- sample_chars %>% bind_rows(region)
 #####               Employment and income characteristics                  #####
 #####----------------------------------------------------------------------#####
 
-#### Current job: Three Class NS-SEC -------------------------------------------
-nssec3 <- pair_cc_analytic %>% group_by(jbnssec3_dv_t0) %>% summarise(n=n()) %>% 
+#### Current job: SIC-2007 -----------------------------------------------------
+sic2007 <- pair_cc_analytic %>% group_by(sic2007_section_lab_t0) %>% summarise(n=n()) %>% 
   mutate(est = n/sum(n)*100) %>% 
-  mutate(var="NS-SEC3") %>% 
-  rename("measure"= "jbnssec3_dv_t0") %>% 
-  select(var, measure, n, est)
-# recode inapplicable based on emp status? <<<<<<<<<
+  mutate(var="SIC-2007") %>% 
+  rename("measure"= "sic2007_section_lab_t0") %>% 
+  dplyr::select(var, measure, n, est)
 
-sample_chars <- sample_chars %>% bind_rows(nssec3)
+sample_chars <- sample_chars %>% bind_rows(sic2007)
 
-#### RG Social Class: present job ----------------------------------------------
-#rg_class <- pair_cc_analytic %>% group_by(jbrgsc_dv_t0) %>% summarise(n=n()) %>% 
-#  mutate(pc = n/sum(n)*100)
+#### Current job: SOC-2000 -----------------------------------------------------
+soc2000 <- pair_cc_analytic %>% group_by(soc2000_major_group_title_t0) %>% summarise(n=n()) %>% 
+  mutate(est = n/sum(n)*100) %>% 
+  mutate(var="SOC-2000") %>% 
+  rename("measure"= "soc2000_major_group_title_t0") %>% 
+  dplyr::select(var, measure, n, est)
 
-# don't add for now
+sample_chars <- sample_chars %>% bind_rows(soc2000)
 
 #### permanent or temporary ----------------------------------------------------
 perm_emp <- pair_cc_analytic %>% group_by(emp_contract_t0) %>% summarise(n=n()) %>% 
@@ -160,18 +162,18 @@ sample_chars <- sample_chars %>% bind_rows(perm_emp)
 
 #### Employment spells since last interview ------------------------------------
 
-emp_broken <- pair_cc_analytic %>% group_by(broken_emp_t0) %>% 
-  summarise(n=n()) %>%  
-  mutate(est = n/sum(n)*100) %>% 
-  mutate(var="Broken employment") %>% 
-  rename("measure"= "broken_emp_t0") %>% 
-  dplyr::select(var, measure, n, est)  %>% 
-  arrange(factor(measure, levels = c("Unbroken employment",
-                                           "Broken employment",
-                                           "No employment spells")))
+#emp_broken <- pair_cc_analytic %>% group_by(broken_emp_t0) %>% 
+#  summarise(n=n()) %>%  
+#  mutate(est = n/sum(n)*100) %>% 
+#  mutate(var="Broken employment") %>% 
+#  rename("measure"= "broken_emp_t0") %>% 
+#  dplyr::select(var, measure, n, est)  %>% 
+#  arrange(factor(measure, levels = c("Unbroken employment",
+#                                           "Broken employment",
+#                                           "No employment spells")))
 
 
-sample_chars <- sample_chars %>% bind_rows(emp_broken)
+#sample_chars <- sample_chars %>% bind_rows(emp_broken)
 
 
 #### Multiple jobs -------------------------------------------------------------
@@ -326,9 +328,10 @@ cov_vector <- c("sex_dv_t0",
                 "marital_status_t0",
                 "hiqual_dv_t0", 
                 "gor_dv_t0",
-                "jbnssec3_dv_t0", 
+                "sic2007_section_lab_t0",
+                "soc2000_major_group_title_t0",
                 "emp_contract_t0",
-                "broken_emp_t0",
+#                "broken_emp_t0",
                 "j2has_dv_t0",
                 "fimnnet_dv_t0",
                 "health_t0",
@@ -337,12 +340,62 @@ cov_vector <- c("sex_dv_t0",
                 "sf12mcs_dv_t0",
                 "sf12pcs_dv_t0")
 
-table_one <- CreateTableOne(vars = cov_vector, strata = "exposure1", 
+## unemployed at T1
+table_one <- CreateTableOne(vars = cov_vector, strata = "exposure1",
                             data = pair_cc_analytic)
 
-print(table_one, showAllLevels = TRUE, formatOptions = list(big.mark = ","))
+table_one_sav <- print(table_one, showAllLevels = TRUE, smd = TRUE, 
+                       formatOptions = list(big.mark = ","))
 
+# Count covariates with important imbalance
+table_one_smd <- data.frame(ExtractSmd(table_one))
+table_one_smd <- table_one_smd %>% 
+  rownames_to_column("var") %>% # Apply rownames_to_column
+  rename("smd" = "X1.vs.2") %>% 
+  mutate(imbalance_flag = ifelse(smd>0.1,"SMD>0.1","SMD<=0.1"),
+         matched = "unmatched")
+
+write.csv(table_one_smd, "./output/table_one_unmatched_smd.csv")
+
+addmargins(table(ExtractSmd(table_one) > 0.1))
+
+# plot unmatched smd's
+table_one_smd %>% 
+  ggplot(aes(x=smd, y=var, col=imbalance_flag)) +
+  geom_point() +
+  geom_vline(xintercept = 0.1, linetype = "dashed") +
+  theme_bw() +
+  scale_color_manual(values = c("blue","red"))
+
+## job loss between t0 and t1
 table_one_alt <- CreateTableOne(vars = cov_vector, strata = "exposure2", 
                                 data = pair_cc_analytic)
 
-print(table_one_alt, showAllLevels = TRUE, formatOptions = list(big.mark = ","))
+# Count covariates with important imbalance
+table_one_alt_smd <- data.frame(ExtractSmd(table_one_alt))
+table_one_alt_smd <- table_one_alt_smd %>% 
+  rownames_to_column("var") %>% # Apply rownames_to_column
+  rename("smd" = "X1.vs.2") %>% 
+  mutate(imbalance_flag = ifelse(smd>0.1,"SMD>0.1","SMD<=0.1"),
+         matched = "unmatched")
+
+write.csv(table_one_alt_smd, "./output/table_one_alt_unmatched_smd.csv")
+
+# plot unmatched smd's
+table_one_alt_smd %>% 
+  ggplot(aes(x=smd, y=var, col=imbalance_flag)) +
+  geom_point() +
+  geom_vline(xintercept = 0.1, linetype = "dashed") +
+  theme_bw() +
+  scale_color_manual(values = c("blue","red"))
+
+addmargins(table(ExtractSmd(table_one_alt) > 0.1))
+
+table_one_alt_sav <- print(table_one_alt, showAllLevels = TRUE, smd = TRUE, 
+                           formatOptions = list(big.mark = ","))
+
+### save tables
+
+write.csv(table_one_sav, "./output/table_one.csv")
+write.csv(table_one_alt_sav, "./output/table_one_alt.csv")
+
