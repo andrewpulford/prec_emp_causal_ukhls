@@ -33,7 +33,12 @@ library(foreign) # for reading SPSS files
 library(tidyverse) # all kinds of stuff 
 library(janitor) # cleaning up
 
+################################################################################
+#####                               load functions                         #####
+################################################################################
 
+## function for creating occupation and industry group vars
+source("./functions/soc_sic_prep_function.R")
 
 
 ################################################################################
@@ -41,6 +46,9 @@ library(janitor) # cleaning up
 ################################################################################
 
 master_raw1 <- readRDS("./raw_data/master_raw1.rds")
+
+
+
 
 ################################################################################
 #####                               identifiers                           ######
@@ -183,6 +191,14 @@ master_raw1 <- master_raw1 %>%
                   ifelse(health %in% c("missing","refusal",
                                        "don't know","inapplicable"),"missing",
                          "check"))))
+
+### industry (SIC-2007)
+master_raw1 <- sic2007f()
+
+### occupation (SOC-2000)
+master_raw1 <- soc2000f()
+
+
 
 ################################################################################
 #####                            exposure variables                        #####
@@ -347,7 +363,7 @@ master_raw1 <- master_raw1 %>%
                           "excellent/very good",
                    ifelse(srh_dv %in% c("good","fair","poor"),
                           "good/fair/poor",
-                          NA)))
+                          "missing")))
 
 
 #### recode GHQ-12 caseness for analysis
@@ -401,6 +417,27 @@ master_raw1 <- master_raw1 %>%
                                                            "proxy"),
                                           "missing",
                                           ghq_case3))))
+
+
+#### sf-12 PCS
+master_raw1 <- master_raw1 %>% 
+  mutate(sf12pcs_dv = as.character(sf12pcs_dv)) %>% 
+  mutate(sf12pcs_dv = ifelse(sf12pcs_dv %in%c("inapplicable", 
+                                              "missing", 
+                                              "proxy",
+                                              "(Other)"),
+                             "missing", sf12pcs_dv))
+
+#### sf-12 MCS
+master_raw1 <- master_raw1 %>% 
+  mutate(sf12mcs_dv = as.character(sf12mcs_dv)) %>% 
+  mutate(sf12mcs_dv = ifelse(sf12mcs_dv %in%c("inapplicable", 
+                                              "missing", 
+                                              "proxy",
+                                              "(Other)"),
+                             "missing", sf12mcs_dv))
+
+
 ################################################################################
 #####                         save cleaned dataframe                       #####
 ################################################################################
