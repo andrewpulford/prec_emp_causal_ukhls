@@ -121,7 +121,7 @@ sapply(pair_cc_analytic, function(x) sum(is.na(x)))
 #  slice_sample(prop = 1)
 
 #### load unmatched SMD df
-table_one_unmatched_smd <- read.csv("./output/table_one_unmatched_smd.csv") %>% 
+table_one_unmatched_smd <- read.csv("./working_data/table_one_unmatched_smd.csv") %>% 
   dplyr::select(c(var, smd, imbalance_flag, matched))
 
 
@@ -189,6 +189,11 @@ pair_cc_analytic$ps_min <- pmin(pair_cc_analytic$ps_exp1, pair_cc_analytic$ps_no
 #####                       propensity score matching                      #####
 ################################################################################
 
+### remove missing as category for tables == don't use for now, throws error
+#pair_cc_analytic <- pair_cc_analytic %>% 
+#  mutate(across(.cols = everything(), 
+#                .fns = ~ifelse(.x%in%c("missing","Missing"),NA,.x))) 
+
 
 #### match propensity scores using Matching package ----------------------------
 list_match <- Match(Tr = (pair_cc_analytic$exposure1=="exposed (unemployed at t1)"),
@@ -240,7 +245,7 @@ table_one_weighted <- svyCreateTableOne(vars = cov_vector,
 
 table_one_weighted_sav <- print(table_one_weighted,  smd = TRUE)
 
-write.csv(table_one_weighted_sav, "./output/table_one_weighted_sav.csv")
+write.csv(table_one_weighted_sav, "./output/table_one_weighted.csv")
 
 ### count covariates with an important imbalance (>0.1)
 
@@ -275,13 +280,16 @@ assess_matching_balance <- table_one_matched_smd %>%
   bind_rows(table_one_weighted_smd,table_one_unmatched_smd)
 
 ### plot
-assess_matching_balance %>% 
+unemp_t1_balance_plot <- assess_matching_balance %>% 
   ggplot(aes(x=smd, y=var, col=matched)) +
   geom_point() +
   geom_vline(xintercept = 0.1, linetype = "dashed") +
   theme_bw() +
   scale_color_manual(values = c("blue","red", "green"))
 
+tiff("./output/unemp_t1_balance_plot.tiff")
+unemp_t1_balance_plot
+dev.off()
 
 ################################################################################
 #####                           outcome analysis                           #####
