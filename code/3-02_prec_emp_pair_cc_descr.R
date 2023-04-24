@@ -342,7 +342,8 @@ cov_vector <- c("sex_dv_t0",
 
 ## unemployed at T1
 table_one <- CreateTableOne(vars = cov_vector, strata = "exposure1",
-                            data = pair_cc_analytic)
+                            data = pair_cc_analytic,
+                            test = FALSE)
 
 table_one_sav <- print(table_one, showAllLevels = TRUE, smd = TRUE, 
                        formatOptions = list(big.mark = ","))
@@ -355,7 +356,7 @@ table_one_smd <- table_one_smd %>%
   mutate(imbalance_flag = ifelse(smd>0.1,"SMD>0.1","SMD<=0.1"),
          matched = "unmatched")
 
-write.csv(table_one_smd, "./output/table_one_unmatched_smd.csv")
+write.csv(table_one_smd, "./working_data/table_one_unmatched_smd.csv")
 
 addmargins(table(ExtractSmd(table_one) > 0.1))
 
@@ -396,6 +397,6 @@ table_one_alt_sav <- print(table_one_alt, showAllLevels = TRUE, smd = TRUE,
 
 ### save tables
 
-write.csv(table_one_sav, "./output/table_one.csv")
-write.csv(table_one_alt_sav, "./output/table_one_alt.csv")
+write.csv(table_one_sav, "./output/table_one_unmatched.csv")
+write.csv(table_one_alt_sav, "./output/table_one_alt_unmatched.csv")
 
