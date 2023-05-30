@@ -39,7 +39,7 @@ library(janitor) # cleaning up
 
 clean_raw1 <- readRDS("./working_data/master_raw1_clean.rds")
 
-clean_raw1 %>% filter(wv_n == 1 | wv_n ==2)
+#clean_raw1 %>% filter(wv_n == 1 | wv_n ==2)
 
 ################################################################################
 #####                           define functions                           #####
@@ -187,10 +187,10 @@ three_cc_wide_func <- function(data){
 #### ---------------------------------------------------------------------------
 
 #### waves 1 and 2 -------------------------------------------------------------
-pair12_raw <- pair_func(t0 = 1,t1 = 2)
-pair12_raw_wide <- pair_wide_func(data=pair12_raw)
-pair12_cc <- pair_cc_func(data = pair12_raw, pair = "pair12")
-pair12_cc_wide <- pair_cc_wide_func(data=pair12_cc)
+#pair12_raw <- pair_func(t0 = 1,t1 = 2)
+#pair12_raw_wide <- pair_wide_func(data=pair12_raw)
+#pair12_cc <- pair_cc_func(data = pair12_raw, pair = "pair12")
+#pair12_cc_wide <- pair_cc_wide_func(data=pair12_cc)
 
 #### waves 2 and 3 -------------------------------------------------------------
 pair23_raw <- pair_func(t0 = 2,t1 = 3)
@@ -244,10 +244,10 @@ pair910_cc_wide <- pair_cc_wide_func(data=pair910_cc)
 #### Three waves
 #### ---------------------------------------------------------------------------
 #### waves 1, 2 and 3 ----------------------------------------------------------
-three123_raw <- three_func(t0=1, t1=2, t2=3)
-three123_wide_raw <- three_wide_func(data=three123_raw)
-three123_cc <- three_cc_func(data=three123_raw, trio = "trio123")
-three123_cc_wide <- three_cc_wide_func(three123_cc)
+#three123_raw <- three_func(t0=1, t1=2, t2=3)
+#three123_wide_raw <- three_wide_func(data=three123_raw)
+#three123_cc <- three_cc_func(data=three123_raw, trio = "trio123")
+#three123_cc_wide <- three_cc_wide_func(three123_cc)
 
 #### waves 2, 3 and 4 ----------------------------------------------------------
 three234_raw <- three_func(t0=2, t1=3, t2=4)
@@ -298,9 +298,8 @@ three8910_cc_wide <- three_cc_wide_func(three8910_cc)
 ################################################################################
 
 ### bind into single df
-pair_cc_raw <- pair12_cc_wide %>% 
-  bind_rows(pair23_cc_wide,
-            pair34_cc_wide,
+pair_cc_raw <- pair23_cc_wide %>% 
+  bind_rows(pair34_cc_wide,
             pair45_cc_wide,
             pair56_cc_wide,
             pair67_cc_wide,
@@ -318,9 +317,8 @@ write_rds(pair_cc_raw, "./working_data/pair_cc_raw.rds")
 #####                  Create trio complete cases dataset                  #####
 ################################################################################
 
-three_cc_raw <- three123_cc_wide %>% 
-  bind_rows(three234_cc_wide,
-            three345_cc_wide,
+three_cc_raw <- three234_cc_wide %>% 
+  bind_rows(three345_cc_wide,
             three456_cc_wide,
             three567_cc_wide,
             three678_cc_wide,
