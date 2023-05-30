@@ -59,9 +59,10 @@ cov_vector <- c("sex_dv_t0",
                 "sic2007_section_lab_t0",
                 "soc2000_major_group_title_t0",
                 "emp_contract_t0",
-#                "broken_emp_t0",
+                "broken_emp_t0",
                 "j2has_dv_t0",
                 "fimnnet_dv_t0",
+                "jbhrs_t0",
                 "health_t0",
                 "srh_bin_t0",
                 "ghq_case4_t0",
@@ -76,6 +77,11 @@ outcome_vector <- c("srh_bin_t1",
                     "sf12pcs_dv_t1",
                     "exposure1",
                     "exposure2")
+
+outcome_vector2 <- c("srh_bin_t1",
+                    "ghq_case4_t1",
+                    "sf12mcs_dv_t1",
+                    "sf12pcs_dv_t1")
 
 #### keep only variables required for analysis ---------------------------------
 pair_cc_analytic <- pair_cc_analytic %>% 
@@ -141,8 +147,9 @@ ps_model <- function(data = pair_cc_analytic, outcome){
               gor_dv_t0 +
               sic2007_section_lab_t0 +
               soc2000_major_group_title_t0 +
+              jbhrs_t0 +
               emp_contract_t0 +
-#              broken_emp_t0 +
+              broken_emp_t0 +
               j2has_dv_t0 +
               fimnnet_dv_t0 +
               health_t0 +
@@ -152,6 +159,17 @@ ps_model <- function(data = pair_cc_analytic, outcome){
               sf12pcs_dv_t0,
             family = binomial(link="logit"),
             data = data)
+  
+  
+}
+
+#### outcome model -------------------------------------------------------------
+
+outcome_model <- function(outcome, exposure = exposure1, data = pair_cc_analytic_svy){
+  svyglm(outcome ~ exposure,
+      family = quasibinomial,
+      design = data, 
+      na.action = na.omit)
   
   
 }
@@ -295,5 +313,103 @@ dev.off()
 #####                           outcome analysis                           #####
 ################################################################################
 
-# separate script for this
+#### unweighted outcomes table -------------------------------------------------
+table_outcomes_unweighted <- CreateTableOne(vars = outcome_vector2, 
+                                            strata = "exposure1",
+                                            data = pair_cc_analytic,
+                                            test = TRUE)
 
+table_outcomes_unweighted_sav <- print(table_outcomes_unweighted, 
+                                       showAllLevels = TRUE, 
+                                       smd = TRUE, 
+                       formatOptions = list(big.mark = ","))
+
+
+### weighted outcomes table
+table_outcomes_weighted <- svyCreateTableOne(vars = outcome_vector2,
+                                        strata = "exposure1",
+                                        data = pair_cc_analytic_svy,
+                                        test = TRUE)
+
+table_outcomes_weighted_sav <- print(table_outcomes_weighted, 
+                                     showAllLevels = TRUE,  
+                                     smd = TRUE)
+
+write.csv(table_outcomes_weighted_sav, "./output/table_outcomes_weighted_sav.csv")
+
+#### weighted regression models -------------------------------------------------
+#outcome_model(outcome = srh_bin_t1,
+#              exposure = exposure1,
+#              data = pair_cc_analytic_svy)
+############arg!
+
+### poor self-rated health -------------------
+
+srh_svyglm_mod <- svyglm(srh_bin_t1 ~ exposure1,
+       family = quasibinomial,
+       design = pair_cc_analytic_svy, 
+       na.action = na.omit)
+
+summary(srh_svyglm_mod)
+
+
+## coefficients dataframe
+srh_svyglm_df <- data.frame(srh_svyglm_mod$coefficients)
+
+# exponentiate to get ORs
+srh_svyglm_df <- srh_svyglm_df %>% 
+  mutate(est = exp(srh_svyglm_mod.coefficients)) %>% 
+  dplyr::select(est) 
+
+# add in row names 
+srh_svyglm_df <- cbind(rownames(srh_svyglm_df),srh_svyglm_df, row.names=NULL)
+
+srh_svyglm_df <- srh_svyglm_df %>% 
+  rename(measure = `rownames(srh_svyglm_df)`)
+
+## confidence intervals
+srh_svyglm_df_ci <- data.frame(confint(srh_svyglm_mod)) %>% 
+  rename(lci = X2.5..,
+         uci = X97.5..) %>% 
+  mutate(lci = exp(lci),
+         uci = exp(uci))
+
+# add in row names
+srh_svyglm_df_ci <- cbind(rownames(srh_svyglm_df_ci),srh_svyglm_df_ci, row.names=NULL)
+
+srh_svyglm_df_ci <- srh_svyglm_df_ci %>% 
+  rename(measure = `rownames(srh_svyglm_df_ci)`)
+
+## join dfs together
+srh_svyglm_df <- srh_svyglm_df %>% 
+  left_join(srh_svyglm_df_ci) %>% 
+  mutate(measure = str_remove(measure, "exposure1"))
+
+### GHQ-12 caseness -----------------
+
+ghq_svyglm_mod <- svyglm(ghq_case4_t1 ~ exposure1,
+                         family = quasibinomial,
+                         design = pair_cc_analytic_svy, 
+                         na.action = na.omit)
+
+summary(ghq_svyglm_mod)
+
+
+
+### SF-12 PCS -----------------------
+
+pcs_svyglm_mod <- svyglm(sf12pcs_dv_t1 ~ exposure1,
+#                         family = ,
+                         design = pair_cc_analytic_svy, 
+                         na.action = na.omit)
+
+summary(pcs_svyglm_mod)
+
+### SF-12 MCS -----------------------
+
+mcs_svyglm_mod <- svyglm(sf12mcs_dv_t1 ~ exposure1,
+                         #                         family = ,
+                         design = pair_cc_analytic_svy, 
+                         na.action = na.omit)
+
+summary(mcs_svyglm_mod)
