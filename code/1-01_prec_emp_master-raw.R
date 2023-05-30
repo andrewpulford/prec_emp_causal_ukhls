@@ -94,7 +94,7 @@ load_wave <- function(wv_n, wv_l, datafile) {
 #### Function calls
 ### Individual respondents
 ## wave 1 
-load_wave(wv_n = 1, wv_l = "a", datafile = "indresp")
+#load_wave(wv_n = 1, wv_l = "a", datafile = "indresp")
 
 ## wave 2  
 load_wave(wv_n = 2, wv_l = "b", datafile = "indresp")
@@ -144,7 +144,7 @@ load_raw_wave <- function(wv_n, wv_l, datafile){
 
 #### Individual respondents
 # wave 1 function call ------------- 
-load_raw_wave(wv_n = 1, wv_l = "a", datafile = "indresp")
+#load_raw_wave(wv_n = 1, wv_l = "a", datafile = "indresp")
 # wave 2 function call ------------- 
 load_raw_wave(wv_n = 2, wv_l = "b", datafile = "indresp")
 # wave 3 function call -------------
