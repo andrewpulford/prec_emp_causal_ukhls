@@ -198,6 +198,27 @@ master_raw1 <- sic2007f()
 ### occupation (SOC-2000)
 master_raw1 <- soc2000f()
 
+### normal weekly hours
+## convert to character rather than factor
+master_raw1$jbhrs <- as.character(master_raw1$jbhrs)
+
+## change missing categories to NA then convert to numeric
+master_raw1 <- master_raw1 %>% 
+  mutate(jbhrs = ifelse(jbhrs %in% c("missing", "inapplicable", "proxy", 
+                                     "refusal", "don't know"),NA, jbhrs))
+master_raw1$jbhrs <- as.numeric(master_raw1$jbhrs)
+
+### income
+master_raw1$fimnnet_dv <- as.character(master_raw1$fimnnet_dv)
+master_raw1$fimnnet_dv <- as.numeric(master_raw1$fimnnet_dv)
+
+
+## check <0s
+master_raw1 %>% mutate(inc_flag = ifelse(fimnnet_dv<0,1,0)) %>% 
+  group_by(inc_flag) %>% 
+  summarise(n=n())
+# can be <0 due to self-employ,ent losses reported
+# so shouldn't see any/many in analytic sample
 
 
 ################################################################################
