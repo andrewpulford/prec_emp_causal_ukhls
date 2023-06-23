@@ -181,7 +181,7 @@ table_outcomes_weighted_sav <- print(table_outcomes_weighted,
                                      showAllLevels = TRUE,  
                                      smd = TRUE)
 
-write.csv(table_outcomes_weighted_sav, "./output/table_outcomes_weighted_sav.csv")
+write.csv(table_outcomes_weighted_sav, "./output/weighted_descriptives/table_outcomes_weighted_sav.csv")
 
 ################################################################################
 #####                      weighted regression models                     ######
@@ -349,7 +349,7 @@ reg_df <- srh_svyglm_df %>%
   rename(t_value=statistic)
 
 ################################################################################
-#####               doubly-robust weighted regression models               #####
+#####               double robust weighted regression models               #####
 ################################################################################
 
 # remove all unneed df's
