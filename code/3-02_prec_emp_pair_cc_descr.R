@@ -381,7 +381,7 @@ table_one_alt_smd <- table_one_alt_smd %>%
   mutate(imbalance_flag = ifelse(smd>0.1,"SMD>0.1","SMD<=0.1"),
          matched = "unmatched")
 
-write.csv(table_one_alt_smd, "./output/table_one_alt_unmatched_smd.csv")
+write.csv(table_one_alt_smd, "./output/unmatched_descriptives/table_one_alt_unmatched_smd.csv")
 
 # plot unmatched smd's
 table_one_alt_smd %>% 
@@ -398,6 +398,6 @@ table_one_alt_sav <- print(table_one_alt, showAllLevels = TRUE, smd = TRUE,
 
 ### save tables
 
-write.csv(table_one_sav, "./output/table_one_unmatched.csv")
-write.csv(table_one_alt_sav, "./output/table_one_alt_unmatched.csv")
+write.csv(table_one_sav, "./output/unmatched_descriptives/table_one_unmatched.csv")
+write.csv(table_one_alt_sav, "./output/unmatched_descriptives/table_one_alt_unmatched.csv")
 
