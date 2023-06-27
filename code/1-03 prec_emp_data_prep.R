@@ -349,6 +349,29 @@ master_raw1 <- master_raw1 %>%
                                    "missing")))))
 
 
+#### full/part-time employment recode
+master_raw1$jbft_dv <- as.character(master_raw1$jbft_dv)
+
+master_raw1 <- master_raw1 %>% 
+  mutate(jbft_dv = ifelse(jbft_dv %in% c("proxy","missing","refusal","don't know", "inapplicable"),
+                          "missing",
+                          jbft_dv))
+
+#### employer size recode
+master_raw1$jbsize <- as.character(master_raw1$jbsize)
+
+
+master_raw1 <- master_raw1 %>% 
+  mutate(jbsize = ifelse(jbsize %in% c("proxy","missing","refusal","don't know", "inapplicable"),
+                         "missing",
+                         ifelse(jbsize == "Don't know but fewer than 25","10 - 24",
+                                ifelse(jbsize == "Don't know but 25 or more","25 - 49",
+                         jbsize)))) %>% 
+  mutate(small_firm = ifelse(jbsize=="missing","missing",
+                             ifelse(jbsize %in% c("1 - 2",  "10 - 24", "25 - 49"),
+                                    "under 50 employees",
+                                    "over 50 employees")))
+
 
 
 ################################################################################
