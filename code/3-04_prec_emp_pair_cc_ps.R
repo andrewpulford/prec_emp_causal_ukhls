@@ -38,6 +38,7 @@ library(tableone) # for creating table one
 library(survey) # for PS weighting
 library(reshape2) # Reorganizing data
 library(broom) # for tidying regression outputs into df format
+library(lme4) # for multi-level modelling
 
 ################################################################################
 #####                         load and prepare data                        #####
@@ -114,7 +115,7 @@ outcome_vector2 <- c("srh_bin_t1",
 
 #### keep only variables required for propensity score -------------------------
 pair_cc_ps <- pair_cc_analytic %>% 
-  dplyr::select(c(id_wt_vector, cov_vector, outcome_vector)) %>% 
+  dplyr::select(all_of(c(id_wt_vector, cov_vector, outcome_vector))) %>% 
   dplyr::select(-c(psu, strata, wt_name, wt_value))
 
 
@@ -167,25 +168,26 @@ table_one_unmatched_smd <- read.csv("./working_data/table_one_unmatched_smd.csv"
 #### propensity score model ----------------------------------------------------
 
 ps_model <- function(data = pair_cc_ps, outcome){
-  glm(formula = outcome ~
-              sex_dv_t0 +
-              age_dv_t0 +
-              non_white_t0  +
-              marital_status_t0 +
-              hiqual_dv_t0 +
-              gor_dv_t0 +
-              sic2007_section_lab_t0 +
-              soc2000_major_group_title_t0 +
-              jbhrs_t0 +
-              emp_contract_t0 +
-              broken_emp_t0 +
-              j2has_dv_t0 +
-              fimnnet_dv_t0 +
-              health_t0 +
-              srh_bin_t0 +
-              ghq_case4_t0 +
-              sf12mcs_dv_t0 +
-              sf12pcs_dv_t0,
+  glmer(outcome ~
+         sex_dv_t0 +
+         age_dv_t0 +
+         non_white_t0  +
+         marital_status_t0 +
+         hiqual_dv_t0 +
+         gor_dv_t0 +
+         sic2007_section_lab_t0 +
+         soc2000_major_group_title_t0 +
+         jbhrs_t0 +
+         emp_contract_t0 +
+         broken_emp_t0 +
+         j2has_dv_t0 +
+         fimnnet_dv_t0 +
+         health_t0 +
+         srh_bin_t0 +
+         ghq_case4_t0 +
+         sf12mcs_dv_t0 +
+         sf12pcs_dv_t0 +
+         1+(1|pidp),
             family = binomial(link="logit"),
             data = data)
   
