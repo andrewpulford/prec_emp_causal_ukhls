@@ -105,11 +105,11 @@ ed_attain <- pair_cc_analytic %>% group_by(hiqual_dv_t0) %>% summarise(n=n()) %>
   rename("measure"= "hiqual_dv_t0") %>% 
   dplyr::select(var, measure, n, est) %>% 
   arrange(factor(measure, levels = c("degree",
-                                           "other higher degree",
-                                           "a-level etc",
-                                           "gcse etc",
-                                           "other qualification",
-                                           "no qualification")))
+                                     "other higher degree",
+                                     "a-level etc",
+                                     "gcse etc",
+                                     "other qualification",
+                                     "no qualification")))
 
 
 sample_chars <- sample_chars %>% bind_rows(ed_attain)
@@ -152,8 +152,8 @@ perm_emp <- pair_cc_analytic %>% group_by(emp_contract_t0) %>% summarise(n=n()) 
   rename("measure"= "emp_contract_t0") %>% 
   dplyr::select(var, measure, n, est) %>% 
   arrange(factor(measure, levels = c("fixed-term",
-                                           "permanent",
-                                           "unemployed/not in employment")))
+                                     "permanent",
+                                     "unemployed/not in employment")))
 
 
 
@@ -184,7 +184,7 @@ emp_2nd <- pair_cc_analytic %>% group_by(j2has_dv_t0) %>% summarise(n=n()) %>%
   rename("measure"= "j2has_dv_t0") %>% 
   dplyr::select(var, measure, n, est)  %>% 
   arrange(factor(measure, levels = c("no",
-                                           "yes")))
+                                     "yes")))
 
 
 
@@ -227,8 +227,8 @@ sample_chars <- sample_chars %>% bind_rows(ltc)
 #### self-rated health ---------------------------------------------------------
 
 pair_cc_analytic$srh_dv_t0 <- factor(pair_cc_analytic$srh_dv_t0, 
-                           levels = c("excellent", "very good", "good",
-                                      "fair", "poor"))
+                                     levels = c("excellent", "very good", "good",
+                                                "fair", "poor"))
 
 srh <- pair_cc_analytic %>% 
   group_by(srh_dv_t0) %>% summarise(n=n()) %>%  
@@ -248,7 +248,7 @@ ghq4 <- pair_cc_analytic %>% group_by(ghq_case4_t0) %>% summarise(n=n()) %>%
   rename("measure"= "ghq_case4_t0") %>% 
   dplyr::select(var, measure, n, est) %>% 
   arrange(factor(measure, levels = c("0-3",
-                                           "4 or more")))
+                                     "4 or more")))
 
 
 sample_chars <- sample_chars %>% bind_rows(ghq4)
@@ -312,6 +312,7 @@ lost_job <- pair_cc_analytic %>%
   rename("measure"= "exposure2") %>% 
   dplyr::select(var, measure, n, est)
 
+
 ################################################################################
 #####        Table 1: participant characteristics by exposure group        #####
 ################################################################################
@@ -330,6 +331,8 @@ cov_vector <- c("sex_dv_t0",
                 "gor_dv_t0",
                 "sic2007_section_lab_t0",
                 "soc2000_major_group_title_t0",
+                "jbft_dv_t0",
+                "small_firm_t0",
                 "emp_contract_t0",
                 "broken_emp_t0",
                 "j2has_dv_t0",
@@ -341,8 +344,11 @@ cov_vector <- c("sex_dv_t0",
                 "sf12mcs_dv_t0",
                 "sf12pcs_dv_t0")
 
+pair_cc_analytic <- pair_cc_analytic %>% 
+  dplyr::select(all_of(cov_vector), exposure1, exposure2)
+  
 ## unemployed at T1
-table_one <- CreateTableOne(vars = cov_vector, strata = "exposure1",
+table_one <- tableone::CreateTableOne(vars = cov_vector, strata = "exposure1",
                             data = pair_cc_analytic,
                             test = FALSE)
 
