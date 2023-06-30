@@ -66,6 +66,8 @@ cov_vector <- c("sex_dv_t0",
                 "gor_dv_t0",
                 "sic2007_section_lab_t0",
                 "soc2000_major_group_title_t0",
+                "jbft_dv_t0",
+                "small_firm_t0",
                 "emp_contract_t0",
                 "broken_emp_t0",
                 "j2has_dv_t0",
@@ -84,6 +86,8 @@ cov_vector2 <- c("age_dv_t1",
                 "gor_dv_t1",
                 "sic2007_section_lab_t1",
                 "soc2000_major_group_title_t1",
+                "jbft_dv_t1",
+                "small_firm_t1",
                 "emp_contract_t1",
                 "broken_emp_t1",
                 "j2has_dv_t1",
@@ -328,7 +332,7 @@ assess_matching_balance <- table_one_matched_smd %>%
 ### plot
 unemp_t1_balance_plot <- assess_matching_balance %>% 
   ggplot(aes(x=smd, y=var, col=matched)) +
-  geom_point() +
+  geom_jitter(height = 0.01, width = 0.01) +
   geom_vline(xintercept = 0.1, linetype = "dashed") +
   theme_bw() +
   scale_color_manual(values = c("blue","red", "green"))
