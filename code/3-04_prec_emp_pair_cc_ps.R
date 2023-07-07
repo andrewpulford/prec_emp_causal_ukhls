@@ -72,8 +72,8 @@ cov_vector <- c("sex_dv_t0",
                 "emp_contract_t0",
                 "broken_emp_t0",
                 "j2has_dv_t0",
-                "fimnnet_dv_t0",
-                "jbhrs_t0",
+                "rel_pov_t0",
+#                "jbhrs_t0",
                 "health_t0",
                 "srh_bin_t0",
                 "ghq_case4_t0",
@@ -92,8 +92,7 @@ cov_vector2 <- c("age_dv_t1",
                 "emp_contract_t1",
                 "broken_emp_t1",
                 "j2has_dv_t1",
-                "fimnnet_dv_t1",
-                "jbhrs_t1",
+#                "jbhrs_t1",
                 "health_t1",
                 "srh_bin_t1",
                 "ghq_case4_t1",
@@ -113,15 +112,15 @@ outcome_vector2 <- c("srh_bin_t1",
                     "sf12mcs_dv_t1",
                     "sf12pcs_dv_t1")
 
-#### keep only variables required for propensity score -------------------------
+#### keep only variables required for propensity score (and other analysis) ----
 pair_cc_ps <- pair_cc_analytic %>% 
-  dplyr::select(all_of(c(id_wt_vector, cov_vector, outcome_vector))) %>% 
+  dplyr::select(all_of(c(id_wt_vector, cov_vector, cov_vector2, outcome_vector))) %>% 
   dplyr::select(-c(psu, strata, wt_name, wt_value))
 
 
 #### convert scale vars to numeric ---------------------------------------------
 pair_cc_ps <- pair_cc_ps %>% 
-  mutate(fimnnet_dv_t0 = as.numeric(fimnnet_dv_t0)) %>%
+#  mutate(fimnnet_dv_t0 = as.numeric(fimnnet_dv_t0)) %>%
   ## these to character first so score converted rather than factor level
   mutate(sf12mcs_dv_t0 = as.character(sf12mcs_dv_t0),
          sf12pcs_dv_t0 = as.character(sf12pcs_dv_t0),
@@ -165,9 +164,37 @@ table_one_unmatched_smd <- read.csv("./working_data/table_one_unmatched_smd.csv"
 #####                               functions                              #####
 ################################################################################
 
-#### propensity score model ----------------------------------------------------
-
+#### propensity score model - basic --------------------------------------------
 ps_model <- function(data = pair_cc_ps, outcome){
+  glm(outcome ~
+          sex_dv_t0 +
+          age_dv_t0 +
+          non_white_t0  +
+          marital_status_t0 +
+          hiqual_dv_t0 +
+          gor_dv_t0 +
+          sic2007_section_lab_t0 +
+          soc2000_major_group_title_t0 +
+          jbft_dv_t0 +
+          small_firm_t0 +
+#          jbhrs_t0 +
+          emp_contract_t0 +
+          broken_emp_t0 +
+          j2has_dv_t0 +
+          rel_pov_t0 +
+          health_t0 +
+          srh_bin_t0 +
+          ghq_case4_t0 +
+          sf12mcs_dv_t0 +
+          sf12pcs_dv_t0,
+        family = binomial(link="logit"),
+        data = data)
+  
+  
+}
+
+#### propensity score model - mlm ----------------------------------------------
+ps_model_mlm <- function(data = pair_cc_ps, outcome){
   glmer(outcome ~
          sex_dv_t0 +
          age_dv_t0 +
@@ -177,11 +204,13 @@ ps_model <- function(data = pair_cc_ps, outcome){
          gor_dv_t0 +
          sic2007_section_lab_t0 +
          soc2000_major_group_title_t0 +
-         jbhrs_t0 +
+         jbft_dv_t0 +
+         small_firm_t0 +
+#         jbhrs_t0 +
          emp_contract_t0 +
          broken_emp_t0 +
          j2has_dv_t0 +
-         fimnnet_dv_t0 +
+         rel_pov_t0 +
          health_t0 +
          srh_bin_t0 +
          ghq_case4_t0 +
@@ -194,16 +223,7 @@ ps_model <- function(data = pair_cc_ps, outcome){
   
 }
 
-#### outcome model -------------------------------------------------------------
 
-outcome_model <- function(outcome, exposure = exposure1, data = pair_cc_ps_svy){
-  svyglm(outcome ~ exposure,
-      family = quasibinomial,
-      design = data, 
-      na.action = na.omit)
-  
-  
-}
 
 
 ################################################################################
@@ -211,11 +231,18 @@ outcome_model <- function(outcome, exposure = exposure1, data = pair_cc_ps_svy){
 ################################################################################
 
 ### call the function
-ps_mod_exp1 <- ps_model(data = pair_cc_ps, outcome = pair_cc_ps$exposure1)
+ps_mod_exp1 <- ps_model_mlm(data = pair_cc_ps, outcome = pair_cc_ps$exposure1)
 
 ### summary of model
 summary(ps_mod_exp1)
 
+### check for 1 or 0 predicted probabilities
+pair_cc_ps$y_pred <- predict(ps_mod_exp1, pair_cc_ps, type="response")
+
+summary(pair_cc_ps$y_pred)
+
+test <- pair_cc_ps %>% filter(y_pred==min(y_pred)) %>% 
+  dplyr::select(pidp, y_pred)
 
 ### predicted probability of being assigned to exposed group
 pair_cc_ps$ps_exp1 <- predict(ps_mod_exp1, type = "response")
@@ -343,452 +370,3 @@ tiff("./output/weighted_descriptives/unemp_t1_balance_plot.tiff")
 unemp_t1_balance_plot
 dev.off()
 
-#################################################################################
-######                           outcome analysis                           #####
-#################################################################################
-#
-##### unweighted outcomes table -------------------------------------------------
-#table_outcomes_unweighted <- CreateTableOne(vars = outcome_vector2, 
-#                                            strata = "exposure1",
-#                                            data = pair_cc_ps,
-#                                            test = TRUE)
-#
-#table_outcomes_unweighted_sav <- print(table_outcomes_unweighted, 
-#                                       showAllLevels = TRUE, 
-#                                       smd = TRUE, 
-#                       formatOptions = list(big.mark = ","))
-#
-#
-#### weighted outcomes table
-#table_outcomes_weighted <- svyCreateTableOne(vars = outcome_vector2,
-#                                        strata = "exposure1",
-#                                        data = pair_cc_ps_svy,
-#                                        test = TRUE)
-#
-#table_outcomes_weighted_sav <- print(table_outcomes_weighted, 
-#                                     showAllLevels = TRUE,  
-#                                     smd = TRUE)
-#
-#write.csv(table_outcomes_weighted_sav, "./output/weighted_descriptives/table_outcomes_weighted_sav.csv")
-#
-##### weighted regression models ------------------------------------------------
-#
-#### create weighted analytic df ----------------
-### add ps weights onto analytic df
-#mw_spine <- pair_cc_ps %>% 
-#  dplyr::select(pidp, mw)
-#
-#pair_cc_analytic <- pair_cc_analytic %>% 
-#  right_join(mw_spine)
-#
-#pair_cc_analytic_svy <- svydesign(ids = ~1,
-#                            data = pair_cc_analytic,
-#                            weights = ~mw)
-#
-#
-#### poor self-rated health -------------------
-#
-#srh_svyglm_mod <- svyglm(srh_bin_t1 ~ exposure1,
-#       family = quasibinomial,
-#       design = pair_cc_analytic_svy, 
-#       na.action = na.omit)
-#
-#srh_svyglm_summary <- summary(srh_svyglm_mod)
-#
-#
-### coefficients dataframe
-#srh_svyglm_df <- tidy(srh_svyglm_mod) %>% 
-## exponentiate to get ORs
-#  mutate(estimate = exp(estimate))
-#
-### confidence intervals
-#srh_svyglm_df_ci <- data.frame(confint(srh_svyglm_mod)) %>% 
-#  rename(lci = X2.5..,
-#         uci = X97.5..) %>% 
-#  mutate(lci = exp(lci),
-#         uci = exp(uci))
-#
-## add in row names
-#srh_svyglm_df_ci <- cbind(rownames(srh_svyglm_df_ci),srh_svyglm_df_ci, row.names=NULL)
-#
-#srh_svyglm_df_ci <- srh_svyglm_df_ci %>% 
-#  rename(term = `rownames(srh_svyglm_df_ci)`)
-#
-### join dfs together
-#srh_svyglm_df <- srh_svyglm_df %>% 
-#  left_join(srh_svyglm_df_ci) %>% 
-#  mutate(term = str_remove(term, "exposure1"),
-#         outcome = "Poor self-rated health",
-#         est_type = "OR",
-#         p.value = ifelse(p.value<0.001,"<0.001",
-#                          ifelse(p.value<0.01,"<0.01",
-#                                 ifelse(p.value<0.05,"<0.05",       
-#                                        p.value))))
-#
-#### GHQ-12 caseness -----------------
-#
-#ghq_svyglm_mod <- svyglm(ghq_case4_t1 ~ exposure1,
-#                         family = quasibinomial,
-#                         design = pair_cc_analytic_svy, 
-#                         na.action = na.omit)
-#
-#ghq_svyglm_summary <- summary(ghq_svyglm_mod)
-#
-#
-### coefficients dataframe
-#ghq_svyglm_df <- tidy(ghq_svyglm_mod) %>% 
-#  mutate(estimate = exp(estimate))
-#
-### confidence intervals
-#ghq_svyglm_df_ci <- data.frame(confint(ghq_svyglm_mod)) %>% 
-#  rename(lci = X2.5..,
-#         uci = X97.5..) %>% 
-#  mutate(lci = exp(lci),
-#         uci = exp(uci))
-#
-## add in row names
-#ghq_svyglm_df_ci <- cbind(rownames(ghq_svyglm_df_ci),ghq_svyglm_df_ci, row.names=NULL)
-#
-#ghq_svyglm_df_ci <- ghq_svyglm_df_ci %>% 
-#  rename(term = `rownames(ghq_svyglm_df_ci)`)
-#
-### join dfs together
-#ghq_svyglm_df <- ghq_svyglm_df %>% 
-#  left_join(ghq_svyglm_df_ci) %>% 
-#  mutate(term = str_remove(term, "exposure1"),
-#         outcome = "GHQ-12 caseness (4+)",
-#         est_type = "OR",
-#         p.value = ifelse(p.value<0.001,"<0.001",
-#                          ifelse(p.value<0.01,"<0.01",
-#                                 ifelse(p.value<0.05,"<0.05",       
-#                                        p.value))))
-#
-#### SF-12 PCS -----------------------
-#
-#pcs_svyglm_mod <- svyglm(sf12pcs_dv_t1 ~ exposure1,
-##                         family = ,
-#                         design = pair_cc_analytic_svy, 
-#                         na.action = na.omit)
-#
-#pcs_svyglm_summary <- summary(pcs_svyglm_mod)
-#
-#pcs_svyglm_df <- tidy(pcs_svyglm_mod)
-#
-### confidence intervals
-#pcs_svyglm_df_ci <- data.frame(confint(pcs_svyglm_mod)) %>% 
-#  rename(lci = X2.5..,
-#         uci = X97.5..) %>% 
-#  mutate(lci = exp(lci),
-#         uci = exp(uci))
-#
-## add in row names
-#pcs_svyglm_df_ci <- cbind(rownames(pcs_svyglm_df_ci),pcs_svyglm_df_ci, row.names=NULL)
-#
-#pcs_svyglm_df_ci <- pcs_svyglm_df_ci %>% 
-#  rename(term = `rownames(pcs_svyglm_df_ci)`)
-#
-### join dfs together
-#pcs_svyglm_df <- pcs_svyglm_df %>% 
-#  left_join(pcs_svyglm_df_ci) %>% 
-#  mutate(term = str_remove(term, "exposure1"),
-#         outcome = "SF-12 PCS",
-#         est_type = "coefficient",
-#         p.value = ifelse(p.value<0.001,"<0.001",
-#                          ifelse(p.value<0.01,"<0.01",
-#                                 ifelse(p.value<0.05,"<0.05",       
-#                                        p.value))))
-#
-#### SF-12 MCS -----------------------
-#
-#mcs_svyglm_mod <- svyglm(sf12mcs_dv_t1 ~ exposure1,
-#                         #                         family = ,
-#                         design = pair_cc_analytic_svy, 
-#                         na.action = na.omit)
-#
-#mcs_svyglm_summary <- summary(mcs_svyglm_mod)
-#
-#mcs_svyglm_df <- tidy(mcs_svyglm_mod)
-#
-### confidence intervals
-#mcs_svyglm_df_ci <- data.frame(confint(mcs_svyglm_mod)) %>% 
-#  rename(lci = X2.5..,
-#         uci = X97.5..) %>% 
-#  mutate(lci = exp(lci),
-#         uci = exp(uci))
-#
-## add in row names
-#mcs_svyglm_df_ci <- cbind(rownames(mcs_svyglm_df_ci),mcs_svyglm_df_ci, row.names=NULL)
-#
-#mcs_svyglm_df_ci <- mcs_svyglm_df_ci %>% 
-#  rename(term = `rownames(mcs_svyglm_df_ci)`)
-#
-### join dfs together
-#mcs_svyglm_df <- mcs_svyglm_df %>% 
-#  left_join(mcs_svyglm_df_ci) %>% 
-#  mutate(term = str_remove(term, "exposure1"),
-#         outcome = "SF-12 MCS",
-#         est_type = "coefficient",
-#         p.value = ifelse(p.value<0.001,"<0.001",
-#                          ifelse(p.value<0.01,"<0.01",
-#                                 ifelse(p.value<0.05,"<0.05",       
-#                          p.value))))
-#
-##### combine into single dataframe
-#
-#reg_df <- srh_svyglm_df %>% 
-#  bind_rows(ghq_svyglm_df,
-#            pcs_svyglm_df,
-#            mcs_svyglm_df) %>% 
-#  filter(term!="(Intercept)") %>% 
-#  dplyr::select(-term) %>% 
-#  dplyr::select(outcome, everything()) %>% 
-#  rename(t_value=statistic)
-#
-##### doubly-robust weighted regression models ----------------------------------
-#
-#### poor self-rated health -------------------
-#
-#dr_srh_svyglm_mod <- svyglm(srh_bin_t1 ~ exposure1 +
-#                           sex_dv_t0 +
-#                           age_dv_t0 +
-#                             age_dv_t1 +
-#                           non_white_t0  +
-#                           marital_status_t0 +
-#                             marital_status_t1 +
-#                           hiqual_dv_t0 +
-#                             hiqual_dv_t1 +
-#                           gor_dv_t0 +
-#                             gor_dv_t1 +
-#                           sic2007_section_lab_t0 +
-#                             sic2007_section_lab_t1 +
-#                           soc2000_major_group_title_t0 +
-#                             soc2000_major_group_title_t1 +
-#                           jbhrs_t0 +
-#                             jbhrs_t1 +
-#                           emp_contract_t0 +
-#                             emp_contract_t1 +
-#                           broken_emp_t0 +
-#                             broken_emp_t1 +
-#                           j2has_dv_t0 +
-#                             j2has_dv_t1 +
-#                           fimnnet_dv_t0 +
-#                             fimnnet_dv_t1 +
-#                           health_t0 +
-#                             health_t1 +
-#                           srh_bin_t0 +
-#                           ghq_case4_t0 +
-#                             ghq_case4_t1 +
-#                           sf12mcs_dv_t0 +
-#                             sf12mcs_dv_t1 +
-#                             sf12pcs_dv_t0 +
-#                           sf12pcs_dv_t1,
-#                           family = quasibinomial,
-#                         design = pair_cc_analytic_svy, 
-#                         na.action = na.omit)
-#
-#dr_srh_svyglm_summary <- summary(dr_srh_svyglm_mod)
-#
-#
-### coefficients dataframe
-#dr_srh_svyglm_df <- tidy(dr_srh_svyglm_mod) %>% 
-#  # exponentiate to get ORs
-#  mutate(estimate = exp(estimate))
-#
-### confidence intervals
-#dr_srh_svyglm_df_ci <- data.frame(confint(dr_srh_svyglm_mod)) %>% 
-#  rename(lci = X2.5..,
-#         uci = X97.5..) %>% 
-#  mutate(lci = exp(lci),
-#         uci = exp(uci))
-#
-## add in row names
-#dr_srh_svyglm_df_ci <- cbind(rownames(dr_srh_svyglm_df_ci),dr_srh_svyglm_df_ci, row.names=NULL)
-#
-#dr_srh_svyglm_df_ci <- dr_srh_svyglm_df_ci %>% 
-#  rename(term = `rownames(dr_srh_svyglm_df_ci)`)
-#
-### join dfs together
-#dr_srh_svyglm_df <- dr_srh_svyglm_df %>% 
-#  left_join(dr_srh_svyglm_df_ci) %>% 
-#  mutate(term = str_remove(term, "exposure1"),
-#         outcome = "Poor self-rated health",
-#         est_type = "OR",
-#         p.value = ifelse(p.value<0.001,"<0.001",
-#                          ifelse(p.value<0.01,"<0.01",
-#                                 ifelse(p.value<0.05,"<0.05",       
-#                                        p.value))))
-#
-#### GHQ-12 caseness -----------------
-#
-#dr_ghq_svyglm_mod <- svyglm(ghq_case4_t1 ~ exposure1 +
-#                         sex_dv_t0 +
-#                           age_dv_t0 +
-#                           non_white_t0  +
-#                           marital_status_t0 +
-#                           hiqual_dv_t0 +
-#                           gor_dv_t0 +
-#                           sic2007_section_lab_t0 +
-#                           soc2000_major_group_title_t0 +
-#                           jbhrs_t0 +
-#                           emp_contract_t0 +
-#                           broken_emp_t0 +
-#                           j2has_dv_t0 +
-#                           fimnnet_dv_t0 +
-#                           health_t0 +
-#                           srh_bin_t0 +
-#                           ghq_case4_t0 +
-#                           sf12mcs_dv_t0 +
-#                           sf12pcs_dv_t0,
-#                         family = quasibinomial,
-#                         design = pair_cc_analytic_svy, 
-#                         na.action = na.omit)
-#
-#dr_ghq_svyglm_summary <- summary(dr_ghq_svyglm_mod)
-#
-#
-### coefficients dataframe
-#dr_ghq_svyglm_df <- tidy(dr_ghq_svyglm_mod) %>% 
-#  mutate(estimate = exp(estimate))
-#
-### confidence intervals
-#dr_ghq_svyglm_df_ci <- data.frame(confint(dr_ghq_svyglm_mod)) %>% 
-#  rename(lci = X2.5..,
-#         uci = X97.5..) %>% 
-#  mutate(lci = exp(lci),
-#         uci = exp(uci))
-#
-## add in row names
-#dr_ghq_svyglm_df_ci <- cbind(rownames(dr_ghq_svyglm_df_ci),dr_ghq_svyglm_df_ci, row.names=NULL)
-#
-#dr_ghq_svyglm_df_ci <- dr_ghq_svyglm_df_ci %>% 
-#  rename(term = `rownames(dr_ghq_svyglm_df_ci)`)
-#
-### join dfs together
-#dr_ghq_svyglm_df <- dr_ghq_svyglm_df %>% 
-#  left_join(dr_ghq_svyglm_df_ci) %>% 
-#  mutate(term = str_remove(term, "exposure1"),
-#         outcome = "GHQ-12 caseness (4+)",
-#         est_type = "OR",
-#         p.value = ifelse(p.value<0.001,"<0.001",
-#                          ifelse(p.value<0.01,"<0.01",
-#                                 ifelse(p.value<0.05,"<0.05",       
-#                                        p.value))))
-#
-#### SF-12 PCS -----------------------
-#
-#dr_pcs_svyglm_mod <- svyglm(sf12pcs_dv_t1 ~ exposure1 +
-#                         sex_dv_t0 +
-#                           age_dv_t0 +
-#                           non_white_t0  +
-#                           marital_status_t0 +
-#                           hiqual_dv_t0 +
-#                           gor_dv_t0 +
-#                           sic2007_section_lab_t0 +
-#                           soc2000_major_group_title_t0 +
-#                           jbhrs_t0 +
-#                           emp_contract_t0 +
-#                           broken_emp_t0 +
-#                           j2has_dv_t0 +
-#                           fimnnet_dv_t0 +
-#                           health_t0 +
-#                           srh_bin_t0 +
-#                           ghq_case4_t0 +
-#                           sf12mcs_dv_t0 +
-#                           sf12pcs_dv_t0,
-#                         #                         family = ,
-#                         design = pair_cc_analytic_svy, 
-#                         na.action = na.omit)
-#
-#dr_pcs_svyglm_summary <- summary(dr_pcs_svyglm_mod)
-#
-#dr_pcs_svyglm_df <- tidy(dr_pcs_svyglm_mod)
-#
-### confidence intervals
-#dr_pcs_svyglm_df_ci <- data.frame(confint(dr_pcs_svyglm_mod)) %>% 
-#  rename(lci = X2.5..,
-#         uci = X97.5..) %>% 
-#  mutate(lci = exp(lci),
-#         uci = exp(uci))
-#
-## add in row names
-#dr_pcs_svyglm_df_ci <- cbind(rownames(dr_pcs_svyglm_df_ci),dr_pcs_svyglm_df_ci, row.names=NULL)
-#
-#dr_pcs_svyglm_df_ci <- dr_pcs_svyglm_df_ci %>% 
-#  rename(term = `rownames(dr_pcs_svyglm_df_ci)`)
-#
-### join dfs together
-#dr_pcs_svyglm_df <- dr_pcs_svyglm_df %>% 
-#  left_join(dr_pcs_svyglm_df_ci) %>% 
-#  mutate(term = str_remove(term, "exposure1"),
-#         outcome = "SF-12 PCS",
-#         est_type = "coefficient",
-#         p.value = ifelse(p.value<0.001,"<0.001",
-#                          ifelse(p.value<0.01,"<0.01",
-#                                 ifelse(p.value<0.05,"<0.05",       
-#                                        p.value))))
-#
-#### SF-12 MCS -----------------------
-#
-#dr_mcs_svyglm_mod <- svyglm(sf12mcs_dv_t1 ~ exposure1 +
-#                         sex_dv_t0 +
-#                           age_dv_t0 +
-#                           non_white_t0  +
-#                           marital_status_t0 +
-#                           hiqual_dv_t0 +
-#                           gor_dv_t0 +
-#                           sic2007_section_lab_t0 +
-#                           soc2000_major_group_title_t0 +
-#                           jbhrs_t0 +
-#                           emp_contract_t0 +
-#                           broken_emp_t0 +
-#                           j2has_dv_t0 +
-#                           fimnnet_dv_t0 +
-#                           health_t0 +
-#                           srh_bin_t0 +
-#                           ghq_case4_t0 +
-#                           sf12mcs_dv_t0 +
-#                           sf12pcs_dv_t0,
-#                         #                         family = ,
-#                         design = pair_cc_analytic_svy, 
-#                         na.action = na.omit)
-#
-#dr_mcs_svyglm_summary <- summary(dr_mcs_svyglm_mod)
-#
-#dr_mcs_svyglm_df <- tidy(dr_mcs_svyglm_mod)
-#
-### confidence intervals
-#dr_mcs_svyglm_df_ci <- data.frame(confint(dr_mcs_svyglm_mod)) %>% 
-#  rename(lci = X2.5..,
-#         uci = X97.5..) %>% 
-#  mutate(lci = exp(lci),
-#         uci = exp(uci))
-#
-## add in row names
-#dr_mcs_svyglm_df_ci <- cbind(rownames(dr_mcs_svyglm_df_ci),dr_mcs_svyglm_df_ci, row.names=NULL)
-#
-#dr_mcs_svyglm_df_ci <- dr_mcs_svyglm_df_ci %>% 
-#  rename(term = `rownames(dr_mcs_svyglm_df_ci)`)
-#
-### join dfs together
-#dr_mcs_svyglm_df <- dr_mcs_svyglm_df %>% 
-#  left_join(dr_mcs_svyglm_df_ci) %>% 
-#  mutate(term = str_remove(term, "exposure1"),
-#         outcome = "SF-12 MCS",
-#         est_type = "coefficient",
-#         p.value = ifelse(p.value<0.001,"<0.001",
-#                          ifelse(p.value<0.01,"<0.01",
-#                                 ifelse(p.value<0.05,"<0.05",       
-#                                        p.value))))
-#
-##### combine into single dataframe
-#
-#dr_reg_df <- dr_srh_svyglm_df %>% 
-#  bind_rows(dr_ghq_svyglm_df,
-#            dr_pcs_svyglm_df,
-#            dr_mcs_svyglm_df) %>% 
-#  filter(term=="exposed (unemployed at t1)") %>% 
-#  dplyr::select(-term) %>% 
-#  dplyr::select(outcome, everything()) %>% 
-#  rename(t_value=statistic)
-#
-#
