@@ -195,6 +195,28 @@ master_raw1 <- master_raw1 %>%
 ### industry (SIC-2007)
 master_raw1 <- sic2007f()
 
+## create "other" category for smaller industries (n<10k)
+master_raw1 <- master_raw1 %>%
+  mutate(sic2007_section_lab = 
+           ifelse(sic2007_section_lab %in% 
+                    c("Activities of extraterritorial organisations and bodies",
+                      "Activities of households as employers; undifferentiated goods-and services-producing activities of households for own use",
+                      "Agriculture, forestry and fishing",
+                      "Arts, entertainment and recreation",
+                      "Electricity, gas, steam and air conditioning supply",
+                      "Financial and insurance activities",
+                      "Information and communication",
+                      "Mining and quarrying",
+                      "Other service activities",
+                      "Real estate activities",
+                      "Water supply; sewerage, waste management and remediation activities"),
+                  "Other industry", sic2007_section_lab))
+  
+master_raw1 %>% 
+  group_by(sic2007_section_lab) %>% 
+  summarise(n=n()) %>% 
+  print(n=25)
+
 ### occupation (SOC-2000)
 master_raw1 <- soc2000f()
 
@@ -219,6 +241,22 @@ master_raw1 %>% mutate(inc_flag = ifelse(fimnnet_dv<0,1,0)) %>%
   summarise(n=n())
 # can be <0 due to self-employ,ent losses reported
 # so shouldn't see any/many in analytic sample
+
+## calculate median income and relative poverty for each wave
+
+inc_temp <- master_raw1 %>% 
+  group_by(wv_n) %>% 
+  summarise(med_inc = median(fimnnet_dv, na.rm=TRUE)) %>% 
+  mutate(med_inc_60 = 0.6*med_inc) # calculate 60% median income (relative poverty)
+
+# join back onto master df
+master_raw1 <- master_raw1 %>% left_join(inc_temp) %>% 
+  mutate(below_med_inc = ifelse(fimnnet_dv<med_inc,"below median income","median income of above"),
+         rel_pov = ifelse(fimnnet_dv<med_inc_60,"relative poverty","not in relative poverty")) %>% 
+  dplyr::select(-c(med_inc, med_inc_60))
+
+table(master_raw1$below_med_inc)
+table(master_raw1$rel_pov)
 
 
 ################################################################################
