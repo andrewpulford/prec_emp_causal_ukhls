@@ -38,6 +38,10 @@ library(tableone) # for creating table one
 library(survey) # for PS weighting
 library(reshape2) # Reorganizing data
 library(broom) # for tidying regression outputs into df format
+#library(doParallel)
+#library(foreach)
+#cluster = makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+#registerDoParallel(cluster)
 
 ################################################################################
 #####                         load and prepare data                        #####
@@ -56,11 +60,13 @@ cov_vector <- c("sex_dv_t0",
                 "gor_dv_t0",
                 "sic2007_section_lab_t0",
                 "soc2000_major_group_title_t0",
+                "jbft_dv_t0",
+                "small_firm_t0",
                 "emp_contract_t0",
                 "broken_emp_t0",
                 "j2has_dv_t0",
-                "fimnnet_dv_t0",
-                "jbhrs_t0",
+                "rel_pov_t0",
+#                "jbhrs_t0",
                 "health_t0",
                 "srh_bin_t0",
                 "ghq_case4_t0",
@@ -75,11 +81,12 @@ cov_vector2 <- c("age_dv_t1",
                  "gor_dv_t1",
                  "sic2007_section_lab_t1",
                  "soc2000_major_group_title_t1",
+                 "jbft_dv_t1",
+                 "small_firm_t1",
                  "emp_contract_t1",
                  "broken_emp_t1",
                  "j2has_dv_t1",
-                 "fimnnet_dv_t1",
-                 "jbhrs_t1",
+#                 "jbhrs_t1",
                  "health_t1",
                  "srh_bin_t1",
                  "ghq_case4_t1",
@@ -111,49 +118,49 @@ pair_cc_ps_svy <- svydesign(ids = ~1,
 
 
 ####load eligible cases --------------------------------------------------------
-pair_cc_analytic <- readRDS("./working_data/pair_cc_analytic.rds") %>% 
-  dplyr::select(c(id_wt_vector, cov_vector, cov_vector2, outcome_vector)) %>% 
-  dplyr::select(-c(psu, strata, wt_name, wt_value))
+#pair_cc_analytic <- readRDS("./working_data/pair_cc_analytic.rds") %>% 
+#  dplyr::select(c(id_wt_vector, cov_vector, cov_vector2, outcome_vector)) %>% 
+#  dplyr::select(-c(psu, strata, wt_name, wt_value))
 
 ### convert binary outcome and exposure vars to factors and relevel to allow svyglm to work
-pair_cc_analytic$srh_bin_t0 <- factor(pair_cc_analytic$srh_bin_t0,
+pair_cc_ps$srh_bin_t0 <- factor(pair_cc_ps$srh_bin_t0,
                                       levels = c("good/fair/poor", 
                                                  "excellent/very good"))
-pair_cc_analytic$srh_bin_t1 <- factor(pair_cc_analytic$srh_bin_t1,
+pair_cc_ps$srh_bin_t1 <- factor(pair_cc_ps$srh_bin_t1,
                                       levels = c("good/fair/poor", 
                                                  "excellent/very good"))
 
-pair_cc_analytic$ghq_case4_t0 <- factor(pair_cc_analytic$ghq_case4_t0,
+pair_cc_ps$ghq_case4_t0 <- factor(pair_cc_ps$ghq_case4_t0,
                                         levels = c("0-3", "4 or more"))
-pair_cc_analytic$ghq_case4_t1 <- factor(pair_cc_analytic$ghq_case4_t1,
+pair_cc_ps$ghq_case4_t1 <- factor(pair_cc_ps$ghq_case4_t1,
                                         levels = c("0-3", "4 or more"))
 
 
-pair_cc_analytic$exposure1 <- factor(pair_cc_analytic$exposure1,
+pair_cc_ps$exposure1 <- factor(pair_cc_ps$exposure1,
                                      levels = c("unexposed",
                                                 "exposed (unemployed at t1)"))
-pair_cc_analytic$exposure2 <- factor(pair_cc_analytic$exposure2,
+pair_cc_ps$exposure2 <- factor(pair_cc_ps$exposure2,
                                      levels = c("unexposed",
                                                 "exposed (job loss between t0 and t1"))
 
 
 ### convert SF-12 outcomes to numeric to allow svyglm to work
-pair_cc_analytic$sf12pcs_dv_t1 <- as.numeric(pair_cc_analytic$sf12pcs_dv_t1)
-pair_cc_analytic$sf12mcs_dv_t1 <- as.numeric(pair_cc_analytic$sf12mcs_dv_t1)
+pair_cc_ps$sf12pcs_dv_t1 <- as.numeric(pair_cc_ps$sf12pcs_dv_t1)
+pair_cc_ps$sf12mcs_dv_t1 <- as.numeric(pair_cc_ps$sf12mcs_dv_t1)
 
 
 ### create weighted analytic df ----------------
 ## add ps weights onto analytic df
-mw_spine <- pair_cc_ps %>% 
-  dplyr::select(pidp, mw)
-
-pair_cc_analytic <- pair_cc_analytic %>% 
-  right_join(mw_spine)
-
-pair_cc_analytic_svy <- svydesign(ids = ~1,
-                                  data = pair_cc_analytic,
-                                  weights = ~mw)
-
+#mw_spine <- pair_cc_ps %>% 
+#  dplyr::select(pidp, mw)
+#
+#pair_cc_ps <- pair_cc_ps %>% 
+#  full_join(mw_spine)
+#
+#pair_cc_analytic_svy <- svydesign(ids = ~1,
+#                                  data = pair_cc_analytic,
+#                                  weights = ~mw)
+#
 
 ################################################################################
 #####                           descriptive tables                         #####
@@ -193,7 +200,7 @@ write.csv(table_outcomes_weighted_sav, "./output/weighted_descriptives/table_out
 
 pcs_svyglm_mod <- svyglm(sf12pcs_dv_t1 ~ exposure1,
                          #                         family = ,
-                         design = pair_cc_analytic_svy, 
+                         design = pair_cc_ps_svy, 
                          na.action = na.omit)
 
 pcs_svyglm_summary <- summary(pcs_svyglm_mod)
@@ -203,9 +210,7 @@ pcs_svyglm_df <- tidy(pcs_svyglm_mod)
 ## confidence intervals
 pcs_svyglm_df_ci <- data.frame(confint(pcs_svyglm_mod)) %>% 
   rename(lci = X2.5..,
-         uci = X97.5..) %>% 
-  mutate(lci = exp(lci),
-         uci = exp(uci))
+         uci = X97.5..) 
 
 # add in row names
 pcs_svyglm_df_ci <- cbind(rownames(pcs_svyglm_df_ci),pcs_svyglm_df_ci, row.names=NULL)
@@ -228,7 +233,7 @@ pcs_svyglm_df <- pcs_svyglm_df %>%
 
 mcs_svyglm_mod <- svyglm(sf12mcs_dv_t1 ~ exposure1,
                          #                         family = ,
-                         design = pair_cc_analytic_svy, 
+                         design =pair_cc_ps_svy, 
                          na.action = na.omit)
 
 mcs_svyglm_summary <- summary(mcs_svyglm_mod)
@@ -238,9 +243,7 @@ mcs_svyglm_df <- tidy(mcs_svyglm_mod)
 ## confidence intervals
 mcs_svyglm_df_ci <- data.frame(confint(mcs_svyglm_mod)) %>% 
   rename(lci = X2.5..,
-         uci = X97.5..) %>% 
-  mutate(lci = exp(lci),
-         uci = exp(uci))
+         uci = X97.5..) 
 
 # add in row names
 mcs_svyglm_df_ci <- cbind(rownames(mcs_svyglm_df_ci),mcs_svyglm_df_ci, row.names=NULL)
@@ -263,7 +266,7 @@ mcs_svyglm_df <- mcs_svyglm_df %>%
 
 srh_svyglm_mod <- svyglm(srh_bin_t1 ~ exposure1,
                          family = quasibinomial,
-                         design = pair_cc_analytic_svy, 
+                         design = pair_cc_ps_svy, 
                          na.action = na.omit)
 
 srh_svyglm_summary <- summary(srh_svyglm_mod)
@@ -302,7 +305,7 @@ srh_svyglm_df <- srh_svyglm_df %>%
 
 ghq_svyglm_mod <- svyglm(ghq_case4_t1 ~ exposure1,
                          family = quasibinomial,
-                         design = pair_cc_analytic_svy, 
+                         design = pair_cc_ps_svy, 
                          na.action = na.omit)
 
 ghq_svyglm_summary <- summary(ghq_svyglm_mod)
@@ -355,11 +358,11 @@ reg_df <- srh_svyglm_df %>%
 # remove all unneed df's
 rm(ghq_svyglm_df, ghq_svyglm_df_ci, ghq_svyglm_mod, ghq_svyglm_summary,
    mcs_svyglm_df, mcs_svyglm_df_ci, mcs_svyglm_mod, mcs_svyglm_summary,
-   mw_spine,
-   pair_cc_analytic,
-   pair_cc_ps, pair_cc_ps_svy,
+#   mw_spine,
+#   pair_cc_ps,
+#   pair_cc_ps_svy,
    pcs_svyglm_df, pcs_svyglm_df_ci, pcs_svyglm_mod, pcs_svyglm_summary,
-   reg_df,
+#   reg_df,
    srh_svyglm_df, srh_svyglm_df_ci, srh_svyglm_mod, srh_svyglm_summary,
    table_outcomes_unweighted,table_outcomes_unweighted_sav,
    table_outcomes_weighted, table_outcomes_weighted_sav)
@@ -378,24 +381,26 @@ dr_pcs_svyglm_mod <- svyglm(sf12pcs_dv_t1 ~ exposure1 +
                               gor_dv_t0 +
                               gor_dv_t1 +
                               sic2007_section_lab_t0 +
-                              sic2007_section_lab_t1 +
+#                              sic2007_section_lab_t1 +
                               soc2000_major_group_title_t0 +
-                              soc2000_major_group_title_t1 +
-                              jbhrs_t0 +
-                              jbhrs_t1 +
+#                              soc2000_major_group_title_t1 +
+                              jbft_dv_t0 +
+#                              jbft_dv_t1 +
+                              small_firm_t0 +
+#                              small_firm_t1 +
+#                             jbhrs_t0 +
+#                              jbhrs_t1 +
                               emp_contract_t0 +
-                              emp_contract_t1 +
+#                              emp_contract_t1 +
                               broken_emp_t0 +
-#                              broken_emp_t1 +
                               j2has_dv_t0 +
-                              j2has_dv_t1 +
-                              fimnnet_dv_t0 +
-                              fimnnet_dv_t1 +
+#                              j2has_dv_t1 +
+                              rel_pov_t0 +
                               health_t0 +
                               health_t1 +
                               sf12pcs_dv_t0,
 #                           family = ,
-                            design = pair_cc_analytic_svy, 
+                            design = pair_cc_ps_svy, 
                             na.action = na.omit)
 
 dr_pcs_svyglm_summary <- summary(dr_pcs_svyglm_mod)
@@ -405,9 +410,7 @@ dr_pcs_svyglm_df <- tidy(dr_pcs_svyglm_mod)
 ## confidence intervals
 dr_pcs_svyglm_df_ci <- data.frame(confint(dr_pcs_svyglm_mod)) %>% 
   rename(lci = X2.5..,
-         uci = X97.5..) %>% 
-  mutate(lci = exp(lci),
-         uci = exp(uci))
+         uci = X97.5..)
 
 # add in row names
 dr_pcs_svyglm_df_ci <- cbind(rownames(dr_pcs_svyglm_df_ci),dr_pcs_svyglm_df_ci, row.names=NULL)
@@ -439,24 +442,26 @@ dr_mcs_svyglm_mod <- svyglm(sf12mcs_dv_t1 ~ exposure1 +
                               gor_dv_t0 +
                               gor_dv_t1 +
                               sic2007_section_lab_t0 +
-                              sic2007_section_lab_t1 +
+#                              sic2007_section_lab_t1 +
                               soc2000_major_group_title_t0 +
-                              soc2000_major_group_title_t1 +
-                              jbhrs_t0 +
-                              jbhrs_t1 +
+#                              soc2000_major_group_title_t1 +
+                              jbft_dv_t0 +
+#                              jbft_dv_t1 +
+                              small_firm_t0 +
+#                              small_firm_t1 +
+#                              jbhrs_t0 +
+#                              jbhrs_t1 +
                               emp_contract_t0 +
-                              emp_contract_t1 +
+#                              emp_contract_t1 +
                               broken_emp_t0 +
-                              #                              broken_emp_t1 +
                               j2has_dv_t0 +
-                              j2has_dv_t1 +
-                              fimnnet_dv_t0 +
-                              fimnnet_dv_t1 +
+#                              j2has_dv_t1 +
+                              rel_pov_t0 +
                               health_t0 +
                               health_t1 +
                               sf12mcs_dv_t0,
 #                         family = ,
-                            design = pair_cc_analytic_svy, 
+                            design = pair_cc_ps_svy, 
                             na.action = na.omit)
 
 dr_mcs_svyglm_summary <- summary(dr_mcs_svyglm_mod)
@@ -466,9 +471,9 @@ dr_mcs_svyglm_df <- tidy(dr_mcs_svyglm_mod)
 ## confidence intervals
 dr_mcs_svyglm_df_ci <- data.frame(confint(dr_mcs_svyglm_mod)) %>% 
   rename(lci = X2.5..,
-         uci = X97.5..) %>% 
-  mutate(lci = exp(lci),
-         uci = exp(uci))
+         uci = X97.5..) #%>% 
+#  mutate(lci = exp(lci),
+#         uci = exp(uci))
 
 # add in row names
 dr_mcs_svyglm_df_ci <- cbind(rownames(dr_mcs_svyglm_df_ci),dr_mcs_svyglm_df_ci, row.names=NULL)
@@ -500,24 +505,26 @@ dr_srh_svyglm_mod <- svyglm(srh_bin_t1 ~ exposure1 +
                               gor_dv_t0 +
                               gor_dv_t1 +
                               sic2007_section_lab_t0 +
-                              sic2007_section_lab_t1 +
+#                              sic2007_section_lab_t1 +
                               soc2000_major_group_title_t0 +
-                              soc2000_major_group_title_t1 +
-                              jbhrs_t0 +
-                              jbhrs_t1 +
+#                              soc2000_major_group_title_t1 +
+                              jbft_dv_t0 +
+#                              jbft_dv_t1 +
+                              small_firm_t0 +
+#                              small_firm_t1 +
+#                              jbhrs_t0 +
+#                              jbhrs_t1 +
                               emp_contract_t0 +
-                              emp_contract_t1 +
+#                              emp_contract_t1 +
                               broken_emp_t0 +
-                              #                              broken_emp_t1 +
                               j2has_dv_t0 +
-                              j2has_dv_t1 +
-                              fimnnet_dv_t0 +
-                              fimnnet_dv_t1 +
+#                              j2has_dv_t1 +
+                              rel_pov_t0 +
                               health_t0 +
                               health_t1 +
                               srh_bin_t0,
                             family = quasibinomial,
-                            design = pair_cc_analytic_svy, 
+                            design = pair_cc_ps_svy, 
                             na.action = na.omit)
 
 dr_srh_svyglm_summary <- summary(dr_srh_svyglm_mod)
@@ -565,24 +572,26 @@ dr_ghq_svyglm_mod <- svyglm(ghq_case4_t1 ~ exposure1 +
                               gor_dv_t0 +
                               gor_dv_t1 +
                               sic2007_section_lab_t0 +
-                              sic2007_section_lab_t1 +
+#                              sic2007_section_lab_t1 +
                               soc2000_major_group_title_t0 +
-                              soc2000_major_group_title_t1 +
-                              jbhrs_t0 +
-                              jbhrs_t1 +
+#                              soc2000_major_group_title_t1 +
+                              jbft_dv_t0 +
+#                              jbft_dv_t1 +
+                              small_firm_t0 +
+#                              small_firm_t1 +
+#                              jbhrs_t0 +
+#                              jbhrs_t1 +
                               emp_contract_t0 +
-                              emp_contract_t1 +
+#                              emp_contract_t1 +
                               broken_emp_t0 +
-                              #                              broken_emp_t1 +
                               j2has_dv_t0 +
-                              j2has_dv_t1 +
-                              fimnnet_dv_t0 +
-                              fimnnet_dv_t1 +
+#                              j2has_dv_t1 +
+                              rel_pov_t0 +
                               health_t0 +
                               health_t1 +
                               ghq_case4_t0,
                             family = quasibinomial,
-                            design = pair_cc_analytic_svy, 
+                            design = pair_cc_ps_svy, 
                             na.action = na.omit)
 
 dr_ghq_svyglm_summary <- summary(dr_ghq_svyglm_mod)
@@ -619,10 +628,10 @@ dr_ghq_svyglm_df <- dr_ghq_svyglm_df %>%
 
 #### combine into single dataframe
 
-dr_reg_df <- dr_srh_svyglm_df %>% 
-  bind_rows(dr_ghq_svyglm_df,
-            dr_pcs_svyglm_df,
-            dr_mcs_svyglm_df) %>% 
+dr_reg_df <- dr_pcs_svyglm_df %>% 
+  bind_rows(dr_mcs_svyglm_df,
+            dr_srh_svyglm_df,
+            dr_ghq_svyglm_df) %>% 
   filter(term=="exposed (unemployed at t1)") %>% 
   dplyr::select(-term) %>% 
   dplyr::select(outcome, everything()) %>% 
