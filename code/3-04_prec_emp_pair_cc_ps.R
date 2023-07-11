@@ -48,7 +48,7 @@ library(lme4) # for multi-level modelling
 pair_cc_analytic <- readRDS("./working_data/pair_cc_analytic.rds")
 
 ### convert binary outcome vars to factors to allow svyglm to work
-pair_cc_analytic$srh_bin_t1 <- factor(pair_cc_analytic$srh_bin_t0)
+pair_cc_analytic$srh_bin_t1 <- factor(pair_cc_analytic$srh_bin_t1)
 pair_cc_analytic$ghq_case4_t1 <- factor(pair_cc_analytic$ghq_case4_t1)
 
 ### convert SF-12 outcomes to numeric to allow svyglm to work
