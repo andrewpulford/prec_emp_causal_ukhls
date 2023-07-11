@@ -497,20 +497,12 @@ dr_srh_svyglm_mod <- svyglm(srh_bin_t1 ~ exposure1 +
                               gor_dv_t0 +
                               gor_dv_t1 +
                               sic2007_section_lab_t0 +
-#                              sic2007_section_lab_t1 +
                               soc2000_major_group_title_t0 +
-#                              soc2000_major_group_title_t1 +
                               jbft_dv_t0 +
-#                              jbft_dv_t1 +
                               small_firm_t0 +
-#                              small_firm_t1 +
-#                              jbhrs_t0 +
-#                              jbhrs_t1 +
                               emp_contract_t0 +
-#                              emp_contract_t1 +
                               broken_emp_t0 +
                               j2has_dv_t0 +
-#                              j2has_dv_t1 +
                               rel_pov_t0 +
                               health_t0 +
                               health_t1 +
@@ -518,6 +510,7 @@ dr_srh_svyglm_mod <- svyglm(srh_bin_t1 ~ exposure1 +
                             family = quasibinomial,
                             design = pair_cc_ps_svy, 
                             na.action = na.omit)
+## note - model not currently converging
 
 dr_srh_svyglm_summary <- summary(dr_srh_svyglm_mod)
 
