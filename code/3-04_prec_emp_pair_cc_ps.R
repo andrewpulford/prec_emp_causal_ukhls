@@ -85,14 +85,6 @@ cov_vector <- c("sex_dv_t0",
 cov_vector2 <- c("age_dv_t1",  
                 "marital_status_t1",
                 "gor_dv_t1",
-                "sic2007_section_lab_t1",
-                "soc2000_major_group_title_t1",
-                "jbft_dv_t1",
-                "small_firm_t1",
-                "emp_contract_t1",
-                "broken_emp_t1",
-                "j2has_dv_t1",
-#                "jbhrs_t1",
                 "health_t1",
                 "srh_bin_t1",
                 "ghq_case4_t1",
@@ -230,8 +222,11 @@ ps_model_mlm <- function(data = pair_cc_ps, outcome){
 #####                     Unemployment at t1 PS model                      #####
 ################################################################################
 
-### call the function
+### call the function (and benchmark time - takes a while to run!)
+start_time <- Sys.time()
 ps_mod_exp1 <- ps_model_mlm(data = pair_cc_ps, outcome = pair_cc_ps$exposure1)
+end_time <- Sys.time()
+end_time - start_time
 
 ### summary of model
 summary(ps_mod_exp1)
@@ -265,10 +260,10 @@ pair_cc_ps$ps_min <- pmin(pair_cc_ps$ps_exp1, pair_cc_ps$ps_noexp1)
 #####                       propensity score matching                      #####
 ################################################################################
 
-### remove missing as category for tables == don't use for now, throws error
-#pair_cc_ps <- pair_cc_ps %>% 
-#  mutate(across(.cols = everything(), 
-#                .fns = ~ifelse(.x%in%c("missing","Missing"),NA,.x))) 
+### remove missing as category for tables 
+pair_cc_ps <- pair_cc_ps %>% 
+  mutate(across(.cols = everything(), 
+                .fns = ~ifelse(.x%in%c("missing","Missing"),NA,.x))) 
 
 
 #### match propensity scores using Matching package ----------------------------
@@ -370,3 +365,50 @@ tiff("./output/weighted_descriptives/unemp_t1_balance_plot.tiff")
 unemp_t1_balance_plot
 dev.off()
 
+################################################################################
+#IPW package test 
+#
+#library(ipw)
+#
+#### remove missing as category for tables 
+#pair_cc_ps <- pair_cc_ps %>% 
+#  mutate(across(.cols = everything(), 
+#                .fns = ~ifelse(.x%in%c("missing","Missing"),NA,.x))) 
+#
+#pair_cc_ipw <- pair_cc_ps %>% 
+#  mutate(exposure1 = as.numeric(exposure1),
+#         sex_dv_t0 = as.numeric(sex_dv_t0)) %>% 
+#  mutate(exposure1 = exposure1-1,
+#         male_t0 = sex_dv_t0-1,
+#         non_white_t0 = ifelse(non_white_t0==3,0,1)) %>% 
+#  drop_na(everything())
+##  dplyr::select(male_t0) %>% 
+##  group_by(male_t0) %>% 
+##  summarise(n=n())
+#
+#weight <- ipwpoint(exposure = exposure1, family = "binomial", link = "logit",
+#                   numerator =~ 1,
+#                   denominator =~ male_t0 + age_dv_t0 + non_white_t0,
+#                   id = pair_cc_ipw$pidp,
+#                   trunc = 0.01, data = as.data.frame(pair_cc_ipw))
+##currentDataset$.ipw0 = weight$weights.trunc
+#
+#
+#
+#  marital_status_t0 +
+#  hiqual_dv_t0 +
+#  gor_dv_t0 +
+#  sic2007_section_lab_t0 +
+#  soc2000_major_group_title_t0 +
+#  jbft_dv_t0 +
+#  small_firm_t0 +
+#  #         jbhrs_t0 +
+#  emp_contract_t0 +
+#  broken_emp_t0 +
+#  j2has_dv_t0 +
+#  rel_pov_t0 +
+#  health_t0 +
+#  srh_bin_t0 +
+#  ghq_case4_t0 +
+#  sf12mcs_dv_t0 +
+#  sf12pcs_dv_t0#
