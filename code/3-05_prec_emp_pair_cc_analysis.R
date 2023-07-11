@@ -510,7 +510,7 @@ dr_srh_svyglm_mod <- svyglm(srh_bin_t1 ~ exposure1 +
                             family = quasibinomial,
                             design = pair_cc_ps_svy, 
                             na.action = na.omit)
-## note - model not currently converging
+## note - model not currently converging due to coding error on srh_bin_t0 == re-run once PS code done
 
 dr_srh_svyglm_summary <- summary(dr_srh_svyglm_mod)
 
