@@ -219,11 +219,12 @@ pair_cc_exc <- pair_cc_exc %>%
 
 
 #### final df's
-pair_cc_eligible <- not_other
+pair_eligible <- not_other
 
 ##save
 
-write_rds(pair_cc_eligible, "./working_data/pair_cc_eligible.rds")
+## eligible df for CC and MI analysis
+write_rds(pair_eligible, "./working_data/pair_eligible.rds")
 
 write_rds(pair_cc_exc, "./working_data/pair_cc_exc.rds")
 
