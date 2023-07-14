@@ -1,0 +1,82 @@
+major_group,major_group_title,minor_group,minor_group_title
+1,Managers and senior officials,111,Corporate Managers And Senior Officials
+1,Managers and senior officials,112,Production Managers
+1,Managers and senior officials,113,Functional Managers
+1,Managers and senior officials,114,Quality And Customer Care Managers
+1,Managers and senior officials,115,Financial Institution And Office Managers
+1,Managers and senior officials,116,"Managers In Distribution, Storage And Retailing"
+1,Managers and senior officials,117,Protective Service Officers
+1,Managers and senior officials,118,Health And Social Services Managers
+1,Managers and senior officials,121,"Managers In Farming, Horticulture, Forestry And Fishing"
+1,Managers and senior officials,122,Managers And Proprietors In Hospitality And Leisure Services
+1,Managers and senior officials,123,Managers And Proprietors In Other Service Industries
+2,Science and technology professionals,211,Science Professionals
+2,Science and technology professionals,212,Engineering Professionals
+2,Science and technology professionals,213,Information And Communication Technology Professionals
+2,Science and technology professionals,221,Health Professionals
+2,Science and technology professionals,231,Teaching Professionals
+2,Science and technology professionals,232,Research Professionals
+2,Science and technology professionals,241,Legal Professionals
+2,Science and technology professionals,242,Business And Statistical Professionals
+2,Science and technology professionals,243,"Architects, Town Planners, Surveyors"
+2,Science and technology professionals,244,Public Service Professionals
+2,Science and technology professionals,245,Librarians And Related Professionals
+3,Associate professional and technical occupations,311,Science And Engineering Technicians
+3,Associate professional and technical occupations,312,Draughtspersons And Building Inspectors
+3,Associate professional and technical occupations,313,IT Service Delivery Occupations
+3,Associate professional and technical occupations,321,Health Associate Professionals
+3,Associate professional and technical occupations,322,Therapists
+3,Associate professional and technical occupations,323,Social Welfare Associate Professionals
+3,Associate professional and technical occupations,331,Protective Service Occupations
+3,Associate professional and technical occupations,341,Artistic And Literary Occupations
+3,Associate professional and technical occupations,342,Design Associate Professionals
+3,Associate professional and technical occupations,343,Media Associate Professionals
+3,Associate professional and technical occupations,344,Sports And Fitness Occupations
+3,Associate professional and technical occupations,351,Transport Associate Professionals
+3,Associate professional and technical occupations,352,Legal Associate Professionals
+3,Associate professional and technical occupations,353,Business And Finance Associate Professionals
+3,Associate professional and technical occupations,354,Sales And Related Associate Professionals
+3,Associate professional and technical occupations,355,Conservation Associate Professionals
+3,Associate professional and technical occupations,356,Public Service And Other Associate Professionals
+4,Administrative and secretarial occupations,411,Administrative Occupations: Government And Related Organisations
+4,Administrative and secretarial occupations,412,Administrative Occupations: Finance
+4,Administrative and secretarial occupations,413,Administrative Occupations: Records
+4,Administrative and secretarial occupations,414,Administrative Occupations: Communications
+4,Administrative and secretarial occupations,415,Administrative Occupations: General
+4,Administrative and secretarial occupations,421,Secretarial And Related Occupations
+5,Skilled trades occupations,511,Agricultural Trades
+5,Skilled trades occupations,521,"Metal Forming, Welding And Related Trades"
+5,Skilled trades occupations,522,"Metal Machining, Fitting And Instrument Making Trades"
+5,Skilled trades occupations,523,Vehicle Trades
+5,Skilled trades occupations,524,Electrical Trades
+5,Skilled trades occupations,531,Construction Trades
+5,Skilled trades occupations,532,Building Trades
+5,Skilled trades occupations,541,Textiles And Garments Trades
+5,Skilled trades occupations,542,Printing Trades
+5,Skilled trades occupations,543,Food Preparation Trades
+5,Skilled trades occupations,549,Skilled Trades n. e. c.
+6,Personal service occupations,611,Healthcare And Related Personal Services
+6,Personal service occupations,612,Childcare And Related Personal Services
+6,Personal service occupations,613,Animal Care Services
+6,Personal service occupations,621,Leisure And Travel Service Occupations
+6,Personal service occupations,622,Hairdressers And Related Occupations
+6,Personal service occupations,623,Housekeeping Occupations
+6,Personal service occupations,629,Personal Services Occupations n. e. c.
+7,Sales and customer service occupations,711,Sales Assistants And Retail Cashiers
+7,Sales and customer service occupations,712,Sales Related Occupations
+7,Sales and customer service occupations,721,Customer Service Occupations
+8,"Process, plant and machine operatives",811,Process Operatives
+8,"Process, plant and machine operatives",812,Plant And Machine Operatives
+8,"Process, plant and machine operatives",813,Assemblers And Routine Operatives
+8,"Process, plant and machine operatives",814,Construction Operatives
+8,"Process, plant and machine operatives",821,Transport Drivers And Operatives
+8,"Process, plant and machine operatives",822,Mobile Machine Drivers And Operatives
+9,Elementary occupations,911,Elementary Agricultural Occupations
+9,Elementary occupations,912,Elementary Construction Occupations
+9,Elementary occupations,913,Elementary Process Plant Occupations
+9,Elementary occupations,914,Elementary Goods Storage Occupations
+9,Elementary occupations,921,Elementary Administration Occupations
+9,Elementary occupations,922,Elementary Personal Services Occupations
+9,Elementary occupations,923,Elementary Cleaning Occupations
+9,Elementary occupations,924,Elementary Security Occupations
+9,Elementary occupations,925,Elementary Sales Occupations
