@@ -37,13 +37,15 @@ library(tableone) # for creating table one
 ####load analytic df -----------------------------------------------------------
 pair_cc_analytic <- readRDS("./working_data/pair_cc_analytic.rds")
 
+# check no NAs
+sapply(pair_cc_analytic, function(x) sum(is.na(x)))
 
-pair_cc_analytic$fimnnet_dv_t0 <- as.numeric(as.character(pair_cc_analytic$fimnnet_dv_t0))
+#pair_cc_analytic$fimnnet_dv_t0 <- as.numeric(as.character(pair_cc_analytic$fimnnet_dv_t0))
 
 
-pair_cc_analytic$srh_dv_t0 <- factor(pair_cc_analytic$srh_dv_t0, 
-                                     levels = c("excellent", "very good", "good",
-                                                "fair", "poor"))
+#pair_cc_analytic$srh_dv_t0 <- factor(pair_cc_analytic$srh_dv_t0, 
+#                                     levels = c("excellent", "very good", "good",
+#                                                "fair", "poor"))
 
 pair_cc_analytic$sf12pcs_dv_t0 <- as.character(pair_cc_analytic$sf12pcs_dv_t0)
 pair_cc_analytic$sf12pcs_dv_t0 <- as.numeric(pair_cc_analytic$sf12pcs_dv_t0)
@@ -87,9 +89,9 @@ pair_cc_analytic$sf12mcs_dv_t0 <- as.numeric(pair_cc_analytic$sf12mcs_dv_t0)
 
 pair_cc_analytic <- droplevels(pair_cc_analytic)
 
-pair_cc_analytic <- pair_cc_analytic %>% 
-  mutate(across(.cols = everything(), 
-                .fns = ~ifelse(.x%in%c("missing","Missing"),NA,.x))) 
+#pair_cc_analytic <- pair_cc_analytic %>% 
+#  mutate(across(.cols = everything(), 
+#                .fns = ~ifelse(.x%in%c("missing","Missing"),NA,.x))) 
 
 cov_vector <- c("sex_dv_t0", 
                 "age_dv_t0",  
@@ -105,7 +107,6 @@ cov_vector <- c("sex_dv_t0",
                 "broken_emp_t0",
                 "j2has_dv_t0",
                 "rel_pov_t0",
-                "jbhrs_t0",
                 "health_t0",
                 "srh_bin_t0",
                 "ghq_case4_t0",
