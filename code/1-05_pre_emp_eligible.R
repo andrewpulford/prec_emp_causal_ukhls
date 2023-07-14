@@ -221,6 +221,21 @@ pair_cc_exc <- pair_cc_exc %>%
 #### final df's
 pair_eligible <- not_other
 
+################################################################################
+#####                       create exposure variables                      #####
+################################################################################
+
+pair_eligible <- pair_eligible %>%
+  # unemployed at t1
+  mutate(exposure1 = ifelse(jbstat_t1%in%c("unemployed","Unemployed"),
+                            "exposed (unemployed at t1)","unexposed")) %>% 
+  # job loss between t0 and t1
+  mutate(exposure2 = ifelse(jbstat_t1 %in% c("unemployed","unemployed"), 
+                            "exposed (job loss between t0 and t1",
+                            ifelse(nunmpsp_dv_t1>0,
+                                   "exposed (job loss between t0 and t1",
+                                   "unexposed"))) 
+
 ##save
 
 ## eligible df for CC and MI analysis
