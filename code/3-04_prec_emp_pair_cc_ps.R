@@ -73,13 +73,11 @@ cov_vector <- c("sex_dv_t0",
                 "broken_emp_t0",
                 "j2has_dv_t0",
                 "rel_pov_t0",
-#                "jbhrs_t0",
                 "health_t0",
                 "srh_bin_t0",
                 "ghq_case4_t0",
                 "sf12mcs_dv_t0",
                 "sf12pcs_dv_t0")
-# use missing cat
 # don't create separate outcome df's unless high # missing
 
 cov_vector2 <- c("age_dv_t1",  
@@ -106,9 +104,11 @@ outcome_vector2 <- c("srh_bin_t1",
 
 #### keep only variables required for propensity score (and other analysis) ----
 pair_cc_ps <- pair_cc_analytic %>% 
-  dplyr::select(all_of(c(id_wt_vector, cov_vector, cov_vector2, outcome_vector))) %>% 
-  dplyr::select(-c(psu, strata, wt_name, wt_value))
+  dplyr::select(pidp, all_of(c(cov_vector, cov_vector2, outcome_vector))) #%>% 
+#  dplyr::select(-c(psu, strata, wt_name, wt_value))
 
+#### convert pidp to factor 
+pair_cc_ps$pidp <- factor(pair_cc_ps$pidp)
 
 #### convert scale vars to numeric ---------------------------------------------
 pair_cc_ps <- pair_cc_ps %>% 
@@ -123,7 +123,7 @@ pair_cc_ps <- pair_cc_ps %>%
          sf12mcs_dv_t1 = as.numeric(sf12mcs_dv_t1),
          sf12pcs_dv_t1 = as.numeric(sf12pcs_dv_t1))
 
-
+## change any character vars to factor
 pair_cc_ps[sapply(pair_cc_ps, is.character)] <- lapply(pair_cc_ps[sapply(pair_cc_ps, is.character)], as.factor)
 
 #### revel exposure vars so that unexposed is lower ref category ---------------
@@ -169,7 +169,6 @@ ps_model <- function(data = pair_cc_ps, outcome){
           soc2000_major_group_title_t0 +
           jbft_dv_t0 +
           small_firm_t0 +
-#          jbhrs_t0 +
           emp_contract_t0 +
           broken_emp_t0 +
           j2has_dv_t0 +
@@ -190,25 +189,24 @@ ps_model_mlm <- function(data = pair_cc_ps, outcome){
   glmer(outcome ~
          sex_dv_t0 +
          age_dv_t0 +
-         non_white_t0  +
-         marital_status_t0 +
-         hiqual_dv_t0 +
-         gor_dv_t0 +
-         sic2007_section_lab_t0 +
-         soc2000_major_group_title_t0 +
-         jbft_dv_t0 +
-         small_firm_t0 +
-#         jbhrs_t0 +
-         emp_contract_t0 +
-         broken_emp_t0 +
-         j2has_dv_t0 +
-         rel_pov_t0 +
-         health_t0 +
-         srh_bin_t0 +
-         ghq_case4_t0 +
-         sf12mcs_dv_t0 +
-         sf12pcs_dv_t0 +
-         1+(1|pidp),
+         non_white_t0  +                # NA = 246
+         marital_status_t0 +            # NA = 258
+         hiqual_dv_t0 +                 # NA = 593
+         gor_dv_t0 +                    # NA = 56
+         sic2007_section_lab_t0 +       # NA = 4085
+         soc2000_major_group_title_t0 + # NA = 2068
+         jbft_dv_t0 +                   # NA = 1630
+         small_firm_t0 +                # NA = 2268
+         emp_contract_t0 +              # NA = 846
+         broken_emp_t0 +                # NA = 7965
+         j2has_dv_t0 +                  # NA = 72
+         rel_pov_t0 +                   # NA = 0
+         health_t0 +                    # NA = 56
+         srh_bin_t0 +                   # NA = 4
+         ghq_case4_t0 +                 # NA = 323
+         sf12mcs_dv_t0 +                # NA = 0
+         sf12pcs_dv_t0 +                # NA = 0
+         (1|pidp),
             family = binomial(link="logit"),
             data = data)
   
@@ -222,7 +220,12 @@ ps_model_mlm <- function(data = pair_cc_ps, outcome){
 #####                     Unemployment at t1 PS model                      #####
 ################################################################################
 
-### call the function (and benchmark time - takes a while to run!)
+### call the function (and benchmark time - takes a while to run foe MLM ~2 days!)
+start_time <- Sys.time()
+ps_mod_exp1_noMLM <- ps_model(data = pair_cc_ps, outcome = pair_cc_ps$exposure1)
+end_time <- Sys.time()
+end_time - start_time
+
 start_time <- Sys.time()
 ps_mod_exp1 <- ps_model_mlm(data = pair_cc_ps, outcome = pair_cc_ps$exposure1)
 end_time <- Sys.time()
