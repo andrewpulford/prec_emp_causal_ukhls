@@ -62,21 +62,6 @@ pair_cc_eligible <- readRDS("./working_data/pair_eligible.rds") %>%
   dplyr::select(-c(psu, strata, wt_name, wt_value))
 
 ################################################################################
-#####                       create exposure variables                      #####
-################################################################################
-
-pair_cc_eligible <- pair_cc_eligible %>%
-  # unemployed at t1
-  mutate(exposure1 = ifelse(jbstat_t1%in%c("unemployed","Unemployed"),
-                            "exposed (unemployed at t1)","unexposed")) %>% 
-  # job loss between t0 and t1
-  mutate(exposure2 = ifelse(jbstat_t1 %in% c("unemployed","unemployed"), 
-                            "exposed (job loss between t0 and t1",
-                            ifelse(nunmpsp_dv_t1>0,
-                                   "exposed (job loss between t0 and t1",
-                                   "unexposed"))) 
-
-################################################################################
 #####                             create NAs df                            #####
 ################################################################################
 
