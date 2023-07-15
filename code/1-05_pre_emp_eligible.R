@@ -26,6 +26,7 @@ rm(list=ls())
 
 library(tidyverse) # all kinds of stuff 
 library(janitor) # cleaning up
+library(naniar) # for missing values
 
 `%notin%` <- Negate(`%in%`)
 
@@ -235,6 +236,17 @@ pair_eligible <- pair_eligible %>%
                             ifelse(nunmpsp_dv_t1>0,
                                    "exposed (job loss between t0 and t1",
                                    "unexposed"))) 
+
+### recode missing categories as NA
+start_time <- Sys.time()
+pair_eligible <- pair_eligible  %>% 
+  replace_with_na_all(condition = ~.x =="missing")
+end_time <- Sys.time()
+end_time - start_time
+
+# check
+sapply(pair_eligible, function(x) sum(is.na(x)))
+
 
 ##save
 
