@@ -26,7 +26,6 @@ rm(list=ls())
 ################################################################################
 
 library(tidyverse) # all kinds of stuff 
-library(naniar) # for missing values
 
 ################################################################################
 #####                         load and prepare data                        #####
@@ -97,15 +96,6 @@ pair_cc_eligible_na <- pair_cc_eligible_na %>%
 #####                     create final complete case df                    #####
 ################################################################################
 
-### recode missing categories as NA
-start_time <- Sys.time()
-pair_cc_analytic <- pair_cc_eligible  %>% 
-  replace_with_na_all(condition = ~.x =="missing")
-end_time <- Sys.time()
-end_time - start_time
-
-# check
-sapply(pair_cc_analytic, function(x) sum(is.na(x)))
 
 ### remove any incomplete cases for CC analysis
 pair_cc_analytic <- pair_cc_analytic %>% 
