@@ -622,3 +622,4 @@ dr_reg_df <- dr_pcs_svyglm_df %>%
   dplyr::select(outcome, everything()) %>% 
   rename(t_value=statistic)
 
+write.csv(table_outcomes_weighted_sav, "./output/weighted_outcomes/cc_double_robust_MSM.csv")
