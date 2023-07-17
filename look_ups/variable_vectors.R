@@ -3,6 +3,30 @@
 #### vector for person identifier and weigting variables -----------------------
 id_wt_vector <- c("pidp", "psu", "strata", "wt_name", "wt_value")
 
+#### master vars vector (no time point suffix) ---------------------------------
+#### vector baseline covariates ------------------------------------------------
+master_var_vec <- c("sex_dv", 
+                "age_dv",  
+                "non_white", 
+                "marital_status",
+                "hiqual_dv", 
+                "gor_dv",
+                "sic2007_section_lab",
+                "soc2000_major_group_title",
+                "jbft_dv",
+                "small_firm",
+                "emp_contract",
+                "broken_emp",
+                "j2has_dv",
+                "rel_pov",
+                "health",
+                "srh_bin",
+                "ghq_case4",
+                "sf12mcs_dv",
+                "sf12pcs_dv",
+                "jbstat", 
+                "nunmpsp_dv")
+
 #### vector baseline covariates ------------------------------------------------
 cov_vector <- c("sex_dv_t0", 
                 "age_dv_t0",  
