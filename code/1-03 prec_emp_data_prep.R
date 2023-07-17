@@ -78,7 +78,7 @@ master_raw1 <- master_raw1 %>%
   mutate(non_white = ifelse(ethn_dv=="british/english/scottish/welsh/northern irish", "White",
                             ifelse(ethn_dv=="irish", "White",
                                    ifelse(ethn_dv=="any other white background", "White",
-                                          ifelse(ethn_dv=="missing", "Missing",
+                                          ifelse(ethn_dv=="missing", "missing",
                                                  "Non-white")))))
 
 
