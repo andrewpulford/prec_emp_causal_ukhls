@@ -54,29 +54,28 @@ extra_vars <- c("jbstat_t1", "nunmpsp_dv_t1")
 
 ####load eligible cases --------------------------------------------------------
 pair_cc_eligible <- readRDS("./working_data/pair_eligible.rds") %>% 
-  dplyr::select(all_of(c(id_wt_vector, 
-                         cov_vector, cov_vector2, 
-                         outcome_vector2,
-                         extra_vars))) %>% 
-  dplyr::select(-c(psu, strata, wt_name, wt_value))
+#  dplyr::select(pidp, all_of(c(id_wt_vector, 
+#                         cov_vector, cov_vector2, 
+#                         outcome_vector2,
+#                         extra_vars))) %>% 
+  dplyr::select(-all_of(extra_vars))
 
 ################################################################################
 #####                             create NAs df                            #####
 ################################################################################
 
-missing_vector <- c("missing", "Missing",
-                    "inapplicable", "proxy",
-                    "refusal", 
-                    "Only available for IEMB", 
-                    "Not available for IEMB",
-                    "don't know")
+#missing_vector <- c("missing", "Missing",
+#                    "inapplicable", "proxy",
+#                    "refusal", 
+#                    "Only available for IEMB", 
+#                    "Not available for IEMB",
+#                    "don't know")
+#
 
 pair_cc_eligible_na <- pair_cc_eligible %>% 
-  mutate(across(everything(), as.character)) %>% 
+#  mutate(across(everything(), as.character)) %>% 
   mutate(across(.cols = everything(), 
-                .fns = ~ifelse(is.na(.x),"missing",.x))) %>% 
-  mutate(across(.cols=everything(), 
-                .fns= ~ifelse(.x%in%missing_vector,1,0)))
+                .fns = ~ifelse(is.na(.x),1,0)))
 
 
 ################################################################################
@@ -98,7 +97,7 @@ pair_cc_eligible_na <- pair_cc_eligible_na %>%
 
 
 ### remove any incomplete cases for CC analysis
-pair_cc_analytic <- pair_cc_analytic %>% 
+pair_cc_analytic <- pair_cc_eligible %>% 
   na.omit()
 
 #### VVV retain for now - may need for MI VVV ####
@@ -144,7 +143,7 @@ pair_cc_analytic <- pair_cc_analytic %>%
 ################################################################################
 
 ## paired eligible complete case df
-write_rds(pair_cc_eligible, "./working_data/pair_eligible.rds")
+#write_rds(pair_cc_eligible, "./working_data/pair_eligible.rds")
 
 
 ## paired analytic complete case df
