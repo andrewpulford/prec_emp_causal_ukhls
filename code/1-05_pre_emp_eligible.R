@@ -35,12 +35,28 @@ library(naniar) # for missing values
 #####                         load and prepare data                        #####
 ################################################################################
 
+####read in variable vectors ---------------------------------------------------
+source("./look_ups/variable_vectors.r")
+
+
+## extra vars for 
+extra_vars <- c("jbstat_t0", "jbstat_t1","nunmpsp_dv_t0", 
+                "nunmpsp_dv_t1", "retchk_flag_t1")
+
+#### read in data
 pair_cc_raw <- readRDS("./working_data/pair_cc_raw.rds")
 
 weight_spine_pair <- readRDS("./look_ups/weight_spine_pair.rds")
 
 pair_cc_raw <- pair_cc_raw %>% 
-  left_join(weight_spine_pair)
+  left_join(weight_spine_pair) %>% 
+  dplyr::select(all_of(c(id_wt_vector, 
+                         cov_vector, cov_vector2, 
+                         outcome_vector2,
+                         extra_vars))) %>% 
+  dplyr::select(-c(psu, strata, wt_name, wt_value))
+
+  
 
 ################################################################################
 #####                             job retention                            #####
@@ -238,6 +254,7 @@ pair_eligible <- pair_eligible %>%
                                    "unexposed"))) 
 
 ### recode missing categories as NA
+
 start_time <- Sys.time()
 pair_eligible <- pair_eligible  %>% 
   replace_with_na_all(condition = ~.x =="missing")
