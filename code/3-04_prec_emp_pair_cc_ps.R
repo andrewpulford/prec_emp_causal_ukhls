@@ -39,6 +39,7 @@ library(survey) # for PS weighting
 library(reshape2) # Reorganizing data
 library(broom) # for tidying regression outputs into df format
 library(lme4) # for multi-level modelling
+library(numDeriv) # for gradient checks
 
 ################################################################################
 #####                         load and prepare data                        #####
@@ -186,29 +187,30 @@ ps_model <- function(data = pair_cc_ps, outcome){
 
 #### propensity score model - mlm ----------------------------------------------
 ps_model_mlm <- function(data = pair_cc_ps, outcome){
-  glmer(outcome ~
+  glmmTMB::glmmTMB(outcome ~
          sex_dv_t0 +
          age_dv_t0 +
-         non_white_t0  +                # NA = 246
-         marital_status_t0 +            # NA = 258
-         hiqual_dv_t0 +                 # NA = 593
-         gor_dv_t0 +                    # NA = 56
-         sic2007_section_lab_t0 +       # NA = 4085
-         soc2000_major_group_title_t0 + # NA = 2068
-         jbft_dv_t0 +                   # NA = 1630
-         small_firm_t0 +                # NA = 2268
-         emp_contract_t0 +              # NA = 846
-         broken_emp_t0 +                # NA = 7965
-         j2has_dv_t0 +                  # NA = 72
-         rel_pov_t0 +                   # NA = 0
-         health_t0 +                    # NA = 56
-         srh_bin_t0 +                   # NA = 4
-         ghq_case4_t0 +                 # NA = 323
-         sf12mcs_dv_t0 +                # NA = 0
-         sf12pcs_dv_t0 +                # NA = 0
+         non_white_t0  +                
+         marital_status_t0 +            
+         hiqual_dv_t0 +                 
+         gor_dv_t0 +                    
+         sic2007_section_lab_t0 +       
+         soc2000_major_group_title_t0 + 
+         jbft_dv_t0 +                   
+         small_firm_t0 +                
+         emp_contract_t0 +              
+         broken_emp_t0 +                
+         j2has_dv_t0 +                  
+         rel_pov_t0 +                   
+         health_t0 +                    
+         srh_bin_t0 +                   
+         ghq_case4_t0 +                 
+         sf12mcs_dv_t0 +                
+         sf12pcs_dv_t0 +                
          (1|pidp),
             family = binomial(link="logit"),
-            data = data)
+            data = data)#, control=glmerControl(optimizer="bobyqa",
+#                     optCtrl=list(maxfun=2e5)))
   
   
 }
@@ -221,11 +223,13 @@ ps_model_mlm <- function(data = pair_cc_ps, outcome){
 ################################################################################
 
 ### call the function (and benchmark time - takes a while to run foe MLM ~2 days!)
+## not MLM
 start_time <- Sys.time()
 ps_mod_exp1_noMLM <- ps_model(data = pair_cc_ps, outcome = pair_cc_ps$exposure1)
 end_time <- Sys.time()
 end_time - start_time
 
+## MLM
 start_time <- Sys.time()
 ps_mod_exp1 <- ps_model_mlm(data = pair_cc_ps, outcome = pair_cc_ps$exposure1)
 end_time <- Sys.time()
@@ -234,7 +238,44 @@ end_time - start_time
 ### summary of model
 summary(ps_mod_exp1)
 
-### check for 1 or 0 predicted probabilities
+### checks
+
+## rescale vars
+numcols <- grep("^c\\.",names(pair_cc_ps))
+pair_cc_ps_scaled <- pair_cc_ps
+pair_cc_ps_scaled[,numcols] <- scale(pair_cc_ps_scaled[,numcols])
+ps_mod_exp1 <- update(ps_mod_exp1,data=pair_cc_ps_scaled)
+
+## Check singularity
+tt <- getME(ps_mod_exp1,"theta")
+ll <- getME(ps_mod_exp1,"lower")
+min(tt[ll==0])
+
+## Double-checking gradient calculations
+derivs1 <- ps_mod_exp1@optinfo$derivs
+check_grad1 <- with(derivs1,solve(Hessian,gradient))
+max(abs(check_grad1))
+
+# try with numDeriv
+dd <- update(ps_mod_exp1,devFunOnly=TRUE)
+pars <- unlist(getME(ps_mod_exp1,c("theta","fixef")))
+grad2 <- grad(dd,pars)
+hess2 <- hessian(dd,pars)
+check_grad2 <- solve(hess2,grad2)
+max(pmin(abs(check_grad2),abs(grad2)))
+
+## try update with max iterations
+ss <- getME(ps_mod_exp1,c("theta","fixef"))
+start_time <- Sys.time()
+ps_mod_exp1_update <- update(ps_mod_exp1,start=ss,
+                             control=glmerControl(optimizer="bobyqa",
+                                                  optCtrl=list(maxfun=2e5)))
+end_time <- Sys.time()
+end_time - start_time
+
+
+
+## check for 1 or 0 predicted probabilities
 pair_cc_ps$y_pred <- predict(ps_mod_exp1, pair_cc_ps, type="response")
 
 summary(pair_cc_ps$y_pred)
