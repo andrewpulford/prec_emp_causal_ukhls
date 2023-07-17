@@ -138,11 +138,11 @@ pair_cc_ps$exposure2 <- factor(pair_cc_ps$exposure2,
 
 #### remove any NAs not coded as a missing category ----------------------------
 ##  check NAs
-sapply(pair_cc_ps, function(x) sum(is.na(x)))
+#sapply(pair_cc_ps, function(x) sum(is.na(x)))
 ## remove
-pair_cc_ps <- na.omit(pair_cc_ps)
+#pair_cc_ps <- na.omit(pair_cc_ps)
 ## check again
-sapply(pair_cc_ps, function(x) sum(is.na(x)))
+#sapply(pair_cc_ps, function(x) sum(is.na(x)))
 
 
 ### use this if full df is too big
@@ -279,12 +279,12 @@ summary(ps_mod_exp1)
 
 
 ## check for 1 or 0 predicted probabilities
-#pair_cc_ps$y_pred <- predict(ps_mod_exp1, pair_cc_ps, type="response")
-#
-#summary(pair_cc_ps$y_pred)
+pair_cc_ps$y_pred <- predict(ps_mod_exp1, pair_cc_ps, type="response")
 
-#test <- pair_cc_ps %>% filter(y_pred==min(y_pred)) %>% 
-#  dplyr::select(pidp, y_pred)
+summary(pair_cc_ps$y_pred)
+
+test <- pair_cc_ps %>% filter(y_pred==min(y_pred)) %>% 
+  dplyr::select(pidp, y_pred)
 
 ### predicted probability of being assigned to exposed group
 pair_cc_ps$ps_exp1 <- predict(ps_mod_exp1, type = "response")
@@ -308,9 +308,9 @@ pair_cc_ps$ps_min <- pmin(pair_cc_ps$ps_exp1, pair_cc_ps$ps_noexp1)
 ################################################################################
 
 ### remove missing as category for tables 
-pair_cc_ps <- pair_cc_ps %>% 
-  mutate(across(.cols = everything(), 
-                .fns = ~ifelse(.x%in%c("missing","Missing"),NA,.x))) 
+#pair_cc_ps <- pair_cc_ps %>% 
+#  mutate(across(.cols = everything(), 
+#                .fns = ~ifelse(.x%in%c("missing","Missing"),NA,.x))) 
 
 
 #### match propensity scores using Matching package ----------------------------
