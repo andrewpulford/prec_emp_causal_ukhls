@@ -39,6 +39,7 @@ library(survey) # for PS weighting
 library(reshape2) # Reorganizing data
 library(broom) # for tidying regression outputs into df format
 library(lme4) # for multi-level modelling
+library(glmmTMB) # for multi-level modelling (faster than lme4)
 library(numDeriv) # for gradient checks
 
 ################################################################################
@@ -229,6 +230,8 @@ ps_mod_exp1_noMLM <- ps_model(data = pair_cc_ps, outcome = pair_cc_ps$exposure1)
 end_time <- Sys.time()
 end_time - start_time
 
+summary(ps_mod_exp1_noMLM)
+
 ## MLM
 start_time <- Sys.time()
 ps_mod_exp1 <- ps_model_mlm(data = pair_cc_ps, outcome = pair_cc_ps$exposure1)
@@ -239,49 +242,49 @@ end_time - start_time
 summary(ps_mod_exp1)
 
 ### checks
-
+#
 ## rescale vars
-numcols <- grep("^c\\.",names(pair_cc_ps))
-pair_cc_ps_scaled <- pair_cc_ps
-pair_cc_ps_scaled[,numcols] <- scale(pair_cc_ps_scaled[,numcols])
-ps_mod_exp1 <- update(ps_mod_exp1,data=pair_cc_ps_scaled)
-
+#numcols <- grep("^c\\.",names(pair_cc_ps))
+#pair_cc_ps_scaled <- pair_cc_ps
+#pair_cc_ps_scaled[,numcols] <- scale(pair_cc_ps_scaled[,numcols])
+#ps_mod_exp1 <- update(ps_mod_exp1,data=pair_cc_ps_scaled)#
+#
 ## Check singularity
-tt <- getME(ps_mod_exp1,"theta")
-ll <- getME(ps_mod_exp1,"lower")
-min(tt[ll==0])
-
+#tt <- getME(ps_mod_exp1,"theta")
+#ll <- getME(ps_mod_exp1,"lower")
+#min(tt[ll==0])
+#
 ## Double-checking gradient calculations
-derivs1 <- ps_mod_exp1@optinfo$derivs
-check_grad1 <- with(derivs1,solve(Hessian,gradient))
-max(abs(check_grad1))
-
+#derivs1 <- ps_mod_exp1@optinfo$derivs
+#check_grad1 <- with(derivs1,solve(Hessian,gradient))
+#max(abs(check_grad1))
+#
 # try with numDeriv
-dd <- update(ps_mod_exp1,devFunOnly=TRUE)
-pars <- unlist(getME(ps_mod_exp1,c("theta","fixef")))
-grad2 <- grad(dd,pars)
-hess2 <- hessian(dd,pars)
-check_grad2 <- solve(hess2,grad2)
-max(pmin(abs(check_grad2),abs(grad2)))
+#dd <- update(ps_mod_exp1,devFunOnly=TRUE)
+#pars <- unlist(getME(ps_mod_exp1,c("theta","fixef")))
+#grad2 <- grad(dd,pars)
+#hess2 <- hessian(dd,pars)
+#check_grad2 <- solve(hess2,grad2)
+#max(pmin(abs(check_grad2),abs(grad2)))
 
 ## try update with max iterations
-ss <- getME(ps_mod_exp1,c("theta","fixef"))
-start_time <- Sys.time()
-ps_mod_exp1_update <- update(ps_mod_exp1,start=ss,
-                             control=glmerControl(optimizer="bobyqa",
-                                                  optCtrl=list(maxfun=2e5)))
-end_time <- Sys.time()
-end_time - start_time
+#ss <- getME(ps_mod_exp1,c("theta","fixef"))
+#start_time <- Sys.time()
+#ps_mod_exp1_update <- update(ps_mod_exp1,start=ss,
+#                             control=glmerControl(optimizer="bobyqa",
+#                                                  optCtrl=list(maxfun=2e5)))
+#end_time <- Sys.time()
+#end_time - start_time
 
 
 
 ## check for 1 or 0 predicted probabilities
-pair_cc_ps$y_pred <- predict(ps_mod_exp1, pair_cc_ps, type="response")
+#pair_cc_ps$y_pred <- predict(ps_mod_exp1, pair_cc_ps, type="response")
+#
+#summary(pair_cc_ps$y_pred)
 
-summary(pair_cc_ps$y_pred)
-
-test <- pair_cc_ps %>% filter(y_pred==min(y_pred)) %>% 
-  dplyr::select(pidp, y_pred)
+#test <- pair_cc_ps %>% filter(y_pred==min(y_pred)) %>% 
+#  dplyr::select(pidp, y_pred)
 
 ### predicted probability of being assigned to exposed group
 pair_cc_ps$ps_exp1 <- predict(ps_mod_exp1, type = "response")
