@@ -243,23 +243,21 @@ pair_eligible <- not_other
 ################################################################################
 
 pair_eligible <- pair_eligible %>%
-  # unemployed at t1
+  # prevention of unemployment at t1
   mutate(exposure1 = ifelse(jbstat_t1%in%c("unemployed","Unemployed"),
-                            "exposed (unemployed at t1)","unexposed")) %>% 
-  # job loss between t0 and t1
+                            "unexposed","exposed (employed at t1)")) %>% 
+  # prevention of job loss between t0 and t1
   mutate(exposure2 = ifelse(jbstat_t1 %in% c("unemployed","unemployed"), 
-                            "exposed (job loss between t0 and t1",
+                            "exposed (no job loss between t0 and t1",
                             ifelse(nunmpsp_dv_t1>0,
-                                   "exposed (job loss between t0 and t1",
-                                   "unexposed"))) 
+                                   "unexposed",
+                                   "exposed (job loss between t0 and t1"))) 
 
 ### recode missing categories as NA
 
-start_time <- Sys.time()
-pair_eligible <- pair_eligible  %>% 
-  replace_with_na_all(condition = ~.x =="missing")
-end_time <- Sys.time()
-end_time - start_time
+pair_eligible <- pair_eligible %>% 
+  mutate(across(.cols = everything(), 
+                .fns = ~ifelse(.x%in%c("missing","Missing"),NA,.x))) 
 
 # check
 sapply(pair_eligible, function(x) sum(is.na(x)))
