@@ -121,7 +121,7 @@ pair_cc_analytic <- pair_cc_analytic %>%
 temp <- pair_cc_analytic %>% dplyr::select(where(is.numeric))
 
 # histogram
-hist.data.frame(temp)
+#hist.data.frame(temp)
 
 # normality test for age
 temp2 <- sample (temp$age_dv_t0, size=5000)
