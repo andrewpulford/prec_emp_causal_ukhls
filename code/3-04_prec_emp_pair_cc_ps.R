@@ -80,7 +80,6 @@ cov_vector <- c("sex_dv_t0",
                 "ghq_case4_t0",
                 "sf12mcs_dv_t0",
                 "sf12pcs_dv_t0")
-# don't create separate outcome df's unless high # missing
 
 cov_vector2 <- c("age_dv_t1",  
                 "marital_status_t1",
@@ -103,6 +102,8 @@ outcome_vector2 <- c("srh_bin_t1",
                     "ghq_case4_t1",
                     "sf12mcs_dv_t1",
                     "sf12pcs_dv_t1")
+
+nonnorm_vec <- (c("age_dv_t0", "sf12mcs_dv_t0", "sf12pcs_dv_t0"))
 
 #### keep only variables required for propensity score (and other analysis) ----
 pair_cc_ps <- pair_cc_analytic %>% 
@@ -296,7 +297,7 @@ summary(pair_cc_ps$ps_noexp1)
 
 ### predicted probability of being assigned to actual exposure status
 pair_cc_ps$ps_assign <- NA
-pair_cc_ps$ps_assign[pair_cc_ps$exposure1=="exposed (unemployed at t1)"] <- pair_cc_ps$ps_exp1[pair_cc_ps$exposure1=="exposed (unemployed at t1)"]
+pair_cc_ps$ps_assign[pair_cc_ps$exposure1=="exposed (employed at t1)"] <- pair_cc_ps$ps_exp1[pair_cc_ps$exposure1=="exposed (employed at t1)"]
 pair_cc_ps$ps_assign[pair_cc_ps$exposure1=="unexposed"] <- pair_cc_ps$ps_noexp1[pair_cc_ps$exposure1=="unexposed"]
 
 ### smaller of ps_exp1 and ps_noexp1 for matchnig weight
@@ -314,7 +315,7 @@ pair_cc_ps$ps_min <- pmin(pair_cc_ps$ps_exp1, pair_cc_ps$ps_noexp1)
 
 
 #### match propensity scores using Matching package ----------------------------
-list_match <- Match(Tr = (pair_cc_ps$exposure1=="exposed (unemployed at t1)"),
+list_match <- Match(Tr = (pair_cc_ps$exposure1=="exposed (employed at t1)"),
 # logit of PS/1-PS
 X = log(pair_cc_ps$ps_exp1/pair_cc_ps$ps_noexp1),
 ## 1:1 matching ratio
@@ -361,7 +362,9 @@ table_one_weighted <- svyCreateTableOne(vars = cov_vector,
                                         data = pair_cc_ps_svy,
                                         test = FALSE)
 
-table_one_weighted_sav <- print(table_one_weighted,  smd = TRUE)
+table_one_weighted_sav <- print(table_one_weighted, showAllLevels = TRUE, smd = TRUE,
+                                nonnormal = nonnorm_vec,
+                                formatOptions = list(big.mark = ","))
 
 write.csv(table_one_weighted_sav, "./output/weighted_descriptives/table_one_weighted.csv")
 
