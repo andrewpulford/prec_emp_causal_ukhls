@@ -41,6 +41,7 @@ library(broom) # for tidying regression outputs into df format
 library(lme4) # for multi-level modelling
 library(glmmTMB) # for multi-level modelling (faster than lme4)
 library(numDeriv) # for gradient checks
+library(ipw) # for inverse probability weighting
 
 ################################################################################
 #####                         load and prepare data                        #####
@@ -284,9 +285,6 @@ pair_cc_ps$y_pred <- predict(ps_mod_exp1, pair_cc_ps, type="response")
 
 summary(pair_cc_ps$y_pred)
 
-test <- pair_cc_ps %>% filter(y_pred==min(y_pred)) %>% 
-  dplyr::select(pidp, y_pred)
-
 ### predicted probability of being assigned to exposed group
 pair_cc_ps$ps_exp1 <- predict(ps_mod_exp1, type = "response")
 summary(pair_cc_ps$ps_exp1)
@@ -301,18 +299,12 @@ pair_cc_ps$ps_assign[pair_cc_ps$exposure1=="exposed (employed at t1)"] <- pair_c
 pair_cc_ps$ps_assign[pair_cc_ps$exposure1=="unexposed"] <- pair_cc_ps$ps_noexp1[pair_cc_ps$exposure1=="unexposed"]
 
 ### smaller of ps_exp1 and ps_noexp1 for matchnig weight
-
 pair_cc_ps$ps_min <- pmin(pair_cc_ps$ps_exp1, pair_cc_ps$ps_noexp1)
+summary(pair_cc_ps$ps_min)
 
 ################################################################################
 #####                       propensity score matching                      #####
 ################################################################################
-
-### remove missing as category for tables 
-#pair_cc_ps <- pair_cc_ps %>% 
-#  mutate(across(.cols = everything(), 
-#                .fns = ~ifelse(.x%in%c("missing","Missing"),NA,.x))) 
-
 
 #### match propensity scores using Matching package ----------------------------
 list_match <- Match(Tr = (pair_cc_ps$exposure1=="exposed (employed at t1)"),
@@ -351,6 +343,8 @@ addmargins(table(ExtractSmd(table_one_matched) > 0.1))
 ### create matching weight
 pair_cc_ps$mw <- pair_cc_ps$ps_min/pair_cc_ps$ps_assign
 
+summary(pair_cc_ps$mw)
+
 ### create weighted data
 pair_cc_ps_svy <- svydesign(ids = ~1,
                                   data = pair_cc_ps,
@@ -368,15 +362,191 @@ table_one_weighted_sav <- print(table_one_weighted, showAllLevels = TRUE, smd = 
 
 write.csv(table_one_weighted_sav, "./output/weighted_descriptives/table_one_weighted.csv")
 
-### count covariates with an important imbalance (>0.1)
+################################################################################
+#####              inverse probability of treatment weighting              ##### 
+################################################################################
+
+#### manual IPW calculation
+# Use the 1/PS for the exposed and 1/(1-PS) for the unexposed to create a pseudo-population
+
+pair_cc_manual_ipw <- pair_cc_ps %>% 
+  mutate(exposure1 = as.numeric(exposure1)-1) %>% 
+  mutate(ipw = (exposure1 / ps_exp1) + ((1 - exposure1) / (1 - ps_exp1))) %>% 
+  mutate(ipw_log = log(ipw))
 
 
+summary(pair_cc_manual_ipw$ipw)
+summary(pair_cc_manual_ipw$ipw_log)
 
-########## propensity score overlap weight??????????????????????????????????????
+### created IPTW dataframe
+pair_cc_manual_ipw_svy <- svydesign(ids = ~1,
+                             data = pair_cc_manual_ipw,
+                             weights = ~ipw)
 
+pair_cc_manual_ipw_log_svy <- svydesign(ids = ~1,
+                                    data = pair_cc_manual_ipw,
+                                    weights = ~ipw_log)
+### create IPTW table one
+pair_cc_manual_ipw_tabone <- svyCreateTableOne(vars = cov_vector,
+                                               strata = "exposure1",
+                                               data = pair_cc_manual_ipw_svy,
+                                               test = FALSE)
+
+pair_cc_manual_ipw_tabone_sav <- print(pair_cc_manual_ipw_tabone, showAllLevels = TRUE, smd = TRUE,
+                                       nonnormal = nonnorm_vec,
+                                       formatOptions = list(big.mark = ","))
+
+pair_cc_manual_ipw_log_tabone <- svyCreateTableOne(vars = cov_vector,
+                                                   strata = "exposure1",
+                                                   data = pair_cc_manual_ipw_log_svy,
+                                                   test = FALSE)
+
+pair_cc_manual_ipw_log_tabone_sav <- print(pair_cc_manual_ipw_log_tabone, showAllLevels = TRUE, smd = TRUE,
+                                           nonnormal = nonnorm_vec,
+                                           formatOptions = list(big.mark = ","))
+
+write.csv(pair_cc_manual_ipw_tabone_sav, "./output/temp_output/pair_cc_manual_ipw_tabone_sav.csv")
+
+write.csv(pair_cc_manual_ipw_log_tabone_sav, "./output/temp_output/pair_cc_manual_ipw_log_tabone_sav.csv")
+
+
+#### IPW package
+pair_cc_ipw <- pair_cc_ps %>% 
+  mutate(exposure1 = as.numeric(exposure1)) %>% #,
+#         sex_dv_t0 = as.numeric(sex_dv_t0),
+#         non_white_t0 = as.numeric(non_white_t0)) %>% 
+  mutate(exposure1 = exposure1-1)#,
+#         male_t0 = sex_dv_t0-1)#,
+#         non_white_t0 = ifelse(non_white_t0==3,0,1)) #%>% 
+#  drop_na(everything())
+##  dplyr::select(male_t0) %>% 
+##  group_by(male_t0) %>% 
+##  summarise(n=n())
+#
+weight <- ipwpoint(exposure = exposure1, family = "binomial", link = "logit",
+#                   numerator =~ 1,
+                   denominator =~ sex_dv_t0 + 
+                     age_dv_t0 + 
+                     non_white_t0 +
+                     marital_status_t0 +
+                     hiqual_dv_t0 +
+                     gor_dv_t0 +
+                     sic2007_section_lab_t0 +
+                     soc2000_major_group_title_t0 +
+                     jbft_dv_t0 +
+                     small_firm_t0 +
+                     emp_contract_t0 +
+                     broken_emp_t0 +
+                     j2has_dv_t0 +
+                     rel_pov_t0 +
+                     health_t0 +
+                     srh_bin_t0 +
+                     ghq_case4_t0 +
+                     sf12mcs_dv_t0 +
+                     sf12pcs_dv_t0,
+                   trunc = 0.01, 
+                   data = as.data.frame(pair_cc_ipw))
+weight
+pair_cc_ipw$.ipw0 <-  weight$weights.trunc
+summary(pair_cc_ipw$.ipw0)
+
+pair_cc_ipw$.ipw0_log <-  log(pair_cc_ipw$.ipw0)
+summary(pair_cc_ipw$.ipw0_log)
+
+
+### plot weights
+ipw_plot_cc <- ipwplot(pair_cc_ipw$.ipw0)#, timevar = NULL, binwidth = NULL, logscale = TRUE,
+#        xlab = NULL, ylab = NULL, main = "", ref = TRUE, ...)
+
+ipwplot(pair_cc_ipw$.ipw0_log)
+
+### created IPTW dataframe
+pair_cc_ipw_svy <- svydesign(ids = ~1,
+                            data = pair_cc_ipw,
+                            weights = ~.ipw0)
+
+pair_cc_ipw_log_svy <- svydesign(ids = ~1,
+                             data = pair_cc_ipw,
+                             weights = ~.ipw0_log)
+### create IPTW table one
+table_one_ipw <- svyCreateTableOne(vars = cov_vector,
+                                        strata = "exposure1",
+                                        data = pair_cc_ipw_svy,
+                                        test = FALSE)
+
+table_one_ipw_sav <- print(table_one_ipw, showAllLevels = TRUE, smd = TRUE,
+                                nonnormal = nonnorm_vec,
+                                formatOptions = list(big.mark = ","))
+
+table_one_ipw_log <- svyCreateTableOne(vars = cov_vector,
+                                   strata = "exposure1",
+                                   data = pair_cc_ipw_log_svy,
+                                   test = FALSE)
+
+table_one_ipw_log_sav <- print(table_one_ipw_log, showAllLevels = TRUE, smd = TRUE,
+                           nonnormal = nonnorm_vec,
+                           formatOptions = list(big.mark = ","))
+
+write.csv(table_one_ipw_sav, "./output/ipw_descriptives/table_one_ipw.csv")
+
+write.csv(table_one_ipw_log_sav, "./output/temp_output/table_one_ipw_log_sav.csv")
+
+### WeightIt IPTW
+
+weight_weightit <- WeightIt::weightit(exposure1 ~ sex_dv_t0 + 
+                                       age_dv_t0 + 
+                                       non_white_t0 +
+                                       marital_status_t0 +
+                                       hiqual_dv_t0 +
+                                       gor_dv_t0 +
+                                       sic2007_section_lab_t0 +
+                                       soc2000_major_group_title_t0 +
+                                       jbft_dv_t0 +
+                                       small_firm_t0 +
+                                       emp_contract_t0 +
+                                       broken_emp_t0 +
+                                       j2has_dv_t0 +
+                                       rel_pov_t0 +
+                                       health_t0 +
+                                       srh_bin_t0 +
+                                       ghq_case4_t0 +
+                                       sf12mcs_dv_t0 +
+                                       sf12pcs_dv_t0 ,
+                                     data = pair_cc_ipw, 
+                                     stabilize = TRUE,
+                                     estimand = "ATE",  # Find the ATE
+                                     method = "ps")  # Build weights with propensity scores
+weight_weightit
+
+summary(weight_weightit$weights)
+density(weight_weightit$weights)
+
+pair_cc_weightit <- pair_cc_ipw
+pair_cc_weightit$weightit_ipw <- weight_weightit$weights
+
+pair_cc_weightit %>% group_by(exposure1) %>% summarise(n=sum(weightit_ipw))
+
+### created IPTW dataframe
+pair_cc_weightit_ipw_svy <- svydesign(ids = ~1,
+                             data = pair_cc_weightit,
+                             weights = ~weightit_ipw)
+
+### create IPTW table one
+table_one_weightit_ipw <- svyCreateTableOne(vars = cov_vector,
+                                   strata = "exposure1",
+                                   data = pair_cc_weightit_ipw_svy,
+                                   test = FALSE)
+
+table_one_weightit_ipw_sav <- print(table_one_weightit_ipw, showAllLevels = TRUE, smd = TRUE,
+                           nonnormal = nonnorm_vec,
+                           formatOptions = list(big.mark = ","))
+
+write.csv(table_one_weightit_ipw_sav, "./output/temp_output/table_one_weightit_ipw_sav.csv")
 
 #### write working files -------------------------------------------------------
+write_rds(df_matched, "working_data/pair_cc_matched.rds")
 write_rds(pair_cc_ps, "working_data/pair_cc_ps.rds")
+write_rds(pair_cc_ipw, "working_data/pair_cc_ipw.rds")
 
 
 ################################################################################
@@ -391,7 +561,7 @@ table_one_matched_smd <- table_one_matched_smd %>%
   mutate(imbalance_flag = ifelse(smd>0.1,"SMD>0.1","SMD<=0.1"),
          matched = "matched")
 
-#### create df for weighted smd values -----------------------------------------
+#### create df for PS weighted smd values -----------------------------------------
 table_one_weighted_smd <- data.frame(ExtractSmd(table_one_weighted))
 table_one_weighted_smd <- table_one_weighted_smd %>% 
   rownames_to_column("var") %>% # Apply rownames_to_column
@@ -399,66 +569,29 @@ table_one_weighted_smd <- table_one_weighted_smd %>%
   mutate(imbalance_flag = ifelse(smd>0.1,"SMD>0.1","SMD<=0.1"),
          matched = "weighted")
 
+#### create df for IPW weighted smd values -----------------------------------------
+table_one_ipw_smd <- data.frame(ExtractSmd(table_one_ipw))
+table_one_ipw_smd <- table_one_ipw_smd %>% 
+  rownames_to_column("var") %>% # Apply rownames_to_column
+  rename("smd" = "X1.vs.2") %>% 
+  mutate(imbalance_flag = ifelse(smd>0.1,"SMD>0.1","SMD<=0.1"),
+         matched = "ipw")
+
+
 #### bind to unmatched smd df --------------------------------------------------
 assess_matching_balance <- table_one_matched_smd %>% 
-  bind_rows(table_one_weighted_smd,table_one_unmatched_smd)
+  bind_rows(table_one_weighted_smd,table_one_unmatched_smd, table_one_ipw_smd)
 
 ### plot
 unemp_t1_balance_plot <- assess_matching_balance %>% 
-  ggplot(aes(x=smd, y=var, col=matched)) +
+  ggplot(aes(x=smd, y=var, col=matched, shape=matched)) +
   geom_jitter(height = 0.01, width = 0.01) +
   geom_vline(xintercept = 0.1, linetype = "dashed") +
   theme_bw() +
-  scale_color_manual(values = c("blue","red", "green"))
+  scale_color_manual(values = c("blue","red", "green", "purple"))
 
 tiff("./output/weighted_descriptives/unemp_t1_balance_plot.tiff")
 unemp_t1_balance_plot
 dev.off()
 
-################################################################################
-#IPW package test 
-#
-#library(ipw)
-#
-#### remove missing as category for tables 
-#pair_cc_ps <- pair_cc_ps %>% 
-#  mutate(across(.cols = everything(), 
-#                .fns = ~ifelse(.x%in%c("missing","Missing"),NA,.x))) 
-#
-#pair_cc_ipw <- pair_cc_ps %>% 
-#  mutate(exposure1 = as.numeric(exposure1),
-#         sex_dv_t0 = as.numeric(sex_dv_t0)) %>% 
-#  mutate(exposure1 = exposure1-1,
-#         male_t0 = sex_dv_t0-1,
-#         non_white_t0 = ifelse(non_white_t0==3,0,1)) %>% 
-#  drop_na(everything())
-##  dplyr::select(male_t0) %>% 
-##  group_by(male_t0) %>% 
-##  summarise(n=n())
-#
-#weight <- ipwpoint(exposure = exposure1, family = "binomial", link = "logit",
-#                   numerator =~ 1,
-#                   denominator =~ male_t0 + age_dv_t0 + non_white_t0,
-#                   id = pair_cc_ipw$pidp,
-#                   trunc = 0.01, data = as.data.frame(pair_cc_ipw))
-##currentDataset$.ipw0 = weight$weights.trunc
-#
-#
-#
-#  marital_status_t0 +
-#  hiqual_dv_t0 +
-#  gor_dv_t0 +
-#  sic2007_section_lab_t0 +
-#  soc2000_major_group_title_t0 +
-#  jbft_dv_t0 +
-#  small_firm_t0 +
-#  #         jbhrs_t0 +
-#  emp_contract_t0 +
-#  broken_emp_t0 +
-#  j2has_dv_t0 +
-#  rel_pov_t0 +
-#  health_t0 +
-#  srh_bin_t0 +
-#  ghq_case4_t0 +
-#  sf12mcs_dv_t0 +
-#  sf12pcs_dv_t0#
+
