@@ -249,9 +249,9 @@ pair_eligible <- pair_eligible %>%
   # prevention of job loss between t0 and t1
   mutate(exposure2 = ifelse(jbstat_t1 %in% c("unemployed","unemployed"), 
                             "exposed (no job loss between t0 and t1",
-                            ifelse(nunmpsp_dv_t1>0,
-                                   "unexposed",
-                                   "exposed (job loss between t0 and t1"))) 
+                            ifelse(nunmpsp_dv_t1==0,
+                                   "exposed (no job loss between t0 and t1",
+                            "unexposed"))) 
 
 ### recode missing categories as NA
 
