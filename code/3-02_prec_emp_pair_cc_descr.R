@@ -34,6 +34,9 @@ library(tableone) # for creating table one
 #####                         load and prepare data                        #####
 ################################################################################
 
+####read in variable vectors ---------------------------------------------------
+source("./look_ups/variable_vectors.r")
+
 ####load analytic df -----------------------------------------------------------
 pair_cc_analytic <- readRDS("./working_data/pair_cc_analytic.rds")
 
@@ -52,6 +55,29 @@ pair_cc_analytic$sf12pcs_dv_t0 <- as.numeric(pair_cc_analytic$sf12pcs_dv_t0)
 
 pair_cc_analytic$sf12mcs_dv_t0 <- as.character(pair_cc_analytic$sf12mcs_dv_t0)
 pair_cc_analytic$sf12mcs_dv_t0 <- as.numeric(pair_cc_analytic$sf12mcs_dv_t0)
+
+#### create dummy variables for categorical vars with>2 cats -------------------
+
+pair_cc_analytic <- pair_cc_analytic %>% 
+  dummy_cols(select_columns = c("sex_dv_t0",
+                                "non_white_t0",
+                                "marital_status_t0",
+                                "hiqual_dv_t0",
+                                "gor_dv_t0",
+                                "sic2007_section_lab_t0",
+                                "soc2000_major_group_title_t0",
+                                "jbft_dv_t0",
+                                "small_firm_t0",
+                                "emp_contract_t0",
+                                "broken_emp_t0",
+                                "j2has_dv_t0",
+                                "rel_pov_t0",
+                                "health_t0",
+                                "srh_bin_t0",
+                                "ghq_case4_t0"
+  ))
+
+pair_cc_analytic <- pair_cc_analytic %>% janitor::clean_names()
 
 
 #####----------------------------------------------------------------------#####
@@ -93,28 +119,8 @@ pair_cc_analytic <- droplevels(pair_cc_analytic)
 #  mutate(across(.cols = everything(), 
 #                .fns = ~ifelse(.x%in%c("missing","Missing"),NA,.x))) 
 
-cov_vector <- c("sex_dv_t0", 
-                "age_dv_t0",  
-                "non_white_t0", 
-                "marital_status_t0",
-                "hiqual_dv_t0", 
-                "gor_dv_t0",
-                "sic2007_section_lab_t0",
-                "soc2000_major_group_title_t0",
-                "jbft_dv_t0",
-                "small_firm_t0",
-                "emp_contract_t0",
-                "broken_emp_t0",
-                "j2has_dv_t0",
-                "rel_pov_t0",
-                "health_t0",
-                "srh_bin_t0",
-                "ghq_case4_t0",
-                "sf12mcs_dv_t0",
-                "sf12pcs_dv_t0")
-
 pair_cc_analytic <- pair_cc_analytic %>% 
-  dplyr::select(all_of(cov_vector), exposure1, exposure2)
+  dplyr::select(all_of(cov_vector3), exposure1, exposure2)
 
 ## histogram for each numeric variable
 # temp df with only numeric vars
@@ -134,11 +140,11 @@ shapiro.test(temp2)
 nonnorm_vec <- colnames(temp)
 
 ## unemployed at T1
-table_one <- tableone::CreateTableOne(vars = cov_vector, strata = "exposure1",
+table_one <- tableone::CreateTableOne(vars = cov_vector3, strata = "exposure1",
                             data = pair_cc_analytic,
                             test = FALSE)
 
-table_one_sav <- print(table_one, showAllLevels = TRUE, smd = TRUE, 
+table_one_sav <- print(table_one, showAllLevels = TRUE, smd = TRUE,
                        nonnormal = nonnorm_vec,
                        formatOptions = list(big.mark = ","))
 
@@ -163,7 +169,7 @@ table_one_smd %>%
   scale_color_manual(values = c("blue","red"))
 
 ## job loss between t0 and t1
-table_one_alt <- CreateTableOne(vars = cov_vector, strata = "exposure2", 
+table_one_alt <- CreateTableOne(vars = cov_vector3, strata = "exposure2", 
                                 data = pair_cc_analytic)
 
 # Count covariates with important imbalance
@@ -186,7 +192,8 @@ table_one_alt_smd %>%
 
 addmargins(table(ExtractSmd(table_one_alt) > 0.1))
 
-table_one_alt_sav <- print(table_one_alt, showAllLevels = TRUE, smd = TRUE, 
+table_one_alt_sav <- print(table_one_alt, showAllLevels = TRUE, smd = TRUE,
+                           nonnormal = nonnorm_vec,
                            formatOptions = list(big.mark = ","))
 
 ### save tables
