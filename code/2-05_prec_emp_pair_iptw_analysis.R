@@ -1,7 +1,7 @@
 ################################################################################
 
 # Precarious employment and health - Understanding Society
-# 3-06 - Paired inverse probability of treatment weighted complete case outcome   
+# 2-06 - Paired inverse probability of treatment weighted complete case outcome   
 # analysis for risk of job loss 
 # Andrew Pulford
 
