@@ -11,7 +11,8 @@
 # http://doi.org/10.5255/UKDA-SN-6614-14
 
 #### What this script does:
-# (a) complete case outcome analysis for IPTW data
+# (a) complete case descriptive and outcome analysis by sex for PS matched data
+# (b) complete case descriptive and outcome analysis by sex for IPTW data
 
 
 
@@ -379,7 +380,7 @@ list_match_m <- Match(Tr = (male_df$exposure1=="exposed (employed at t1)"),
                       version  = "fast")
 
 ### extract matched data -----------------
-m_matched <- male_df[unlist(list_match_f[c("index.treated","index.control")]), ]
+m_matched <- male_df[unlist(list_match_m[c("index.treated","index.control")]), ]
 
 ### matched Table One with SMD ---------
 table_one_m_matched <- CreateTableOne(vars = cov_vector3,
@@ -1336,7 +1337,7 @@ dr_iptw_mcs_m_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                 age_dv_t0*rel_pov_t0 +
                                 (1|pidp),
                               weights = weights_ps,
-                              data = f_iptw)
+                              data = m_iptw)
 end_time <- Sys.time()
 end_time-start_time
 
@@ -1370,7 +1371,7 @@ dr_iptw_mcs_m_df <- dr_iptw_mcs_m_df %>%
 
 ### poor self-rated health -------------------
 
-f_iptw$srh_bin_t1 <- factor(f_iptw$srh_bin_t1,
+m_iptw$srh_bin_t1 <- factor(m_iptw$srh_bin_t1,
                             levels = c("excellent/very good", 
                                        "good/fair/poor"))
 
@@ -1457,7 +1458,7 @@ dr_iptw_srh_m_mod <- glmmTMB( srh_bin_t1 ~
                                 (1|pidp),
                               family = binomial(link="logit"),
                               weights = weights_ps,
-                              data = f_iptw)
+                              data = m_iptw)
 end_time <- Sys.time()
 end_time-start_time
 
@@ -1494,7 +1495,7 @@ dr_iptw_srh_m_df <- dr_iptw_srh_m_df %>%
 
 ### GHQ-12 caseness -----------------
 
-f_iptw$ghq_case4_t1 <- factor(f_iptw$ghq_case4_t1,
+m_iptw$ghq_case4_t1 <- factor(m_iptw$ghq_case4_t1,
                               levels = c("0-3", "4 or more"))
 
 
@@ -1580,7 +1581,7 @@ dr_iptw_ghq_m_mod <- glmmTMB( ghq_case4_t1 ~
                                 (1|pidp),
                               family = binomial(link="logit"),
                               weights = weights_ps,
-                              data = f_iptw)
+                              data = m_iptw)
 end_time <- Sys.time()
 end_time-start_time
 
