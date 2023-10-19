@@ -151,6 +151,7 @@ male_df <- pair_cc_analytic %>% filter(sex_dv_t0=="Male")
 #### propensity score model - mlm ----------------------------------------------
 ps_model_mlm <- function(data = pair_cc_ps, outcome){
   glmmTMB::glmmTMB(outcome ~
+                     #sex_dv_t0 +
                      age_dv_t0 +
                      non_white_t0 +
                      #        marital_status_t0_married_civil_partnership +
@@ -420,7 +421,8 @@ f_iptw$ghq_case4_t1 <- as.character(f_iptw$ghq_case4_t1)
 
 start_time <- Sys.time()
 f_iptw_mod <- matchit(exp1_bin ~
-                         age_dv_t0 +
+                        # sex_dv_t0 + 
+                        age_dv_t0 +
                          non_white_t0 +
                          #        marital_status_t0_married_civil_partnership +
                          marital_status_t0_divorced_separated_widowed +
@@ -532,6 +534,7 @@ m_iptw$ghq_case4_t1 <- as.character(m_iptw$ghq_case4_t1)
 
 start_time <- Sys.time()
 m_iptw_mod <- matchit(exp1_bin ~
+                        # sex_dv_t0 +
                         age_dv_t0 +
                         non_white_t0 +
                         #        marital_status_t0_married_civil_partnership +
