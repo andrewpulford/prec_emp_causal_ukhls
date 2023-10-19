@@ -151,6 +151,7 @@ older_df <- pair_cc_analytic %>% filter(age_dv_t0>median(age_dv_t0))
 ps_model_mlm <- function(data = pair_cc_ps, outcome){
   glmmTMB::glmmTMB(outcome ~
                      sex_dv_t0 +
+                     # age_dv_t0 +
                      non_white_t0 +
                      #        marital_status_t0_married_civil_partnership +
                      marital_status_t0_divorced_separated_widowed +
@@ -419,7 +420,7 @@ young_iptw$ghq_case4_t1 <- as.character(young_iptw$ghq_case4_t1)
 
 start_time <- Sys.time()
 young_iptw_mod <- matchit(exp1_bin ~
-                        age_dv_t0 +
+                        sex_dv_t0 +
                         non_white_t0 +
                         #        marital_status_t0_married_civil_partnership +
                         marital_status_t0_divorced_separated_widowed +
@@ -531,7 +532,7 @@ old_iptw$ghq_case4_t1 <- as.character(old_iptw$ghq_case4_t1)
 
 start_time <- Sys.time()
 old_iptw_mod <- matchit(exp1_bin ~
-                        age_dv_t0 +
+                        sex_dv_t0 +
                         non_white_t0 +
                         #        marital_status_t0_married_civil_partnership +
                         marital_status_t0_divorced_separated_widowed +
@@ -1003,8 +1004,8 @@ start_time <- Sys.time()
 dr_iptw_ghq_young_mod <- glmmTMB( ghq_case4_t1 ~
                                 exposure1 +
                                 sex_dv_t0 +
-                                age_dv_t0 +
-                                age_dv_t1 +
+                                #age_dv_t0 +
+                                #age_dv_t1 +
                                 non_white_t0 +
                                 #        marital_status_t0_married_civil_partnership +
                                 marital_status_t0_divorced_separated_widowed +
