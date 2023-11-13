@@ -126,7 +126,33 @@ master_raw1 <- master_raw1 %>%
                                   "separated from civil partner"),
                                   "divorced/separated/widowed",
                                   "check")))))
-                                      
+
+### dependent children
+# note inapplicable (-8) is for respondents living alone - code as 0 children
+
+## binary
+master_raw1$ndepchl_dv <- as.character(master_raw1$ndepchl_dv)
+
+master_raw1 <- master_raw1 %>% 
+  mutate(dep_child_bin = ifelse(ndepchl_dv=="inapplicable","0",ndepchl_dv))
+
+master_raw1$dep_child_bin <- as.numeric(master_raw1$dep_child_bin)
+
+master_raw1 <- master_raw1 %>% 
+  mutate(dep_child_bin = ifelse(dep_child_bin==0,0,1))
+
+## categorical
+master_raw1 <- master_raw1 %>% 
+  mutate(dep_child_cat = ifelse(ndepchl_dv=="inapplicable","0",ndepchl_dv))
+
+master_raw1$dep_child_cat <- as.numeric(master_raw1$dep_child_cat)
+
+master_raw1 <- master_raw1 %>% 
+  mutate(dep_child_cat = ifelse(dep_child_cat==0,"0 dependent children",
+                                ifelse(dep_child_cat==1,"1-2 dependent children",
+                                       ifelse(dep_child_cat==2,"1-2 dependent children",
+                                              "3 or more dependent children"))))
+
 
 ### educational attainment
 
