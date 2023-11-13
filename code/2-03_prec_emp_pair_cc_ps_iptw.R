@@ -122,15 +122,6 @@ pair_cc_ps <- pair_cc_ps %>%
 
 pair_cc_ps <- pair_cc_ps %>% janitor::clean_names()
 
-#### remove any NAs not coded as a missing category ----------------------------
-##  check NAs
-#sapply(pair_cc_ps, function(x) sum(is.na(x)))
-## remove
-#pair_cc_ps <- na.omit(pair_cc_ps)
-## check again
-#sapply(pair_cc_ps, function(x) sum(is.na(x)))
-
-
 ### use this if full df is too big
 #test_df <- pair_cc_ps %>% 
 #  slice_sample(prop = 1)
@@ -153,7 +144,8 @@ ps_model <- function(data = pair_cc_ps, outcome){
 #        marital_status_t0_married_civil_partnership +
         marital_status_t0_divorced_separated_widowed +
         marital_status_t0_single +
-#        hiqual_dv_t0_degree +
+        dep_child_bin_t0 +
+  #        hiqual_dv_t0_degree +
         hiqual_dv_t0_other_higher_degree +
         hiqual_dv_t0_a_level_etc +
         hiqual_dv_t0_gcse_etc +
@@ -219,6 +211,7 @@ ps_model_mlm <- function(data = pair_cc_ps, outcome){
                      #        marital_status_t0_married_civil_partnership +
                      marital_status_t0_divorced_separated_widowed +
                      marital_status_t0_single +
+                     dep_child_bin_t0 +
                      #        hiqual_dv_t0_degree +
                      hiqual_dv_t0_other_higher_degree +
                      hiqual_dv_t0_a_level_etc +
@@ -309,7 +302,8 @@ matchit_mod <- matchit(exp1_bin ~
                   #        marital_status_t0_married_civil_partnership +
                   marital_status_t0_divorced_separated_widowed +
                   marital_status_t0_single +
-                  #        hiqual_dv_t0_degree +
+                    dep_child_bin_t0 +
+                    #        hiqual_dv_t0_degree +
                   hiqual_dv_t0_other_higher_degree +
                   hiqual_dv_t0_a_level_etc +
                   hiqual_dv_t0_gcse_etc +
@@ -383,11 +377,13 @@ matchit_df_svy <- svydesign(ids = ~1,
 table_one_matchit <- svyCreateTableOne(vars = cov_vector3,
                                         strata = "exposure1",
                                         data = matchit_df_svy,
-                                        test = FALSE)
+                                       factorVars = c(catVars_vec),
+                                       test = FALSE)
 
 table_one_matchit_sav <- print(table_one_matchit, showAllLevels = TRUE, smd = TRUE,
                                 nonnormal = nonnorm_vec,
-                                formatOptions = list(big.mark = ","))
+                               factorVars = c(catVars_vec),
+                               formatOptions = list(big.mark = ","))
 
 write.csv(table_one_matchit_sav, "./output/temp_output/table_one_MatchItQuick_sav.csv")
 
@@ -396,10 +392,12 @@ write.csv(table_one_matchit_sav, "./output/temp_output/table_one_MatchItQuick_sa
 table_one_matchit2 <- svyCreateTableOne(vars = cov_vector,
                                        strata = "exposure1",
                                        data = matchit_df_svy,
+                                       factorVars = c(catVars_vec),
                                        test = FALSE)
 
 table_one_matchit2_sav <- print(table_one_matchit2, showAllLevels = TRUE, smd = FALSE,
                                nonnormal = nonnorm_vec,
+                               factorVars = c(catVars_vec),
                                formatOptions = list(big.mark = ","))
 
 write.csv(table_one_matchit2_sav, "./output/weighted_descriptives/table_one_IPTW_paper.csv")
@@ -498,8 +496,8 @@ summary(pair_cc_ps$ps_min)
 list_match <- Match(Tr = (pair_cc_ps$exposure1=="exposed (employed at t1)"),
 # logit of PS/1-PS
 X = log(pair_cc_ps$ps_exp1/pair_cc_ps$ps_noexp1),
-## 1:1 matching ratio
-M = 1,
+## 3:1 matching ratio
+M = 3,
 ## caliper = 0.2 * SD(logit(PS))
 caliper  = 0.2,
 replace  = FALSE,
@@ -513,9 +511,12 @@ df_matched <- pair_cc_ps[unlist(list_match[c("index.treated","index.control")]),
 table_one_matched <- CreateTableOne(vars = cov_vector3,
                                     strata = "exposure1",
                                     data = df_matched,
+                                    factorVars = c(catVars_vec),
                                     test = FALSE)
 
-table_one_matched_sav <- print(table_one_matched,  smd = TRUE)
+table_one_matched_sav <- print(table_one_matched,
+                               factorVars = c(catVars_vec),
+                               smd = TRUE)
 
 write.csv(table_one_matched_sav, "./output/matched_descriptives/table_one_matched.csv")
 
@@ -528,325 +529,340 @@ addmargins(table(ExtractSmd(table_one_matched) > 0.1))
 #####                   propensity score matching weight                   #####
 ################################################################################
 
-### create matching weight
-pair_cc_ps$mw <- pair_cc_ps$ps_min/pair_cc_ps$ps_assign
+#### create matching weight
+#pair_cc_ps$mw <- pair_cc_ps$ps_min/pair_cc_ps$ps_assign
+#
+#summary(pair_cc_ps$mw)
+#
+#### create weighted data
+#pair_cc_ps_svy <- svydesign(ids = ~1,
+#                                  data = pair_cc_ps,
+#                                  weights = ~mw)
+#
+#### weighted table one
+#table_one_weighted <- svyCreateTableOne(vars = cov_vector3,
+#                                        strata = "exposure1",
+#                                        data = pair_cc_ps_svy,
+#                                        factorVars = c(catVars_vec),
+#                                        test = FALSE)
+#
+#table_one_weighted_sav <- print(table_one_weighted, showAllLevels = TRUE, smd = TRUE,
+#                                nonnormal = nonnorm_vec,
+#                                factorVars = c(catVars_vec),
+#                                formatOptions = list(big.mark = ","))
 
-summary(pair_cc_ps$mw)
+#write.csv(table_one_weighted_sav, "./output/weighted_descriptives/table_one_weighted.csv")
 
-### create weighted data
-pair_cc_ps_svy <- svydesign(ids = ~1,
-                                  data = pair_cc_ps,
-                                  weights = ~mw)
+##### Propensity score overlap weight
+### Overlap weight
+#pair_cc_ps$ow <- (pair_cc_ps$ps_assign * (1 - pair_cc_ps$ps_assign)) / pair_cc_ps$ps_assign
 
-### weighted table one
-table_one_weighted <- svyCreateTableOne(vars = cov_vector3,
-                                        strata = "exposure1",
-                                        data = pair_cc_ps_svy,
-                                        test = FALSE)
+#summary(pair_cc_ps$ow)
+#summary(pair_cc_ps$ow[pair_cc_ps$exposure1=="unexposed"])
+#summary(pair_cc_ps$ow[pair_cc_ps$exposure1!="unexposed"])
 
-table_one_weighted_sav <- print(table_one_weighted, showAllLevels = TRUE, smd = TRUE,
-                                nonnormal = nonnorm_vec,
-                                formatOptions = list(big.mark = ","))
+### Weighted data
+#pair_cc_psSvyOw <- svydesign(ids = ~ 1, data = pair_cc_ps, weights = ~ ow)
 
-write.csv(table_one_weighted_sav, "./output/weighted_descriptives/table_one_weighted.csv")
+### Construct a table (This is a bit slow.)
+#tabWeightedOw <- svyCreateTableOne(vars = cov_vector3, 
+#                                   factorVars = c(catVars_vec),
+#                                   strata = "exposure1", 
+#                                   data = pair_cc_psSvyOw, 
+#                                   test = FALSE)
+### Show table with SMD
+#print(tabWeightedOw, smd = TRUE)
 
-#### Propensity score overlap weight
-## Overlap weight
-pair_cc_ps$ow <- (pair_cc_ps$ps_assign * (1 - pair_cc_ps$ps_assign)) / pair_cc_ps$ps_assign
-
-summary(pair_cc_ps$ow)
-summary(pair_cc_ps$ow[pair_cc_ps$exposure1=="unexposed"])
-summary(pair_cc_ps$ow[pair_cc_ps$exposure1!="unexposed"])
-
-## Weighted data
-pair_cc_psSvyOw <- svydesign(ids = ~ 1, data = pair_cc_ps, weights = ~ ow)
-
-## Construct a table (This is a bit slow.)
-tabWeightedOw <- svyCreateTableOne(vars = cov_vector3, strata = "exposure1", data = pair_cc_psSvyOw, test = FALSE)
-## Show table with SMD
-print(tabWeightedOw, smd = TRUE)
-
-tabWeightedOw_sav <- print(tabWeightedOw, showAllLevels = TRUE, smd = TRUE,
-                                       nonnormal = nonnorm_vec,
-                                       formatOptions = list(big.mark = ","))
-
-write.csv(tabWeightedOw_sav, "./output/weighted_descriptives/tabWeightedOw_sav.csv")
-
+#tabWeightedOw_sav <- print(tabWeightedOw, showAllLevels = TRUE, smd = TRUE,
+#                                       nonnormal = nonnorm_vec,
+#                                       formatOptions = list(big.mark = ","))
+#
+#write.csv(tabWeightedOw_sav, "./output/weighted_descriptives/tabWeightedOw_sav.csv")
+#
 ################################################################################
 #####              inverse probability of treatment weighting              ##### 
 ################################################################################
 
-#### manual IPW calculation
-# Use the 1/PS for the exposed and 1/(1-PS) for the unexposed to create a pseudo-population
-
-pair_cc_manual_ipw <- pair_cc_ps %>% 
-  mutate(exposure1 = as.numeric(exposure1)-1) %>% 
-  mutate(ipw0 = ifelse(exposure1==0,
-                       1/(1 - ps_exp1),0)) %>% 
-  mutate(ipw1 = ifelse(exposure1==1,
-                       1/(ps_exp1),0)) %>% 
-  mutate(ipw = ifelse(ipw0!=0,ipw0,ipw1)) #%>% dplyr::select(ps_exp1, ipw0, ipw1, ipw) #%>% 
-#  mutate(ipw_log = log(ipw))
-
-summary(pair_cc_manual_ipw$ipw0)
-summary(pair_cc_manual_ipw$ipw1)
-summary(pair_cc_manual_ipw$ipw)
-
-ipwplot(pair_cc_manual_ipw$ipw)
-
-
-summary(pair_cc_manual_ipw$ipw)
-#summary(pair_cc_manual_ipw$ipw_log)
-
-### created IPTW dataframe
-pair_cc_manual_ipw_svy <- svydesign(ids = ~1,
-                             data = pair_cc_manual_ipw,
-                             weights = ~ipw)
-
-#pair_cc_manual_ipw_log_svy <- svydesign(ids = ~1,
-#                                    data = pair_cc_manual_ipw,
-#                                    weights = ~ipw_log)
-
-### create IPTW table one
-pair_cc_manual_ipw_tabone <- svyCreateTableOne(vars = cov_vector3,
-                                               strata = "exposure1",
-                                               data = pair_cc_manual_ipw_svy,
-                                               test = FALSE)
-
-pair_cc_manual_ipw_tabone_sav <- print(pair_cc_manual_ipw_tabone, showAllLevels = TRUE, smd = TRUE,
-                                       nonnormal = nonnorm_vec,
-                                       formatOptions = list(big.mark = ","))
-
-#pair_cc_manual_ipw_log_tabone <- svyCreateTableOne(vars = cov_vector,
-#                                                   strata = "exposure1",
-#                                                   data = pair_cc_manual_ipw_log_svy,
-#                                                   test = FALSE)
+##### manual IPW calculation
+## Use the 1/PS for the exposed and 1/(1-PS) for the unexposed to create a pseudo-population
 #
-#pair_cc_manual_ipw_log_tabone_sav <- print(pair_cc_manual_ipw_log_tabone, showAllLevels = TRUE, smd = TRUE,
-#                                           nonnormal = nonnorm_vec,
-#                                           formatOptions = list(big.mark = ","))
-
-write.csv(pair_cc_manual_ipw_tabone_sav, "./output/temp_output/pair_cc_manual_ipw_tabone_sav.csv")
-
-#write.csv(pair_cc_manual_ipw_log_tabone_sav, "./output/temp_output/pair_cc_manual_ipw_log_tabone_sav.csv")
-
-
-#### IPW package
-pair_cc_ipw <- pair_cc_ps %>% 
-  mutate(exposure1 = as.numeric(exposure1)) %>% #,
-#         sex_dv_t0 = as.numeric(sex_dv_t0),
-#         non_white_t0 = as.numeric(non_white_t0)) %>% 
-  mutate(exposure1 = exposure1-1)#,
-#         male_t0 = sex_dv_t0-1)#,
-#         non_white_t0 = ifelse(non_white_t0==3,0,1)) #%>% 
-#  drop_na(everything())
-##  dplyr::select(male_t0) %>% 
-##  group_by(male_t0) %>% 
-##  summarise(n=n())
+#pair_cc_manual_ipw <- pair_cc_ps %>% 
+#  mutate(exposure1 = as.numeric(exposure1)-1) %>% 
+#  mutate(ipw0 = ifelse(exposure1==0,
+#                       1/(1 - ps_exp1),0)) %>% 
+#  mutate(ipw1 = ifelse(exposure1==1,
+#                       1/(ps_exp1),0)) %>% 
+#  mutate(ipw = ifelse(ipw0!=0,ipw0,ipw1)) #%>% dplyr::select(ps_exp1, ipw0, ipw1, ipw) #%>% 
+##  mutate(ipw_log = log(ipw))
 #
-weight <- ipwpoint(exposure = exposure1, family = "binomial", link = "logit",
-#                   numerator =~ 1,
-                   denominator = ~         sex_dv_t0 +
-  age_dv_t0 +
-  non_white_t0 +
-  #        marital_status_t0_married_civil_partnership +
-  marital_status_t0_divorced_separated_widowed +
-  marital_status_t0_single +
-  #        hiqual_dv_t0_degree +
-  hiqual_dv_t0_other_higher_degree +
-  hiqual_dv_t0_a_level_etc +
-  hiqual_dv_t0_gcse_etc +
-  hiqual_dv_t0_other_qualification +
-  hiqual_dv_t0_no_qualification +
-  #  gor_dv_t0_east_midlands +
-  gor_dv_t0_east_of_england +
-  gor_dv_t0_london +
-  gor_dv_t0_north_east +
-  gor_dv_t0_north_west +
-  gor_dv_t0_northern_ireland +
-  gor_dv_t0_scotland +
-  gor_dv_t0_south_east +
-  gor_dv_t0_south_west +
-  gor_dv_t0_wales +
-  gor_dv_t0_west_midlands +
-  gor_dv_t0_yorkshire_and_the_humber +
-  #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
-  sic2007_section_lab_t0_administrative_and_support_service_activities +
-  sic2007_section_lab_t0_construction +
-  sic2007_section_lab_t0_education +
-  sic2007_section_lab_t0_human_health_and_social_work_activities +
-  sic2007_section_lab_t0_manufacturing +
-  sic2007_section_lab_t0_other_industry +
-  sic2007_section_lab_t0_professional_scientific_and_technical_activities +
-  sic2007_section_lab_t0_public_administration_and_defence_compulsory_social_security +
-  sic2007_section_lab_t0_transportation_and_storage +
-  sic2007_section_lab_t0_wholesale_and_retail_trade_repair_of_motor_vehicles_and_motorcycles +
-  #  soc2000_major_group_title_t0_administrative_and_secretarial_occupations +
-  soc2000_major_group_title_t0_associate_professional_and_technical_occupations +
-  soc2000_major_group_title_t0_elementary_occupations +
-  soc2000_major_group_title_t0_managers_and_senior_officials +
-  soc2000_major_group_title_t0_personal_service_occupations +
-  soc2000_major_group_title_t0_process_plant_and_machine_operatives +
-  soc2000_major_group_title_t0_sales_and_customer_service_occupations +
-  soc2000_major_group_title_t0_science_and_technology_professionals +
-  soc2000_major_group_title_t0_skilled_trades_occupations +
-  jbft_dv_t0 +
-  small_firm_t0 +
-  emp_contract_t0 +
-  #  broken_emp_t0_broken_employment +
-  broken_emp_t0_no_employment_spells +
-  broken_emp_t0_unbroken_employment +
-  j2has_dv_t0 +
-  rel_pov_t0 +
-  health_t0 +
-  srh_bin_t0 +
-  ghq_case4_t0 +
-  sf12mcs_dv_t0 +
-  sf12pcs_dv_t0,
-                   trunc = 0.01, 
-                   data = as.data.frame(pair_cc_ipw))
-weight
-pair_cc_ipw$.ipw0 <-  weight$weights.trunc
-summary(pair_cc_ipw$.ipw0)
+#summary(pair_cc_manual_ipw$ipw0)
+#summary(pair_cc_manual_ipw$ipw1)
+#summary(pair_cc_manual_ipw$ipw)
+#
+#ipwplot(pair_cc_manual_ipw$ipw)
+#
+#
+#summary(pair_cc_manual_ipw$ipw)
+##summary(pair_cc_manual_ipw$ipw_log)
+#
+#### created IPTW dataframe
+#pair_cc_manual_ipw_svy <- svydesign(ids = ~1,
+#                             data = pair_cc_manual_ipw,
+#                             weights = ~ipw)
+#
+##pair_cc_manual_ipw_log_svy <- svydesign(ids = ~1,
+##                                    data = pair_cc_manual_ipw,
+##                                    weights = ~ipw_log)
+#
+#### create IPTW table one
+#pair_cc_manual_ipw_tabone <- svyCreateTableOne(vars = cov_vector3,
+#                                               strata = "exposure1",
+#                                               data = pair_cc_manual_ipw_svy,
+#                                               factorVars = c(catVars_vec),
+#                                               test = FALSE)
+#
+#pair_cc_manual_ipw_tabone_sav <- print(pair_cc_manual_ipw_tabone, showAllLevels = TRUE, smd = TRUE,
+#                                       nonnormal = nonnorm_vec,
+#                                       factorVars = c(catVars_vec),
+#                                       formatOptions = list(big.mark = ","))
+#
+##pair_cc_manual_ipw_log_tabone <- svyCreateTableOne(vars = cov_vector,
+##                                                   strata = "exposure1",
+##                                                   data = pair_cc_manual_ipw_log_svy,
+##                                                   test = FALSE)
+##
+##pair_cc_manual_ipw_log_tabone_sav <- print(pair_cc_manual_ipw_log_tabone, showAllLevels = TRUE, smd = TRUE,
+##                                           nonnormal = nonnorm_vec,
+##                                           formatOptions = list(big.mark = ","))
+#
+#write.csv(pair_cc_manual_ipw_tabone_sav, "./output/temp_output/pair_cc_manual_ipw_tabone_sav.csv")
+#
+##write.csv(pair_cc_manual_ipw_log_tabone_sav, "./output/temp_output/pair_cc_manual_ipw_log_tabone_sav.csv")
+#
+#
+##### IPW package
+#pair_cc_ipw <- pair_cc_ps %>% 
+#  mutate(exposure1 = as.numeric(exposure1)) %>% #,
+##         sex_dv_t0 = as.numeric(sex_dv_t0),
+##         non_white_t0 = as.numeric(non_white_t0)) %>% 
+#  mutate(exposure1 = exposure1-1)#,
+##         male_t0 = sex_dv_t0-1)#,
+##         non_white_t0 = ifelse(non_white_t0==3,0,1)) #%>% 
+##  drop_na(everything())
+###  dplyr::select(male_t0) %>% 
+###  group_by(male_t0) %>% 
+###  summarise(n=n())
+##
+#weight <- ipwpoint(exposure = exposure1, family = "binomial", link = "logit",
+##                   numerator =~ 1,
+#                   denominator = ~         sex_dv_t0 +
+#  age_dv_t0 +
+#  non_white_t0 +
+#  #        marital_status_t0_married_civil_partnership +
+#  marital_status_t0_divorced_separated_widowed +
+#  marital_status_t0_single +
+#  dep_child_bin_t0 +
+##        hiqual_dv_t0_degree +
+#  hiqual_dv_t0_other_higher_degree +
+#  hiqual_dv_t0_a_level_etc +
+#  hiqual_dv_t0_gcse_etc +
+#  hiqual_dv_t0_other_qualification +
+#  hiqual_dv_t0_no_qualification +
+#  #  gor_dv_t0_east_midlands +
+#  gor_dv_t0_east_of_england +
+#  gor_dv_t0_london +
+#  gor_dv_t0_north_east +
+#  gor_dv_t0_north_west +
+#  gor_dv_t0_northern_ireland +
+#  gor_dv_t0_scotland +
+#  gor_dv_t0_south_east +
+#  gor_dv_t0_south_west +
+#  gor_dv_t0_wales +
+#  gor_dv_t0_west_midlands +
+#  gor_dv_t0_yorkshire_and_the_humber +
+#  #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
+#  sic2007_section_lab_t0_administrative_and_support_service_activities +
+#  sic2007_section_lab_t0_construction +
+#  sic2007_section_lab_t0_education +
+#  sic2007_section_lab_t0_human_health_and_social_work_activities +
+#  sic2007_section_lab_t0_manufacturing +
+#  sic2007_section_lab_t0_other_industry +
+#  sic2007_section_lab_t0_professional_scientific_and_technical_activities +
+#  sic2007_section_lab_t0_public_administration_and_defence_compulsory_social_security +
+#  sic2007_section_lab_t0_transportation_and_storage +
+#  sic2007_section_lab_t0_wholesale_and_retail_trade_repair_of_motor_vehicles_and_motorcycles +
+#  #  soc2000_major_group_title_t0_administrative_and_secretarial_occupations +
+#  soc2000_major_group_title_t0_associate_professional_and_technical_occupations +
+#  soc2000_major_group_title_t0_elementary_occupations +
+#  soc2000_major_group_title_t0_managers_and_senior_officials +
+#  soc2000_major_group_title_t0_personal_service_occupations +
+#  soc2000_major_group_title_t0_process_plant_and_machine_operatives +
+#  soc2000_major_group_title_t0_sales_and_customer_service_occupations +
+#  soc2000_major_group_title_t0_science_and_technology_professionals +
+#  soc2000_major_group_title_t0_skilled_trades_occupations +
+#  jbft_dv_t0 +
+#  small_firm_t0 +
+#  emp_contract_t0 +
+#  #  broken_emp_t0_broken_employment +
+#  broken_emp_t0_no_employment_spells +
+#  broken_emp_t0_unbroken_employment +
+#  j2has_dv_t0 +
+#  rel_pov_t0 +
+#  health_t0 +
+#  srh_bin_t0 +
+#  ghq_case4_t0 +
+#  sf12mcs_dv_t0 +
+#  sf12pcs_dv_t0,
+#                   trunc = 0.01, 
+#                   data = as.data.frame(pair_cc_ipw))
+#weight
+#pair_cc_ipw$.ipw0 <-  weight$weights.trunc
+#summary(pair_cc_ipw$.ipw0)
 
-pair_cc_ipw$.ipw0_log <-  log(pair_cc_ipw$.ipw0)
-summary(pair_cc_ipw$.ipw0_log)
+#pair_cc_ipw$.ipw0_log <-  log(pair_cc_ipw$.ipw0)
+#summary(pair_cc_ipw$.ipw0_log)
 
 
-### plot weights
-ipw_plot_cc <- ipwplot(pair_cc_ipw$.ipw0)#, timevar = NULL, binwidth = NULL, logscale = TRUE,
-#        xlab = NULL, ylab = NULL, main = "", ref = TRUE, ...)
+#### plot weights
+#ipw_plot_cc <- ipwplot(pair_cc_ipw$.ipw0)#, timevar = NULL, binwidth = NULL, logscale = TRUE,
+##        xlab = NULL, ylab = NULL, main = "", ref = TRUE, ...)
+#
+#ipwplot(pair_cc_ipw$.ipw0_log)
+#
+#### created IPTW dataframe
+#pair_cc_ipw_svy <- svydesign(ids = ~1,
+#                            data = pair_cc_ipw,
+#                            weights = ~.ipw0)
+#
+#pair_cc_ipw_log_svy <- svydesign(ids = ~1,
+#                             data = pair_cc_ipw,
+#                             weights = ~.ipw0_log)
+#### create IPTW table one
+#table_one_ipw <- svyCreateTableOne(vars = cov_vector,
+#                                        strata = "exposure1",
+#                                        data = pair_cc_ipw_svy,
+#                                   factorVars = c(catVars_vec),
+#                                   test = FALSE)
+#
+#table_one_ipw_sav <- print(table_one_ipw, showAllLevels = TRUE, smd = TRUE,
+#                                nonnormal = nonnorm_vec,
+#                           factorVars = c(catVars_vec),
+#                           formatOptions = list(big.mark = ","))
 
-ipwplot(pair_cc_ipw$.ipw0_log)
+#table_one_ipw_log <- svyCreateTableOne(vars = cov_vector,
+#                                   strata = "exposure1",
+#                                   data = pair_cc_ipw_log_svy,
+#                                   factorVars = c(catVars_vec),
+#                                   test = FALSE)
 
-### created IPTW dataframe
-pair_cc_ipw_svy <- svydesign(ids = ~1,
-                            data = pair_cc_ipw,
-                            weights = ~.ipw0)
+#table_one_ipw_log_sav <- print(table_one_ipw_log, showAllLevels = TRUE, smd = TRUE,
+#                           nonnormal = nonnorm_vec,
+#                           factorVars = c(catVars_vec),
+#                           formatOptions = list(big.mark = ","))
 
-pair_cc_ipw_log_svy <- svydesign(ids = ~1,
-                             data = pair_cc_ipw,
-                             weights = ~.ipw0_log)
-### create IPTW table one
-table_one_ipw <- svyCreateTableOne(vars = cov_vector,
-                                        strata = "exposure1",
-                                        data = pair_cc_ipw_svy,
-                                        test = FALSE)
+#write.csv(table_one_ipw_sav, "./output/ipw_descriptives/table_one_ipw.csv")
 
-table_one_ipw_sav <- print(table_one_ipw, showAllLevels = TRUE, smd = TRUE,
-                                nonnormal = nonnorm_vec,
-                                formatOptions = list(big.mark = ","))
+#write.csv(table_one_ipw_log_sav, "./output/temp_output/table_one_ipw_log_sav.csv")
 
-table_one_ipw_log <- svyCreateTableOne(vars = cov_vector,
-                                   strata = "exposure1",
-                                   data = pair_cc_ipw_log_svy,
-                                   test = FALSE)
+#### WeightIt IPTW
 
-table_one_ipw_log_sav <- print(table_one_ipw_log, showAllLevels = TRUE, smd = TRUE,
-                           nonnormal = nonnorm_vec,
-                           formatOptions = list(big.mark = ","))
+#weight_weightit <- WeightIt::weightit(exposure1 ~ sex_dv_t0 +
+#                                        age_dv_t0 +
+#                                        non_white_t0 +
+#                                        #        marital_status_t0_married_civil_partnership +
+#                                        marital_status_t0_divorced_separated_widowed +
+#                                        marital_status_t0_single +
+#                                        dep_child_bin_t0 +
+#                                      #        hiqual_dv_t0_degree +
+#                                        hiqual_dv_t0_other_higher_degree +
+#                                        hiqual_dv_t0_a_level_etc +
+#                                        hiqual_dv_t0_gcse_etc +
+#                                        hiqual_dv_t0_other_qualification +
+#                                        hiqual_dv_t0_no_qualification +
+#                                        #  gor_dv_t0_east_midlands +
+#                                        gor_dv_t0_east_of_england +
+#                                        gor_dv_t0_london +
+#                                        gor_dv_t0_north_east +
+#                                        gor_dv_t0_north_west +
+#                                        gor_dv_t0_northern_ireland +
+#                                        gor_dv_t0_scotland +
+#                                        gor_dv_t0_south_east +
+#                                        gor_dv_t0_south_west +
+#                                        gor_dv_t0_wales +
+#                                        gor_dv_t0_west_midlands +
+#                                        gor_dv_t0_yorkshire_and_the_humber +
+#                                        #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
+#                                        sic2007_section_lab_t0_administrative_and_support_service_activities +
+#                                        sic2007_section_lab_t0_construction +
+#                                        sic2007_section_lab_t0_education +
+#                                        sic2007_section_lab_t0_human_health_and_social_work_activities +
+#                                        sic2007_section_lab_t0_manufacturing +
+#                                        sic2007_section_lab_t0_other_industry +
+#                                        sic2007_section_lab_t0_professional_scientific_and_technical_activities +
+#                                        sic2007_section_lab_t0_public_administration_and_defence_compulsory_social_security +
+#                                        sic2007_section_lab_t0_transportation_and_storage +
+#                                        sic2007_section_lab_t0_wholesale_and_retail_trade_repair_of_motor_vehicles_and_motorcycles +
+#                                        #  soc2000_major_group_title_t0_administrative_and_secretarial_occupations +
+#                                        soc2000_major_group_title_t0_associate_professional_and_technical_occupations +
+#                                        soc2000_major_group_title_t0_elementary_occupations +
+#                                        soc2000_major_group_title_t0_managers_and_senior_officials +
+#                                        soc2000_major_group_title_t0_personal_service_occupations +
+#                                        soc2000_major_group_title_t0_process_plant_and_machine_operatives +
+#                                        soc2000_major_group_title_t0_sales_and_customer_service_occupations +
+#                                        soc2000_major_group_title_t0_science_and_technology_professionals +
+#                                        soc2000_major_group_title_t0_skilled_trades_occupations +
+#                                        jbft_dv_t0 +
+#                                        small_firm_t0 +
+#                                        emp_contract_t0 +
+#                                        #  broken_emp_t0_broken_employment +
+#                                        broken_emp_t0_no_employment_spells +
+#                                        broken_emp_t0_unbroken_employment +
+#                                        j2has_dv_t0 +
+#                                        rel_pov_t0 +
+#                                        health_t0 +
+#                                        srh_bin_t0 +
+#                                        ghq_case4_t0 +
+#                                        sf12mcs_dv_t0 +
+#                                        sf12pcs_dv_t0 ,
+#                                     data = pair_cc_ipw, 
+#                                     stabilize = TRUE,
+#                                     estimand = "ATE",  # Find the ATE
+#                                     method = "ps")  # Build weights with propensity scores
+#weight_weightit
 
-write.csv(table_one_ipw_sav, "./output/ipw_descriptives/table_one_ipw.csv")
+#summary(weight_weightit)
+#summary(weight_weightit$weights)
+#density(weight_weightit$weights)
 
-write.csv(table_one_ipw_log_sav, "./output/temp_output/table_one_ipw_log_sav.csv")
+#pair_cc_weightit <- pair_cc_ipw
+#pair_cc_weightit$weightit_ipw <- weight_weightit$weights
 
-### WeightIt IPTW
+#pair_cc_weightit %>% group_by(exposure1) %>% summarise(n=sum(weightit_ipw))##
 
-weight_weightit <- WeightIt::weightit(exposure1 ~ sex_dv_t0 +
-                                        age_dv_t0 +
-                                        non_white_t0 +
-                                        #        marital_status_t0_married_civil_partnership +
-                                        marital_status_t0_divorced_separated_widowed +
-                                        marital_status_t0_single +
-                                        #        hiqual_dv_t0_degree +
-                                        hiqual_dv_t0_other_higher_degree +
-                                        hiqual_dv_t0_a_level_etc +
-                                        hiqual_dv_t0_gcse_etc +
-                                        hiqual_dv_t0_other_qualification +
-                                        hiqual_dv_t0_no_qualification +
-                                        #  gor_dv_t0_east_midlands +
-                                        gor_dv_t0_east_of_england +
-                                        gor_dv_t0_london +
-                                        gor_dv_t0_north_east +
-                                        gor_dv_t0_north_west +
-                                        gor_dv_t0_northern_ireland +
-                                        gor_dv_t0_scotland +
-                                        gor_dv_t0_south_east +
-                                        gor_dv_t0_south_west +
-                                        gor_dv_t0_wales +
-                                        gor_dv_t0_west_midlands +
-                                        gor_dv_t0_yorkshire_and_the_humber +
-                                        #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
-                                        sic2007_section_lab_t0_administrative_and_support_service_activities +
-                                        sic2007_section_lab_t0_construction +
-                                        sic2007_section_lab_t0_education +
-                                        sic2007_section_lab_t0_human_health_and_social_work_activities +
-                                        sic2007_section_lab_t0_manufacturing +
-                                        sic2007_section_lab_t0_other_industry +
-                                        sic2007_section_lab_t0_professional_scientific_and_technical_activities +
-                                        sic2007_section_lab_t0_public_administration_and_defence_compulsory_social_security +
-                                        sic2007_section_lab_t0_transportation_and_storage +
-                                        sic2007_section_lab_t0_wholesale_and_retail_trade_repair_of_motor_vehicles_and_motorcycles +
-                                        #  soc2000_major_group_title_t0_administrative_and_secretarial_occupations +
-                                        soc2000_major_group_title_t0_associate_professional_and_technical_occupations +
-                                        soc2000_major_group_title_t0_elementary_occupations +
-                                        soc2000_major_group_title_t0_managers_and_senior_officials +
-                                        soc2000_major_group_title_t0_personal_service_occupations +
-                                        soc2000_major_group_title_t0_process_plant_and_machine_operatives +
-                                        soc2000_major_group_title_t0_sales_and_customer_service_occupations +
-                                        soc2000_major_group_title_t0_science_and_technology_professionals +
-                                        soc2000_major_group_title_t0_skilled_trades_occupations +
-                                        jbft_dv_t0 +
-                                        small_firm_t0 +
-                                        emp_contract_t0 +
-                                        #  broken_emp_t0_broken_employment +
-                                        broken_emp_t0_no_employment_spells +
-                                        broken_emp_t0_unbroken_employment +
-                                        j2has_dv_t0 +
-                                        rel_pov_t0 +
-                                        health_t0 +
-                                        srh_bin_t0 +
-                                        ghq_case4_t0 +
-                                        sf12mcs_dv_t0 +
-                                        sf12pcs_dv_t0 ,
-                                     data = pair_cc_ipw, 
-                                     stabilize = TRUE,
-                                     estimand = "ATE",  # Find the ATE
-                                     method = "ps")  # Build weights with propensity scores
-weight_weightit
-
-summary(weight_weightit)
-summary(weight_weightit$weights)
-density(weight_weightit$weights)
-
-pair_cc_weightit <- pair_cc_ipw
-pair_cc_weightit$weightit_ipw <- weight_weightit$weights
-
-pair_cc_weightit %>% group_by(exposure1) %>% summarise(n=sum(weightit_ipw))
-
-### created IPTW dataframe
-pair_cc_weightit_ipw_svy <- svydesign(ids = ~1,
-                             data = pair_cc_weightit,
-                             weights = ~weightit_ipw)
-
-### create IPTW table one
-table_one_weightit_ipw <- svyCreateTableOne(vars = cov_vector3,
-                                   strata = "exposure1",
-                                   data = pair_cc_weightit_ipw_svy,
-                                   test = FALSE)
-
-table_one_weightit_ipw_sav <- print(table_one_weightit_ipw, showAllLevels = TRUE, smd = TRUE,
-                           nonnormal = nonnorm_vec,
-                           formatOptions = list(big.mark = ","))
-
-write.csv(table_one_weightit_ipw_sav, "./output/temp_output/table_one_weightit_ipw_sav.csv")
-
-#### write working files -------------------------------------------------------
+#### created IPTW dataframe
+#pair_cc_weightit_ipw_svy <- svydesign(ids = ~1,
+#                             data = pair_cc_weightit,
+#                             weights = ~weightit_ipw)
+#
+#### create IPTW table one
+#table_one_weightit_ipw <- svyCreateTableOne(vars = cov_vector3,
+#                                   strata = "exposure1",
+#                                   data = pair_cc_weightit_ipw_svy,
+#                                   factorVars = c(catVars_vec),
+#                                   test = FALSE)
+#
+#table_one_weightit_ipw_sav <- print(table_one_weightit_ipw, showAllLevels = TRUE, smd = TRUE,
+#                           nonnormal = nonnorm_vec,
+#                           factorVars = c(catVars_vec),
+#                           formatOptions = list(big.mark = ","))
+#
+#write.csv(table_one_weightit_ipw_sav, "./output/temp_output/table_one_weightit_ipw_sav.csv")
+###### write working files -------------------------------------------------------
 write_rds(df_matched, "working_data/pair_cc_matched.rds") # PS matched data
 write_rds(pair_cc_ps, "working_data/pair_cc_ps.rds") # analytic df with PS
 #write_rds(pair_cc_ipw, "working_data/pair_cc_ipw.rds") #
 write_rds(matchit_df, "working_data/matchit_df.rds") # analytic df with IPTW from MatchIt package
-write_rds(pair_cc_weightit, "working_data/pair_cc_weightit.rds") # analytic df with IPTW from WeightIt package
+#write_rds(pair_cc_weightit, "working_data/pair_cc_weightit.rds") # analytic df with IPTW from WeightIt package
 
 
 ################################################################################
@@ -886,15 +902,6 @@ table_one_MatchIt_smd <- table_one_MatchIt_smd %>%
   mutate(imbalance_flag = ifelse(smd>0.1,"SMD>0.1","SMD<=0.1"),
          matched = "IPTW (MatchIt)")
 
-### WeightIt --------
-#table_one_WeightIt_smd <- data.frame(ExtractSmd(table_one_weightit_ipw))
-#table_one_WeightIt_smd <- table_one_WeightIt_smd %>% 
-#  rownames_to_column("var") %>% # Apply rownames_to_column
-#  rename("smd" = "X1.vs.2") %>% 
-#  mutate(imbalance_flag = ifelse(smd>0.1,"SMD>0.1","SMD<=0.1"),
-#         matched = "IPTW (WeightIt)")
-
-
 #### bind to unmatched smd df --------------------------------------------------
 assess_matching_balance <- table_one_unmatched_smd %>% 
   bind_rows(table_one_matched_smd, 
@@ -922,5 +929,5 @@ unemp_t1_balance_plot
 dev.off()
 
 #### number of individuals -----------------------------------------------------
-iptw_df %>% dplyr::select(pidp) %>% unique() %>% nrow()
+#iptw_df %>% dplyr::select(pidp) %>% unique() %>% nrow()
 
