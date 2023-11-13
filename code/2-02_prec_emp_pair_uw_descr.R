@@ -1,7 +1,7 @@
 ################################################################################
 
 # Precarious employment and health - Understanding Society
-# 3-02 - Paired unweighted descriptives 
+# 2-02 - Paired unweighted descriptives 
 # Andrew Pulford
 
 # Data source:
@@ -124,7 +124,9 @@ pair_cc_analytic <- pair_cc_analytic %>%
 
 ## histogram for each numeric variable
 # temp df with only numeric vars
-temp <- pair_cc_analytic %>% dplyr::select(where(is.numeric))
+temp <- pair_cc_analytic %>% dplyr::select(c(age_dv_t0,
+                                             sf12pcs_dv_t0,
+                                             sf12mcs_dv_t0))
 
 # histogram
 #hist.data.frame(temp)
@@ -139,13 +141,16 @@ shapiro.test(temp2)
 ## vector for numeric vars
 nonnorm_vec <- colnames(temp)
 
+
 ## unemployed at T1
 table_one <- tableone::CreateTableOne(vars = cov_vector3, strata = "exposure1",
                             data = pair_cc_analytic,
+                            factorVars = c(catVars_vec),
                             test = FALSE)
 
 table_one_sav <- print(table_one, showAllLevels = TRUE, smd = TRUE,
                        nonnormal = nonnorm_vec,
+                       factorVars = c(catVars_vec),
                        formatOptions = list(big.mark = ","))
 
 # Count covariates with important imbalance
@@ -170,7 +175,8 @@ table_one_smd %>%
 
 ## job loss between t0 and t1
 table_one_alt <- CreateTableOne(vars = cov_vector3, strata = "exposure2", 
-                                data = pair_cc_analytic)
+                                data = pair_cc_analytic,
+                                factorVars = c(catVars_vec))
 
 # Count covariates with important imbalance
 table_one_alt_smd <- data.frame(ExtractSmd(table_one_alt))
@@ -194,6 +200,7 @@ addmargins(table(ExtractSmd(table_one_alt) > 0.1))
 
 table_one_alt_sav <- print(table_one_alt, showAllLevels = TRUE, smd = TRUE,
                            nonnormal = nonnorm_vec,
+                           factorVars = c(catVars_vec),
                            formatOptions = list(big.mark = ","))
 
 ### save tables
