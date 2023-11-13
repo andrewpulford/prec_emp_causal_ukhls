@@ -28,6 +28,7 @@ rm(list=ls())
 library(tidyverse) # all kinds of stuff 
 library(mice) # for multiple imputation
 library(ggmice) # for plotting MI
+library(glmmTMB) # for multi-level modelling
 
 ################################################################################
 #####                         load and prepare data                        #####
@@ -193,7 +194,10 @@ summary(pool(fit), conf.int = TRUE)
 
 ### create sub-set of variables and cases
 mi_subset2 <- pair_eligible %>% 
-  dplyr::select(sf12pcs_dv_t1, exposure1, 
+  dplyr::select(
+                pidp,
+                sf12pcs_dv_t1, 
+                exposure1, 
                 all_of(cov_vector),
                 age_dv_t1,
                 marital_status_t1,
@@ -208,6 +212,8 @@ mi_subset2 <- pair_eligible %>%
 str(mi_subset2)
 
 # change sf-12 vars to numeric
+mi_subset2$sf12pcs_dv_t0 <- as.numeric(mi_subset2$sf12pcs_dv_t0)
+mi_subset2$sf12mcs_dv_t0 <- as.numeric(mi_subset2$sf12mcs_dv_t0)
 mi_subset2$sf12pcs_dv_t1 <- as.numeric(mi_subset2$sf12pcs_dv_t1)
 mi_subset2$sf12mcs_dv_t1 <- as.numeric(mi_subset2$sf12mcs_dv_t1)
 # change exposure to factor so it is ordered correctly for model
@@ -218,26 +224,47 @@ mi_subset2$exposure1 <- factor(mi_subset2$exposure1,
 # take a random sample for testing code (if it's running slow)
 mi_subset2 <- sample_n(mi_subset2, 3000)
 
+mi_subset2_str <- mi_subset2 %>% 
+  summary.default() %>% as.data.frame %>% 
+  dplyr::group_by(Var1) %>%  
+  tidyr::spread(key = Var2, value = Freq)
+
+## set method type depending on variable type
+mi_subset2_str$method <- ""
+#mi_subset2_str$method[mi_subset2_str$Var1=="pidp"] <- ""
+mi_subset2_str$method[mi_subset2_str$Var1=="sf12pcs_dv_t1"] <- "norm"
+mi_subset2_str$method[mi_subset2_str$Var1=="exposure1"] <- "logreg"
+mi_subset2_str$method[mi_subset2_str$Var1=="sex_dv_t0"] <- "logreg"
+mi_subset2_str$method[mi_subset2_str$Var1=="age_dv_t0"] <- "norm"
+mi_subset2_str$method[mi_subset2_str$Var1=="non_white_t0"] <- "logreg"
+mi_subset2_str$method[mi_subset2_str$Var1=="marital_status_t0"] <- "polyreg"
+mi_subset2_str$method[mi_subset2_str$Var1=="hiqual_dv_t0"] <- "polr"
+mi_subset2_str$method[mi_subset2_str$Var1=="gor_dv_t0"] <- "polyreg"
+
 
 ## set new default methods
+# specify method for each incomplete variable in data
 # (numeric, binary, unordered, ordered)
 myDefaultMethod <- c("norm", "logreg", "polyreg", "polr")
 
 ## define a custom predictorMatrix
 # in matrix 1s are included in model; 0s are not
 myPredictorMatrix <- make.predictorMatrix(mi_subset2)
+myPredictorMatrix[,"pidp"] <- 0
+myPredictorMatrix["pidp",] <- 0
 myPredictorMatrix
 
 ## We can now proceed to imputation, being careful to pass myDefaultMethod and 
 ## myPredictorMatrix to the mice function:
 
 set.seed(52267)
-imps <- mice(mi_subset2, m=10, defaultMethod=myDefaultMethod, predictorMatrix=myPredictorMatrix,
+imps2 <- mice(mi_subset2, m=5, maxit = 10,
+              defaultMethod=myDefaultMethod, predictorMatrix=myPredictorMatrix,
              printFlag = FALSE)
-summary(imps)
+summary(imps2)
 
 ## We can then fit our substantive model to the imputations and pool the results:
-fit <- with(data = imps, exp = glm(sf12pcs_dv_t1 ~
+fit <- with(data = imps2, exp = glmmTMB(sf12pcs_dv_t1 ~
                                      exposure1 +
                                      sex_dv_t0 +
                                      age_dv_t0 +
@@ -267,8 +294,8 @@ fit <- with(data = imps, exp = glm(sf12pcs_dv_t1 ~
                                      # interaction terms
                                      sex_dv_t0*age_dv_t0 +
                                      sex_dv_t0*rel_pov_t0 +
-                                     age_dv_t0*rel_pov_t0,# +
-#                                     (1|pidp), 
+                                     age_dv_t0*rel_pov_t0 +
+                                     (1|pidp), 
                                    family="gaussian"))
 pooled <- pool(fit)
 mi_mod2 <- summary(pooled, conf.int = TRUE)
