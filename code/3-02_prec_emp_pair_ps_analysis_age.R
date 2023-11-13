@@ -156,6 +156,7 @@ ps_model_mlm <- function(data = pair_cc_ps, outcome){
                      #        marital_status_t0_married_civil_partnership +
                      marital_status_t0_divorced_separated_widowed +
                      marital_status_t0_single +
+                     dep_child_bin_t0 +
                      #        hiqual_dv_t0_degree +
                      hiqual_dv_t0_other_higher_degree +
                      hiqual_dv_t0_a_level_etc +
@@ -425,7 +426,8 @@ young_iptw_mod <- matchit(exp1_bin ~
                         #        marital_status_t0_married_civil_partnership +
                         marital_status_t0_divorced_separated_widowed +
                         marital_status_t0_single +
-                        #        hiqual_dv_t0_degree +
+                        dep_child_bin_t0 +
+                          #        hiqual_dv_t0_degree +
                         hiqual_dv_t0_other_higher_degree +
                         hiqual_dv_t0_a_level_etc +
                         hiqual_dv_t0_gcse_etc +
@@ -537,7 +539,8 @@ old_iptw_mod <- matchit(exp1_bin ~
                         #        marital_status_t0_married_civil_partnership +
                         marital_status_t0_divorced_separated_widowed +
                         marital_status_t0_single +
-                        #        hiqual_dv_t0_degree +
+                        dep_child_bin_t0 +
+                          #        hiqual_dv_t0_degree +
                         hiqual_dv_t0_other_higher_degree +
                         hiqual_dv_t0_a_level_etc +
                         hiqual_dv_t0_gcse_etc +
@@ -652,7 +655,8 @@ dr_iptw_pcs_young_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                 #        marital_status_t0_married_civil_partnership +
                                 marital_status_t0_divorced_separated_widowed +
                                 marital_status_t0_single +
-                                #        marital_status_t1_married_civil_partnership +
+                                dep_child_bin_t0 +
+                                  #        marital_status_t1_married_civil_partnership +
                                 marital_status_t1_divorced_separated_widowed +
                                 marital_status_t1_single +
                                 #        hiqual_dv_t0_degree +
@@ -673,18 +677,6 @@ dr_iptw_pcs_young_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                 gor_dv_t0_wales +
                                 gor_dv_t0_west_midlands +
                                 gor_dv_t0_yorkshire_and_the_humber +
-                                #                                         #  gor_dv_t1_east_midlands +
-                                #                                         gor_dv_t1_east_of_england +
-                                #                                         gor_dv_t1_london +
-                                #                                         gor_dv_t1_north_east +
-                                #                                         gor_dv_t1_north_west +
-                                #                                         gor_dv_t1_northern_ireland +
-                                #                                         gor_dv_t1_scotland +
-                                #                                         gor_dv_t1_south_east +
-                                #                                         gor_dv_t1_south_west +
-                                #                                         gor_dv_t1_wales +
-                                #                                         gor_dv_t1_west_midlands +
-                              #                                         gor_dv_t1_yorkshire_and_the_humber +
                               #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
                               sic2007_section_lab_t0_administrative_and_support_service_activities +
                                 sic2007_section_lab_t0_construction +
@@ -713,10 +705,9 @@ dr_iptw_pcs_young_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                 broken_emp_t0_unbroken_employment +
                                 j2has_dv_t0 +
                                 rel_pov_t0 +
-                                #                                        rel_pov_t1 +
                                 health_t0 +
                                 health_t1 +
-                                #                                         sf12pcs_dv_t0 +
+                                sf12pcs_dv_t0 +
                                 # interaction terms
                                 #sex_dv_t0*age_dv_t0 +
                                 sex_dv_t0*rel_pov_t0 +
@@ -767,7 +758,8 @@ dr_iptw_mcs_young_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                 #        marital_status_t0_married_civil_partnership +
                                 marital_status_t0_divorced_separated_widowed +
                                 marital_status_t0_single +
-                                #        marital_status_t1_married_civil_partnership +
+                                dep_child_bin_t0 +
+                                  #        marital_status_t1_married_civil_partnership +
                                 marital_status_t1_divorced_separated_widowed +
                                 marital_status_t1_single +
                                 #        hiqual_dv_t0_degree +
@@ -788,18 +780,6 @@ dr_iptw_mcs_young_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                 gor_dv_t0_wales +
                                 gor_dv_t0_west_midlands +
                                 gor_dv_t0_yorkshire_and_the_humber +
-                                #                                         #  gor_dv_t1_east_midlands +
-                                #                                         gor_dv_t1_east_of_england +
-                                #                                         gor_dv_t1_london +
-                                #                                         gor_dv_t1_north_east +
-                                #                                         gor_dv_t1_north_west +
-                                #                                         gor_dv_t1_northern_ireland +
-                                #                                         gor_dv_t1_scotland +
-                                #                                         gor_dv_t1_south_east +
-                                #                                         gor_dv_t1_south_west +
-                                #                                         gor_dv_t1_wales +
-                                #                                         gor_dv_t1_west_midlands +
-                              #                                         gor_dv_t1_yorkshire_and_the_humber +
                               #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
                               sic2007_section_lab_t0_administrative_and_support_service_activities +
                                 sic2007_section_lab_t0_construction +
@@ -828,10 +808,9 @@ dr_iptw_mcs_young_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                 broken_emp_t0_unbroken_employment +
                                 j2has_dv_t0 +
                                 rel_pov_t0 +
-                                #                                        rel_pov_t1 +
                                 health_t0 +
                                 health_t1 +
-                                #                                         sf12mcs_dv_t0 +
+                                sf12mcs_dv_t0 +
                                 # interaction terms
                                 #sex_dv_t0*age_dv_t0 +
                                 sex_dv_t0*rel_pov_t0 +
@@ -887,7 +866,8 @@ dr_iptw_srh_young_mod <- glmmTMB( srh_bin_t1 ~
                                 #        marital_status_t0_married_civil_partnership +
                                 marital_status_t0_divorced_separated_widowed +
                                 marital_status_t0_single +
-                                #        marital_status_t1_married_civil_partnership +
+                                dep_child_bin_t0 +
+                                  #        marital_status_t1_married_civil_partnership +
                                 marital_status_t1_divorced_separated_widowed +
                                 marital_status_t1_single +
                                 #        hiqual_dv_t0_degree +
@@ -908,18 +888,6 @@ dr_iptw_srh_young_mod <- glmmTMB( srh_bin_t1 ~
                                 gor_dv_t0_wales +
                                 gor_dv_t0_west_midlands +
                                 gor_dv_t0_yorkshire_and_the_humber +
-                                #                                         #  gor_dv_t1_east_midlands +
-                                #                                         gor_dv_t1_east_of_england +
-                                #                                         gor_dv_t1_london +
-                                #                                         gor_dv_t1_north_east +
-                                #                                         gor_dv_t1_north_west +
-                                #                                         gor_dv_t1_northern_ireland +
-                                #                                         gor_dv_t1_scotland +
-                                #                                         gor_dv_t1_south_east +
-                                #                                         gor_dv_t1_south_west +
-                                #                                         gor_dv_t1_wales +
-                                #                                         gor_dv_t1_west_midlands +
-                              #                                         gor_dv_t1_yorkshire_and_the_humber +
                               #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
                               sic2007_section_lab_t0_administrative_and_support_service_activities +
                                 sic2007_section_lab_t0_construction +
@@ -948,10 +916,9 @@ dr_iptw_srh_young_mod <- glmmTMB( srh_bin_t1 ~
                                 broken_emp_t0_unbroken_employment +
                                 j2has_dv_t0 +
                                 rel_pov_t0 +
-                                #                                        rel_pov_t1 +
                                 health_t0 +
                                 health_t1 +
-                                #                                         srh_bin_t0 +
+                                srh_bin_t0 +
                                 # interaction terms
                                 #sex_dv_t0*age_dv_t0 +
                                 sex_dv_t0*rel_pov_t0 +
@@ -1010,7 +977,8 @@ dr_iptw_ghq_young_mod <- glmmTMB( ghq_case4_t1 ~
                                 #        marital_status_t0_married_civil_partnership +
                                 marital_status_t0_divorced_separated_widowed +
                                 marital_status_t0_single +
-                                #        marital_status_t1_married_civil_partnership +
+                                dep_child_bin_t0 +
+                                  #        marital_status_t1_married_civil_partnership +
                                 marital_status_t1_divorced_separated_widowed +
                                 marital_status_t1_single +
                                 #        hiqual_dv_t0_degree +
@@ -1031,18 +999,6 @@ dr_iptw_ghq_young_mod <- glmmTMB( ghq_case4_t1 ~
                                 gor_dv_t0_wales +
                                 gor_dv_t0_west_midlands +
                                 gor_dv_t0_yorkshire_and_the_humber +
-                                #                                         #  gor_dv_t1_east_midlands +
-                                #                                         gor_dv_t1_east_of_england +
-                                #                                         gor_dv_t1_london +
-                                #                                         gor_dv_t1_north_east +
-                                #                                         gor_dv_t1_north_west +
-                                #                                         gor_dv_t1_northern_ireland +
-                                #                                         gor_dv_t1_scotland +
-                                #                                         gor_dv_t1_south_east +
-                                #                                         gor_dv_t1_south_west +
-                                #                                         gor_dv_t1_wales +
-                                #                                         gor_dv_t1_west_midlands +
-                              #                                         gor_dv_t1_yorkshire_and_the_humber +
                               #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
                               sic2007_section_lab_t0_administrative_and_support_service_activities +
                                 sic2007_section_lab_t0_construction +
@@ -1071,10 +1027,9 @@ dr_iptw_ghq_young_mod <- glmmTMB( ghq_case4_t1 ~
                                 broken_emp_t0_unbroken_employment +
                                 j2has_dv_t0 +
                                 rel_pov_t0 +
-                                #                                        rel_pov_t1 +
                                 health_t0 +
                                 health_t1 +
-                                #                                         ghq_case4_t0 +
+                                ghq_case4_t0 +
                                 # interaction terms
                                 #                                      sex_dv_t0*age_dv_t0 +
                                 sex_dv_t0*rel_pov_t0 +
@@ -1151,7 +1106,8 @@ dr_iptw_pcs_old_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                 #        marital_status_t0_married_civil_partnership +
                                 marital_status_t0_divorced_separated_widowed +
                                 marital_status_t0_single +
-                                #        marital_status_t1_married_civil_partnership +
+                                dep_child_bin_t0 +
+                                  #        marital_status_t1_married_civil_partnership +
                                 marital_status_t1_divorced_separated_widowed +
                                 marital_status_t1_single +
                                 #        hiqual_dv_t0_degree +
@@ -1172,18 +1128,6 @@ dr_iptw_pcs_old_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                 gor_dv_t0_wales +
                                 gor_dv_t0_west_midlands +
                                 gor_dv_t0_yorkshire_and_the_humber +
-                                #                                         #  gor_dv_t1_east_midlands +
-                                #                                         gor_dv_t1_east_of_england +
-                                #                                         gor_dv_t1_london +
-                                #                                         gor_dv_t1_north_east +
-                                #                                         gor_dv_t1_north_west +
-                                #                                         gor_dv_t1_northern_ireland +
-                                #                                         gor_dv_t1_scotland +
-                                #                                         gor_dv_t1_south_east +
-                                #                                         gor_dv_t1_south_west +
-                                #                                         gor_dv_t1_wales +
-                                #                                         gor_dv_t1_west_midlands +
-                              #                                         gor_dv_t1_yorkshire_and_the_humber +
                               #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
                               sic2007_section_lab_t0_administrative_and_support_service_activities +
                                 sic2007_section_lab_t0_construction +
@@ -1212,10 +1156,9 @@ dr_iptw_pcs_old_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                 broken_emp_t0_unbroken_employment +
                                 j2has_dv_t0 +
                                 rel_pov_t0 +
-                                #                                        rel_pov_t1 +
                                 health_t0 +
                                 health_t1 +
-                                #                                         sf12pcs_dv_t0 +
+                                sf12pcs_dv_t0 +
                                 # interaction terms
                                 #                                      sex_dv_t0*age_dv_t0 +
                                 sex_dv_t0*rel_pov_t0 +
@@ -1269,7 +1212,8 @@ dr_iptw_mcs_old_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                 #        marital_status_t1_married_civil_partnership +
                                 marital_status_t1_divorced_separated_widowed +
                                 marital_status_t1_single +
-                                #        hiqual_dv_t0_degree +
+                                dep_child_bin_t0 +
+                                  #        hiqual_dv_t0_degree +
                                 hiqual_dv_t0_other_higher_degree +
                                 hiqual_dv_t0_a_level_etc +
                                 hiqual_dv_t0_gcse_etc +
@@ -1287,18 +1231,6 @@ dr_iptw_mcs_old_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                 gor_dv_t0_wales +
                                 gor_dv_t0_west_midlands +
                                 gor_dv_t0_yorkshire_and_the_humber +
-                                #                                         #  gor_dv_t1_east_midlands +
-                                #                                         gor_dv_t1_east_of_england +
-                                #                                         gor_dv_t1_london +
-                                #                                         gor_dv_t1_north_east +
-                                #                                         gor_dv_t1_north_west +
-                                #                                         gor_dv_t1_northern_ireland +
-                                #                                         gor_dv_t1_scotland +
-                                #                                         gor_dv_t1_south_east +
-                                #                                         gor_dv_t1_south_west +
-                                #                                         gor_dv_t1_wales +
-                                #                                         gor_dv_t1_west_midlands +
-                              #                                         gor_dv_t1_yorkshire_and_the_humber +
                               #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
                               sic2007_section_lab_t0_administrative_and_support_service_activities +
                                 sic2007_section_lab_t0_construction +
@@ -1327,10 +1259,9 @@ dr_iptw_mcs_old_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                 broken_emp_t0_unbroken_employment +
                                 j2has_dv_t0 +
                                 rel_pov_t0 +
-                                #                                        rel_pov_t1 +
                                 health_t0 +
                                 health_t1 +
-                                #                                         sf12mcs_dv_t0 +
+                                sf12mcs_dv_t0 +
                                 # interaction terms
                                 #                                     sex_dv_t0*age_dv_t0 +
                                 sex_dv_t0*rel_pov_t0 +
@@ -1389,7 +1320,8 @@ dr_iptw_srh_old_mod <- glmmTMB( srh_bin_t1 ~
                                 #        marital_status_t1_married_civil_partnership +
                                 marital_status_t1_divorced_separated_widowed +
                                 marital_status_t1_single +
-                                #        hiqual_dv_t0_degree +
+                                dep_child_bin_t0 +
+                                  #        hiqual_dv_t0_degree +
                                 hiqual_dv_t0_other_higher_degree +
                                 hiqual_dv_t0_a_level_etc +
                                 hiqual_dv_t0_gcse_etc +
@@ -1407,18 +1339,6 @@ dr_iptw_srh_old_mod <- glmmTMB( srh_bin_t1 ~
                                 gor_dv_t0_wales +
                                 gor_dv_t0_west_midlands +
                                 gor_dv_t0_yorkshire_and_the_humber +
-                                #                                         #  gor_dv_t1_east_midlands +
-                                #                                         gor_dv_t1_east_of_england +
-                                #                                         gor_dv_t1_london +
-                                #                                         gor_dv_t1_north_east +
-                                #                                         gor_dv_t1_north_west +
-                                #                                         gor_dv_t1_northern_ireland +
-                                #                                         gor_dv_t1_scotland +
-                                #                                         gor_dv_t1_south_east +
-                                #                                         gor_dv_t1_south_west +
-                                #                                         gor_dv_t1_wales +
-                                #                                         gor_dv_t1_west_midlands +
-                              #                                         gor_dv_t1_yorkshire_and_the_humber +
                               #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
                               sic2007_section_lab_t0_administrative_and_support_service_activities +
                                 sic2007_section_lab_t0_construction +
@@ -1447,10 +1367,9 @@ dr_iptw_srh_old_mod <- glmmTMB( srh_bin_t1 ~
                                 broken_emp_t0_unbroken_employment +
                                 j2has_dv_t0 +
                                 rel_pov_t0 +
-                                #                                        rel_pov_t1 +
                                 health_t0 +
                                 health_t1 +
-                                #                                         srh_bin_t0 +
+                                srh_bin_t0 +
                                 # interaction terms
                                 #                                      sex_dv_t0*age_dv_t0 +
                                 sex_dv_t0*rel_pov_t0 +
@@ -1512,7 +1431,8 @@ dr_iptw_ghq_old_mod <- glmmTMB( ghq_case4_t1 ~
                                 #        marital_status_t1_married_civil_partnership +
                                 marital_status_t1_divorced_separated_widowed +
                                 marital_status_t1_single +
-                                #        hiqual_dv_t0_degree +
+                                dep_child_bin_t0 +
+                                  #        hiqual_dv_t0_degree +
                                 hiqual_dv_t0_other_higher_degree +
                                 hiqual_dv_t0_a_level_etc +
                                 hiqual_dv_t0_gcse_etc +
@@ -1530,18 +1450,6 @@ dr_iptw_ghq_old_mod <- glmmTMB( ghq_case4_t1 ~
                                 gor_dv_t0_wales +
                                 gor_dv_t0_west_midlands +
                                 gor_dv_t0_yorkshire_and_the_humber +
-                                #                                         #  gor_dv_t1_east_midlands +
-                                #                                         gor_dv_t1_east_of_england +
-                                #                                         gor_dv_t1_london +
-                                #                                         gor_dv_t1_north_east +
-                                #                                         gor_dv_t1_north_west +
-                                #                                         gor_dv_t1_northern_ireland +
-                                #                                         gor_dv_t1_scotland +
-                                #                                         gor_dv_t1_south_east +
-                                #                                         gor_dv_t1_south_west +
-                                #                                         gor_dv_t1_wales +
-                                #                                         gor_dv_t1_west_midlands +
-                              #                                         gor_dv_t1_yorkshire_and_the_humber +
                               #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
                               sic2007_section_lab_t0_administrative_and_support_service_activities +
                                 sic2007_section_lab_t0_construction +
@@ -1570,10 +1478,9 @@ dr_iptw_ghq_old_mod <- glmmTMB( ghq_case4_t1 ~
                                 broken_emp_t0_unbroken_employment +
                                 j2has_dv_t0 +
                                 rel_pov_t0 +
-                                #                                        rel_pov_t1 +
                                 health_t0 +
                                 health_t1 +
-                                #                                         ghq_case4_t0 +
+                                ghq_case4_t0 +
                                 # interaction terms
                                 #                                      sex_dv_t0*age_dv_t0 +
                                 sex_dv_t0*rel_pov_t0 +
