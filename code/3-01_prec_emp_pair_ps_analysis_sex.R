@@ -158,6 +158,7 @@ ps_model_mlm <- function(data = pair_cc_ps, outcome){
                      marital_status_t0_divorced_separated_widowed +
                      marital_status_t0_single +
                      #        hiqual_dv_t0_degree +
+                     dep_child_bin_t0 +
                      hiqual_dv_t0_other_higher_degree +
                      hiqual_dv_t0_a_level_etc +
                      hiqual_dv_t0_gcse_etc +
@@ -427,7 +428,8 @@ f_iptw_mod <- matchit(exp1_bin ~
                          #        marital_status_t0_married_civil_partnership +
                          marital_status_t0_divorced_separated_widowed +
                          marital_status_t0_single +
-                         #        hiqual_dv_t0_degree +
+                         dep_child_bin_t0 +
+                        #        hiqual_dv_t0_degree +
                          hiqual_dv_t0_other_higher_degree +
                          hiqual_dv_t0_a_level_etc +
                          hiqual_dv_t0_gcse_etc +
@@ -540,6 +542,7 @@ m_iptw_mod <- matchit(exp1_bin ~
                         #        marital_status_t0_married_civil_partnership +
                         marital_status_t0_divorced_separated_widowed +
                         marital_status_t0_single +
+                        dep_child_bin_t0 +
                         #        hiqual_dv_t0_degree +
                         hiqual_dv_t0_other_higher_degree +
                         hiqual_dv_t0_a_level_etc +
@@ -658,6 +661,7 @@ dr_iptw_pcs_f_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                       #        marital_status_t1_married_civil_partnership +
                                       marital_status_t1_divorced_separated_widowed +
                                       marital_status_t1_single +
+                                      dep_child_bin_t0 +
                                       #        hiqual_dv_t0_degree +
                                       hiqual_dv_t0_other_higher_degree +
                                       hiqual_dv_t0_a_level_etc +
@@ -773,6 +777,7 @@ dr_iptw_mcs_f_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                       #        marital_status_t1_married_civil_partnership +
                                       marital_status_t1_divorced_separated_widowed +
                                       marital_status_t1_single +
+                                      dep_child_bin_t0 +
                                       #        hiqual_dv_t0_degree +
                                       hiqual_dv_t0_other_higher_degree +
                                       hiqual_dv_t0_a_level_etc +
@@ -893,6 +898,7 @@ dr_iptw_srh_f_mod <- glmmTMB( srh_bin_t1 ~
                                       #        marital_status_t1_married_civil_partnership +
                                       marital_status_t1_divorced_separated_widowed +
                                       marital_status_t1_single +
+                                      dep_child_bin_t0 +
                                       #        hiqual_dv_t0_degree +
                                       hiqual_dv_t0_other_higher_degree +
                                       hiqual_dv_t0_a_level_etc +
@@ -1016,6 +1022,7 @@ dr_iptw_ghq_f_mod <- glmmTMB( ghq_case4_t1 ~
                                       #        marital_status_t1_married_civil_partnership +
                                       marital_status_t1_divorced_separated_widowed +
                                       marital_status_t1_single +
+                                      dep_child_bin_t0 +
                                       #        hiqual_dv_t0_degree +
                                       hiqual_dv_t0_other_higher_degree +
                                       hiqual_dv_t0_a_level_etc +
@@ -1157,6 +1164,7 @@ dr_iptw_pcs_m_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                 #        marital_status_t1_married_civil_partnership +
                                 marital_status_t1_divorced_separated_widowed +
                                 marital_status_t1_single +
+                                dep_child_bin_t0 +
                                 #        hiqual_dv_t0_degree +
                                 hiqual_dv_t0_other_higher_degree +
                                 hiqual_dv_t0_a_level_etc +
@@ -1272,6 +1280,7 @@ dr_iptw_mcs_m_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                 #        marital_status_t1_married_civil_partnership +
                                 marital_status_t1_divorced_separated_widowed +
                                 marital_status_t1_single +
+                                dep_child_bin_t0 +
                                 #        hiqual_dv_t0_degree +
                                 hiqual_dv_t0_other_higher_degree +
                                 hiqual_dv_t0_a_level_etc +
@@ -1392,6 +1401,7 @@ dr_iptw_srh_m_mod <- glmmTMB( srh_bin_t1 ~
                                 #        marital_status_t1_married_civil_partnership +
                                 marital_status_t1_divorced_separated_widowed +
                                 marital_status_t1_single +
+                                dep_child_bin_t0 +
                                 #        hiqual_dv_t0_degree +
                                 hiqual_dv_t0_other_higher_degree +
                                 hiqual_dv_t0_a_level_etc +
@@ -1515,6 +1525,7 @@ dr_iptw_ghq_m_mod <- glmmTMB( ghq_case4_t1 ~
                                 #        marital_status_t1_married_civil_partnership +
                                 marital_status_t1_divorced_separated_widowed +
                                 marital_status_t1_single +
+                                dep_child_bin_t0 +
                                 #        hiqual_dv_t0_degree +
                                 hiqual_dv_t0_other_higher_degree +
                                 hiqual_dv_t0_a_level_etc +
