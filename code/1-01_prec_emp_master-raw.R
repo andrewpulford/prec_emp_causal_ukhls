@@ -65,7 +65,7 @@ write_rds(vars, "./variables/vars_master.rds")
 #       datafile - UNderstanding Society datafile
 
 load_wave <- function(wv_n, wv_l, datafile) {
-  temp_df <- read.spss(paste0(data_path,"ukhls_w",wv_n,"/",wv_l,"_indresp.sav"), 
+  temp_df <- read.spss(paste0(data_path,"ukhls_w",wv_n,"/",wv_l,"_",datafile,".sav"), 
                         to.data.frame=TRUE, use.value.labels=TRUE) %>% 
     as_tibble()
 
@@ -168,18 +168,92 @@ load_raw_wave(wv_n = 10, wv_l = "j", datafile = "indresp")
 ## bind listed dfs into single master raw df
 master_raw1 <- bind_rows(df_list)#, .id = "column_label")
 
+################################################################################
+#####                            household data                            #####
+################################################################################
 
+#### Function calls
+### Household
+## wave 1 
+#load_wave(wv_n = 1, wv_l = "a", datafile = "indresp")
+
+## wave 2  
+load_wave(wv_n = 2, wv_l = "b", datafile = "hhresp")
+
+## wave 3
+load_wave(wv_n = 3, wv_l = "c", datafile = "hhresp")
+
+## wave 4
+load_wave(wv_n = 4, wv_l = "d", datafile = "hhresp")
+
+## wave 5
+load_wave(wv_n = 5, wv_l = "e", datafile = "hhresp")
+
+## wave 6
+load_wave(wv_n = 6, wv_l = "f", datafile = "hhresp")
+
+## wave 7
+load_wave(wv_n = 7, wv_l = "g", datafile = "hhresp")
+
+## wave 8
+load_wave(wv_n = 8, wv_l = "h", datafile = "hhresp")
+
+## wave 9
+load_wave(wv_n = 9, wv_l = "i", datafile = "hhresp")
+
+## wave 10
+load_wave(wv_n =10, wv_l = "j", datafile = "hhresp")
+
+
+##----------------------------------------------------------------------------##
+## create single dataframe for waves 1-10 
+##----------------------------------------------------------------------------##
+
+## remove previous df_list
+rm(df_list)
+
+## define list to add df's to
+df_list <<- list()
+
+#### household respondents
+
+# wave 2 function call ------------- 
+load_raw_wave(wv_n = 2, wv_l = "b", datafile = "hhresp")
+# wave 3 function call -------------
+load_raw_wave(wv_n = 3, wv_l = "c", datafile = "hhresp")
+# wave 4 function call -------------
+load_raw_wave(wv_n = 4, wv_l = "d", datafile = "hhresp")
+# wave 5 function call -------------
+load_raw_wave(wv_n = 5, wv_l = "e", datafile = "hhresp")
+# wave 6 function call -------------
+load_raw_wave(wv_n = 6, wv_l = "f", datafile = "hhresp")
+# wave 7 function call -------------
+load_raw_wave(wv_n = 7, wv_l = "g", datafile = "hhresp")
+# wave 8 function call -------------
+load_raw_wave(wv_n = 8, wv_l = "h", datafile = "hhresp")
+# wave 9 function call -------------
+load_raw_wave(wv_n = 9, wv_l = "i", datafile = "hhresp")
+# wave 10 function call -------------
+load_raw_wave(wv_n = 10, wv_l = "j", datafile = "hhresp")
+
+
+## bind listed dfs into single master raw df
+hh_master_raw1 <- bind_rows(df_list)#, .id = "column_label")
+
+
+
+################################################################################
+######             combine individual and household master dfs            ######
+################################################################################
+
+master_raw1 <- master_raw1 %>% 
+  left_join(hh_master_raw1)
 
 ## write as RDS
 write_rds(master_raw1, "./raw_data/master_raw1.rds")
 
-# remove list
-rm(df_list)
-
-### Households
-## to be added?
 
 
-#test <- readRDS("./raw_data/w2_indresp_raw.rds")
+#test <- readRDS("./raw_data/wv2_hhresp_raw.rds")
 
 
