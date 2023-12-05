@@ -34,8 +34,8 @@ options(scipen = 999)
 
 library(tidyverse) # all kinds of stuff 
 library(fastDummies) # for creating dummy variables
-library(Matching) # PS matching
-library(MatchIt) # IPTW
+library(MatchIt) # PS matching
+library(WeightIt) # IPTW
 library(tableone) # for creating table one
 library(survey) # for PS weighting
 library(reshape2) # Reorganizing data
@@ -58,7 +58,7 @@ source("./look_ups/variable_vectors.r")
 nonnorm_vec <- (c("age_dv_t0", "sf12mcs_dv_t0", "sf12pcs_dv_t0"))
 
 ####load eligible cases --------------------------------------------------------
-pair_cc_analytic <- readRDS("./working_data/pair_cc_analytic.rds")
+pair_cc_analytic <- readRDS("./working_data/cc/pair_cc_analytic.rds")
 
 
 ### convert binary outcome and exposure vars to factors and relevel to allow svyglm to work
@@ -119,14 +119,12 @@ pair_cc_analytic <- pair_cc_analytic %>%
   dummy_cols(select_columns = c("sex_dv_t0",
                                 "non_white_t0",
                                 "marital_status_t0",
-                                "hiqual_dv_t0",
                                 "gor_dv_t0",
                                 "sic2007_section_lab_t0",
                                 "soc2000_major_group_title_t0",
                                 "jbft_dv_t0",
                                 "small_firm_t0",
                                 "emp_contract_t0",
-                                "broken_emp_t0",
                                 "j2has_dv_t0",
                                 "rel_pov_t0",
                                 "health_t0",
@@ -157,13 +155,8 @@ ps_model_mlm <- function(data = pair_cc_ps, outcome){
                      #        marital_status_t0_married_civil_partnership +
                      marital_status_t0_divorced_separated_widowed +
                      marital_status_t0_single +
-                     #        hiqual_dv_t0_degree +
                      dep_child_bin_t0 +
-                     hiqual_dv_t0_other_higher_degree +
-                     hiqual_dv_t0_a_level_etc +
-                     hiqual_dv_t0_gcse_etc +
-                     hiqual_dv_t0_other_qualification +
-                     hiqual_dv_t0_no_qualification +
+                     degree_bin_t0 +
                      #  gor_dv_t0_east_midlands +
                      gor_dv_t0_east_of_england +
                      gor_dv_t0_london +
@@ -199,9 +192,7 @@ ps_model_mlm <- function(data = pair_cc_ps, outcome){
                      jbft_dv_t0 +
                      small_firm_t0 +
                      emp_contract_t0 +
-                     #  broken_emp_t0_broken_employment +
-                     broken_emp_t0_no_employment_spells +
-                     broken_emp_t0_unbroken_employment +
+                     broken_emp_t0 +
                      j2has_dv_t0 +
                      rel_pov_t0 +
                      health_t0 +
@@ -278,24 +269,6 @@ end_time - start_time
 summary(ps_mod_f_MLM)
 
 
-### predicted probability of being assigned to exposed group
-female_df$ps_exp1 <- predict(ps_mod_f_MLM, type = "response")
-summary(female_df$ps_exp1)
-
-### predicted probability of being assigned to unexposed group
-female_df$ps_noexp1 <- 1-female_df$ps_exp1
-summary(female_df$ps_noexp1)
-
-### predicted probability of being assigned to actual exposure status
-female_df$ps_assign <- NA
-female_df$ps_assign[female_df$exposure1=="exposed (employed at t1)"] <- female_df$ps_exp1[female_df$exposure1=="exposed (employed at t1)"]
-female_df$ps_assign[female_df$exposure1=="unexposed"] <- female_df$ps_noexp1[female_df$exposure1=="unexposed"]
-
-### smaller of ps_exp1 and ps_noexp1 for matching weight
-female_df$ps_min <- pmin(female_df$ps_exp1, female_df$ps_noexp1)
-summary(female_df$ps_min)
-
-
 #### male ---------------------------------------------------------------------
 ### call the function (and benchmark time - takes a while to run for MLM)
 start_time <- Sys.time()
@@ -307,134 +280,36 @@ end_time - start_time
 summary(ps_mod_m_MLM)
 
 
-### predicted probability of being assigned to exposed group
-male_df$ps_exp1 <- predict(ps_mod_m_MLM, type = "response")
-summary(male_df$ps_exp1)
-
-### predicted probability of being assigned to unexposed group
-male_df$ps_noexp1 <- 1-male_df$ps_exp1
-summary(male_df$ps_noexp1)
-
-### predicted probability of being assigned to actual exposure status
-male_df$ps_assign <- NA
-male_df$ps_assign[male_df$exposure1=="exposed (employed at t1)"] <- male_df$ps_exp1[male_df$exposure1=="exposed (employed at t1)"]
-male_df$ps_assign[male_df$exposure1=="unexposed"] <- male_df$ps_noexp1[male_df$exposure1=="unexposed"]
-
-### smaller of ps_exp1 and ps_noexp1 for matching weight
-male_df$ps_min <- pmin(male_df$ps_exp1, male_df$ps_noexp1)
-summary(male_df$ps_min)
-
 
 ################################################################################
 #####                       propensity score matching                      #####
 ################################################################################
 
 #### females -------------------------------------------------------------------
-### match propensity scores using Matching package ----
-list_match_f <- Match(Tr = (female_df$exposure1=="exposed (employed at t1)"),
-                    # logit of PS/1-PS
-                    X = log(female_df$ps_exp1/female_df$ps_noexp1),
-                    ## 1:1 matching ratio
-                    M = 1,
-                    ## caliper = 0.2 * SD(logit(PS))
-                    caliper  = 0.2,
-                    replace  = FALSE,
-                    ties     = TRUE,
-                    version  = "fast")
-
-### extract matched data -----------------
-f_matched <- female_df[unlist(list_match_f[c("index.treated","index.control")]), ]
-
-### matched Table One with SMD ---------
-table_one_f_matched <- CreateTableOne(vars = cov_vector3,
-                                    strata = "exposure1",
-                                    data = f_matched,
-                                    test = FALSE)
-
-table_one_f_matched_sav <- print(table_one_f_matched,  smd = TRUE)
-
-write.csv(table_one_f_matched_sav, "./output/matched_descriptives/subgroups/sex/table_one_f_matched.csv")
-
-
-### count covariates with an important imbalance (>0.1)
-addmargins(table(ExtractSmd(table_one_f_matched) > 0.1))
-
-table_one_f_matched_smd <- data.frame(ExtractSmd(table_one_f_matched))
-table_one_f_matched_smd <- table_one_f_matched_smd %>% 
-  rownames_to_column("var") %>% # Apply rownames_to_column
-  rename("smd" = "X1.vs.2") %>% 
-  mutate(imbalance_flag = ifelse(smd>0.1,"SMD>0.1","SMD<=0.1"),
-         matched = "unmatched")
-
-write.csv(table_one_f_matched_smd, "./working_data/cc/subgroup/sex/table_one_f_matched_smd.csv")
-
-#### males ---------------------------------------------------------------------
-### match propensity scores using Matching package ----
-list_match_m <- Match(Tr = (male_df$exposure1=="exposed (employed at t1)"),
-                      # logit of PS/1-PS
-                      X = log(male_df$ps_exp1/male_df$ps_noexp1),
-                      ## 1:1 matching ratio
-                      M = 1,
-                      ## caliper = 0.2 * SD(logit(PS))
-                      caliper  = 0.2,
-                      replace  = FALSE,
-                      ties     = TRUE,
-                      version  = "fast")
-
-### extract matched data -----------------
-m_matched <- male_df[unlist(list_match_m[c("index.treated","index.control")]), ]
-
-### matched Table One with SMD ---------
-table_one_m_matched <- CreateTableOne(vars = cov_vector3,
-                                      strata = "exposure1",
-                                      data = m_matched,
-                                      test = FALSE)
-
-table_one_m_matched_sav <- print(table_one_m_matched,  smd = TRUE)
-
-write.csv(table_one_m_matched_sav, "./output/matched_descriptives/subgroups/sex/table_one_m_matched.csv")
-
-
-### count covariates with an important imbalance (>0.1)
-addmargins(table(ExtractSmd(table_one_m_matched) > 0.1))
-
-table_one_m_matched_smd <- data.frame(ExtractSmd(table_one_m_matched))
-table_one_m_matched_smd <- table_one_m_matched_smd %>% 
-  rownames_to_column("var") %>% # Apply rownames_to_column
-  rename("smd" = "X1.vs.2") %>% 
-  mutate(imbalance_flag = ifelse(smd>0.1,"SMD>0.1","SMD<=0.1"),
-         matched = "unmatched")
-
-write.csv(table_one_m_matched_smd, "./working_data/cc/subgroup/sex/table_one_m_matched_smd.csv")
-
-################################################################################
-#####                      IPTW using MatchIt package                      #####
-################################################################################
-
-#### female --------------------------------------------------------------------
-f_iptw <- female_df %>% 
+f_matchit_df <- female_df  %>%  
   mutate(exp1_bin = ifelse(exposure1=="exposed (employed at t1)",
-                           1,0))
+                           0,1)) # 1 = unexposed to allow 3:1 ratio matching
 
-f_iptw$srh_bin_t1 <- as.character(f_iptw$srh_bin_t1)
-f_iptw$ghq_case4_t1 <- as.character(f_iptw$ghq_case4_t1)
+### convert SF-12 outcomes to numeric to allow svyglm to work
+f_matchit_df$sf12pcs_dv_t0 <- as.numeric(f_matchit_df$sf12pcs_dv_t0)
+f_matchit_df$sf12mcs_dv_t0 <- as.numeric(f_matchit_df$sf12mcs_dv_t0)
+f_matchit_df$sf12pcs_dv_t1 <- as.numeric(f_matchit_df$sf12pcs_dv_t1)
+f_matchit_df$sf12mcs_dv_t1 <- as.numeric(f_matchit_df$sf12mcs_dv_t1)
+
+f_matchit_df$srh_bin_t1 <- as.character(f_matchit_df$srh_bin_t1)
+f_matchit_df$ghq_case4_t1 <- as.character(f_matchit_df$ghq_case4_t1)
 
 
 start_time <- Sys.time()
-f_iptw_mod <- matchit(exp1_bin ~
-                        # sex_dv_t0 + 
-                        age_dv_t0 +
+f_matchit_mod <- matchit(exp1_bin ~
+#                         sex_dv_t0 +
+                         age_dv_t0 +
                          non_white_t0 +
                          #        marital_status_t0_married_civil_partnership +
                          marital_status_t0_divorced_separated_widowed +
                          marital_status_t0_single +
                          dep_child_bin_t0 +
-                        #        hiqual_dv_t0_degree +
-                         hiqual_dv_t0_other_higher_degree +
-                         hiqual_dv_t0_a_level_etc +
-                         hiqual_dv_t0_gcse_etc +
-                         hiqual_dv_t0_other_qualification +
-                         hiqual_dv_t0_no_qualification +
+                         degree_bin_t0 +
                          #  gor_dv_t0_east_midlands +
                          gor_dv_t0_east_of_england +
                          gor_dv_t0_london +
@@ -470,9 +345,239 @@ f_iptw_mod <- matchit(exp1_bin ~
                          jbft_dv_t0 +
                          small_firm_t0 +
                          emp_contract_t0 +
-                         #  broken_emp_t0_broken_employment +
-                         broken_emp_t0_no_employment_spells +
-                         broken_emp_t0_unbroken_employment +
+                         broken_emp_t0 +
+                         j2has_dv_t0 +
+                         rel_pov_t0 +
+                         health_t0 +
+                         srh_bin_t0 +
+                         ghq_case4_t0 +
+                         sf12mcs_dv_t0 +
+                         sf12pcs_dv_t0, 
+                       data = f_matchit_df,
+                       method = "nearest", 
+                       ratio=3,
+                       distance = "glm",
+                       estimand = "ATT")
+end_time <- Sys.time()
+end_time - start_time
+
+f_matchit_df$weights_ps <- f_matchit_mod$weights
+
+summary(f_matchit_df$weights_ps)
+
+f_matchit_df <- f_matchit_df %>% filter(weights_ps!=0)
+
+### create weighted data
+f_matchit_df_svy <- svydesign(ids = ~1,
+                            data = f_matchit_df,
+                            weights = ~weights_ps)
+
+
+### PS matched table one
+f_table_one_matchit <- svyCreateTableOne(vars = cov_vector3,
+                                       strata = "exposure1",
+                                       data = f_matchit_df_svy,
+                                       factorVars = c(catVars_vec),
+                                       test = FALSE)
+
+f_table_one_matchit_sav <- print(f_table_one_matchit, showAllLevels = TRUE, smd = TRUE,
+                               nonnormal = nonnorm_vec,
+                               factorVars = c(catVars_vec),
+                               formatOptions = list(big.mark = ","))
+
+
+write.csv(f_table_one_matchit_sav, "./output/cc/matched_descriptives/subgroups/sex/f_table_one_matchit_sav.csv")
+
+
+### count covariates with an important imbalance (>0.1)
+addmargins(table(ExtractSmd(f_table_one_matchit) > 0.1))
+
+f_table_one_matchit_smd <- data.frame(ExtractSmd(f_table_one_matchit))
+f_table_one_matchit_smd <- f_table_one_matchit_smd %>% 
+  rownames_to_column("var") %>% # Apply rownames_to_column
+  rename("smd" = "X1.vs.2") %>% 
+  mutate(imbalance_flag = ifelse(smd>0.1,"SMD>0.1","SMD<=0.1"),
+         matched = "unmatched")
+
+write.csv(f_table_one_matchit_smd, "./working_data/cc/subgroup/sex/f_table_one_matchit_smd.csv")
+
+#### males ---------------------------------------------------------------------
+m_matchit_df <- male_df  %>%  
+  mutate(exp1_bin = ifelse(exposure1=="exposed (employed at t1)",
+                           0,1)) # 1 = unexposed to allow 3:1 ratio matching
+
+### convert SF-12 outcomes to numeric to allow svyglm to work
+m_matchit_df$sf12pcs_dv_t0 <- as.numeric(m_matchit_df$sf12pcs_dv_t0)
+m_matchit_df$sf12mcs_dv_t0 <- as.numeric(m_matchit_df$sf12mcs_dv_t0)
+m_matchit_df$sf12pcs_dv_t1 <- as.numeric(m_matchit_df$sf12pcs_dv_t1)
+m_matchit_df$sf12mcs_dv_t1 <- as.numeric(m_matchit_df$sf12mcs_dv_t1)
+
+m_matchit_df$srh_bin_t1 <- as.character(m_matchit_df$srh_bin_t1)
+m_matchit_df$ghq_case4_t1 <- as.character(m_matchit_df$ghq_case4_t1)
+
+
+start_time <- Sys.time()
+m_matchit_mod <- matchit(exp1_bin ~
+                           #                         sex_dv_t0 +
+                           age_dv_t0 +
+                           non_white_t0 +
+                           #        marital_status_t0_married_civil_partnership +
+                           marital_status_t0_divorced_separated_widowed +
+                           marital_status_t0_single +
+                           dep_child_bin_t0 +
+                           degree_bin_t0 +
+                           #  gor_dv_t0_east_midlands +
+                           gor_dv_t0_east_of_england +
+                           gor_dv_t0_london +
+                           gor_dv_t0_north_east +
+                           gor_dv_t0_north_west +
+                           gor_dv_t0_northern_ireland +
+                           gor_dv_t0_scotland +
+                           gor_dv_t0_south_east +
+                           gor_dv_t0_south_west +
+                           gor_dv_t0_wales +
+                           gor_dv_t0_west_midlands +
+                           gor_dv_t0_yorkshire_and_the_humber +
+                           #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
+                           sic2007_section_lab_t0_administrative_and_support_service_activities +
+                           sic2007_section_lab_t0_construction +
+                           sic2007_section_lab_t0_education +
+                           sic2007_section_lab_t0_human_health_and_social_work_activities +
+                           sic2007_section_lab_t0_manufacturing +
+                           sic2007_section_lab_t0_other_industry +
+                           sic2007_section_lab_t0_professional_scientific_and_technical_activities +
+                           sic2007_section_lab_t0_public_administration_and_defence_compulsory_social_security +
+                           sic2007_section_lab_t0_transportation_and_storage +
+                           sic2007_section_lab_t0_wholesale_and_retail_trade_repair_of_motor_vehicles_and_motorcycles +
+                           #  soc2000_major_group_title_t0_administrative_and_secretarial_occupations +
+                           soc2000_major_group_title_t0_associate_professional_and_technical_occupations +
+                           soc2000_major_group_title_t0_elementary_occupations +
+                           soc2000_major_group_title_t0_managers_and_senior_officials +
+                           soc2000_major_group_title_t0_personal_service_occupations +
+                           soc2000_major_group_title_t0_process_plant_and_machine_operatives +
+                           soc2000_major_group_title_t0_sales_and_customer_service_occupations +
+                           soc2000_major_group_title_t0_science_and_technology_professionals +
+                           soc2000_major_group_title_t0_skilled_trades_occupations +
+                           jbft_dv_t0 +
+                           small_firm_t0 +
+                           emp_contract_t0 +
+                           broken_emp_t0 +
+                           j2has_dv_t0 +
+                           rel_pov_t0 +
+                           health_t0 +
+                           srh_bin_t0 +
+                           ghq_case4_t0 +
+                           sf12mcs_dv_t0 +
+                           sf12pcs_dv_t0, 
+                         data = m_matchit_df,
+                         method = "nearest", 
+                         ratio=3,
+                         distance = "glm",
+                         estimand = "ATT")
+end_time <- Sys.time()
+end_time - start_time
+
+m_matchit_df$weights_ps <- m_matchit_mod$weights
+
+summary(m_matchit_df$weights_ps)
+
+m_matchit_df <- m_matchit_df %>% filter(weights_ps!=0)
+
+### create weighted data
+m_matchit_df_svy <- svydesign(ids = ~1,
+                              data = m_matchit_df,
+                              weights = ~weights_ps)
+
+
+### PS matched table one
+m_table_one_matchit <- svyCreateTableOne(vars = cov_vector3,
+                                         strata = "exposure1",
+                                         data = m_matchit_df_svy,
+                                         factorVars = c(catVars_vec),
+                                         test = FALSE)
+
+m_table_one_matchit_sav <- print(m_table_one_matchit, showAllLevels = TRUE, smd = TRUE,
+                                 nonnormal = nonnorm_vec,
+                                 factorVars = c(catVars_vec),
+                                 formatOptions = list(big.mark = ","))
+
+
+write.csv(m_table_one_matchit_sav, "./output/cc/matched_descriptives/subgroups/sex/m_table_one_matchit_sav.csv")
+
+
+### count covariates with an important imbalance (>0.1)
+addmargins(table(ExtractSmd(m_table_one_matchit) > 0.1))
+
+m_table_one_matchit_smd <- data.frame(ExtractSmd(m_table_one_matchit))
+m_table_one_matchit_smd <- m_table_one_matchit_smd %>% 
+  rownames_to_column("var") %>% # Apply rownames_to_column
+  rename("smd" = "X1.vs.2") %>% 
+  mutate(imbalance_flag = ifelse(smd>0.1,"SMD>0.1","SMD<=0.1"),
+         matched = "unmatched")
+
+write.csv(m_table_one_matchit_smd, "./working_data/cc/subgroup/sex/m_table_one_matchit_smd.csv")
+
+################################################################################
+#####                      IPTW using WeightIt package                     #####
+################################################################################
+
+## here <<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#### female --------------------------------------------------------------------
+f_iptw <- female_df %>% 
+  mutate(exp1_bin = ifelse(exposure1=="exposed (employed at t1)",
+                           1,0))
+
+f_iptw$srh_bin_t1 <- as.character(f_iptw$srh_bin_t1)
+f_iptw$ghq_case4_t1 <- as.character(f_iptw$ghq_case4_t1)
+
+
+start_time <- Sys.time()
+f_iptw_mod <- matchit(exp1_bin ~
+                        # sex_dv_t0 + 
+                        age_dv_t0 +
+                         non_white_t0 +
+                         #        marital_status_t0_married_civil_partnership +
+                         marital_status_t0_divorced_separated_widowed +
+                         marital_status_t0_single +
+                         dep_child_bin_t0 +
+                        degree_bin_t0 +
+                         #  gor_dv_t0_east_midlands +
+                         gor_dv_t0_east_of_england +
+                         gor_dv_t0_london +
+                         gor_dv_t0_north_east +
+                         gor_dv_t0_north_west +
+                         gor_dv_t0_northern_ireland +
+                         gor_dv_t0_scotland +
+                         gor_dv_t0_south_east +
+                         gor_dv_t0_south_west +
+                         gor_dv_t0_wales +
+                         gor_dv_t0_west_midlands +
+                         gor_dv_t0_yorkshire_and_the_humber +
+                         #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
+                         sic2007_section_lab_t0_administrative_and_support_service_activities +
+                         sic2007_section_lab_t0_construction +
+                         sic2007_section_lab_t0_education +
+                         sic2007_section_lab_t0_human_health_and_social_work_activities +
+                         sic2007_section_lab_t0_manufacturing +
+                         sic2007_section_lab_t0_other_industry +
+                         sic2007_section_lab_t0_professional_scientific_and_technical_activities +
+                         sic2007_section_lab_t0_public_administration_and_defence_compulsory_social_security +
+                         sic2007_section_lab_t0_transportation_and_storage +
+                         sic2007_section_lab_t0_wholesale_and_retail_trade_repair_of_motor_vehicles_and_motorcycles +
+                         #  soc2000_major_group_title_t0_administrative_and_secretarial_occupations +
+                         soc2000_major_group_title_t0_associate_professional_and_technical_occupations +
+                         soc2000_major_group_title_t0_elementary_occupations +
+                         soc2000_major_group_title_t0_managers_and_senior_officials +
+                         soc2000_major_group_title_t0_personal_service_occupations +
+                         soc2000_major_group_title_t0_process_plant_and_machine_operatives +
+                         soc2000_major_group_title_t0_sales_and_customer_service_occupations +
+                         soc2000_major_group_title_t0_science_and_technology_professionals +
+                         soc2000_major_group_title_t0_skilled_trades_occupations +
+                         jbft_dv_t0 +
+                         small_firm_t0 +
+                         emp_contract_t0 +
+                         broken_emp_t0 +
                          j2has_dv_t0 +
                          rel_pov_t0 +
                          health_t0 +
@@ -491,7 +596,6 @@ end_time - start_time
 #write.csv(test_summary, "./output/temp_output/test_sumary.csv")
 
 f_iptw$weights_ps <- f_iptw_mod$weights
-#matchit_df$weights <- unname(matchit_df$weights)
 
 ### create weighted data
 f_iptw_svy <- svydesign(ids = ~1,
@@ -543,12 +647,7 @@ m_iptw_mod <- matchit(exp1_bin ~
                         marital_status_t0_divorced_separated_widowed +
                         marital_status_t0_single +
                         dep_child_bin_t0 +
-                        #        hiqual_dv_t0_degree +
-                        hiqual_dv_t0_other_higher_degree +
-                        hiqual_dv_t0_a_level_etc +
-                        hiqual_dv_t0_gcse_etc +
-                        hiqual_dv_t0_other_qualification +
-                        hiqual_dv_t0_no_qualification +
+                        degree_bin_t0 +
                         #  gor_dv_t0_east_midlands +
                         gor_dv_t0_east_of_england +
                         gor_dv_t0_london +
@@ -584,9 +683,7 @@ m_iptw_mod <- matchit(exp1_bin ~
                         jbft_dv_t0 +
                         small_firm_t0 +
                         emp_contract_t0 +
-                        #  broken_emp_t0_broken_employment +
-                        broken_emp_t0_no_employment_spells +
-                        broken_emp_t0_unbroken_employment +
+                        broken_emp_t0 +
                         j2has_dv_t0 +
                         rel_pov_t0 +
                         health_t0 +
@@ -662,12 +759,7 @@ dr_iptw_pcs_f_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                       marital_status_t1_divorced_separated_widowed +
                                       marital_status_t1_single +
                                       dep_child_bin_t0 +
-                                      #        hiqual_dv_t0_degree +
-                                      hiqual_dv_t0_other_higher_degree +
-                                      hiqual_dv_t0_a_level_etc +
-                                      hiqual_dv_t0_gcse_etc +
-                                      hiqual_dv_t0_other_qualification +
-                                      hiqual_dv_t0_no_qualification +
+                                      degree_bin_t0 +
                                       #  gor_dv_t0_east_midlands +
                                       gor_dv_t0_east_of_england +
                                       gor_dv_t0_london +
@@ -680,18 +772,6 @@ dr_iptw_pcs_f_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                       gor_dv_t0_wales +
                                       gor_dv_t0_west_midlands +
                                       gor_dv_t0_yorkshire_and_the_humber +
-                                      #                                         #  gor_dv_t1_east_midlands +
-                                      #                                         gor_dv_t1_east_of_england +
-                                      #                                         gor_dv_t1_london +
-                                      #                                         gor_dv_t1_north_east +
-                                      #                                         gor_dv_t1_north_west +
-                                      #                                         gor_dv_t1_northern_ireland +
-                                      #                                         gor_dv_t1_scotland +
-                                      #                                         gor_dv_t1_south_east +
-                                      #                                         gor_dv_t1_south_west +
-                                      #                                         gor_dv_t1_wales +
-                                      #                                         gor_dv_t1_west_midlands +
-                                    #                                         gor_dv_t1_yorkshire_and_the_humber +
                                     #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
                                     sic2007_section_lab_t0_administrative_and_support_service_activities +
                                       sic2007_section_lab_t0_construction +
@@ -715,15 +795,12 @@ dr_iptw_pcs_f_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                       jbft_dv_t0 +
                                       small_firm_t0 +
                                       emp_contract_t0 +
-                                      #  broken_emp_t0_broken_employment +
-                                      broken_emp_t0_no_employment_spells +
-                                      broken_emp_t0_unbroken_employment +
+                                      broken_emp_t +
                                       j2has_dv_t0 +
                                       rel_pov_t0 +
-                                      #                                        rel_pov_t1 +
                                       health_t0 +
                                       health_t1 +
-                                      #                                         sf12pcs_dv_t0 +
+                                      sf12pcs_dv_t0 +
                                       # interaction terms
 #                                      sex_dv_t0*age_dv_t0 +
 #                                      sex_dv_t0*rel_pov_t0 +
@@ -778,12 +855,7 @@ dr_iptw_mcs_f_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                       marital_status_t1_divorced_separated_widowed +
                                       marital_status_t1_single +
                                       dep_child_bin_t0 +
-                                      #        hiqual_dv_t0_degree +
-                                      hiqual_dv_t0_other_higher_degree +
-                                      hiqual_dv_t0_a_level_etc +
-                                      hiqual_dv_t0_gcse_etc +
-                                      hiqual_dv_t0_other_qualification +
-                                      hiqual_dv_t0_no_qualification +
+                                      degree_bin_t0 +
                                       #  gor_dv_t0_east_midlands +
                                       gor_dv_t0_east_of_england +
                                       gor_dv_t0_london +
@@ -796,18 +868,6 @@ dr_iptw_mcs_f_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                       gor_dv_t0_wales +
                                       gor_dv_t0_west_midlands +
                                       gor_dv_t0_yorkshire_and_the_humber +
-                                      #                                         #  gor_dv_t1_east_midlands +
-                                      #                                         gor_dv_t1_east_of_england +
-                                      #                                         gor_dv_t1_london +
-                                      #                                         gor_dv_t1_north_east +
-                                      #                                         gor_dv_t1_north_west +
-                                      #                                         gor_dv_t1_northern_ireland +
-                                      #                                         gor_dv_t1_scotland +
-                                      #                                         gor_dv_t1_south_east +
-                                      #                                         gor_dv_t1_south_west +
-                                      #                                         gor_dv_t1_wales +
-                                      #                                         gor_dv_t1_west_midlands +
-                                    #                                         gor_dv_t1_yorkshire_and_the_humber +
                                     #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
                                     sic2007_section_lab_t0_administrative_and_support_service_activities +
                                       sic2007_section_lab_t0_construction +
@@ -831,15 +891,12 @@ dr_iptw_mcs_f_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                       jbft_dv_t0 +
                                       small_firm_t0 +
                                       emp_contract_t0 +
-                                      #  broken_emp_t0_broken_employment +
-                                      broken_emp_t0_no_employment_spells +
-                                      broken_emp_t0_unbroken_employment +
+                                      broken_emp_t0 +
                                       j2has_dv_t0 +
                                       rel_pov_t0 +
-                                      #                                        rel_pov_t1 +
                                       health_t0 +
                                       health_t1 +
-                                      #                                         sf12mcs_dv_t0 +
+                                      sf12mcs_dv_t0 +
                                       # interaction terms
  #                                     sex_dv_t0*age_dv_t0 +
  #                                     sex_dv_t0*rel_pov_t0 +
@@ -899,12 +956,7 @@ dr_iptw_srh_f_mod <- glmmTMB( srh_bin_t1 ~
                                       marital_status_t1_divorced_separated_widowed +
                                       marital_status_t1_single +
                                       dep_child_bin_t0 +
-                                      #        hiqual_dv_t0_degree +
-                                      hiqual_dv_t0_other_higher_degree +
-                                      hiqual_dv_t0_a_level_etc +
-                                      hiqual_dv_t0_gcse_etc +
-                                      hiqual_dv_t0_other_qualification +
-                                      hiqual_dv_t0_no_qualification +
+                                      degree_bin_t0 +
                                       #  gor_dv_t0_east_midlands +
                                       gor_dv_t0_east_of_england +
                                       gor_dv_t0_london +
@@ -917,18 +969,6 @@ dr_iptw_srh_f_mod <- glmmTMB( srh_bin_t1 ~
                                       gor_dv_t0_wales +
                                       gor_dv_t0_west_midlands +
                                       gor_dv_t0_yorkshire_and_the_humber +
-                                      #                                         #  gor_dv_t1_east_midlands +
-                                      #                                         gor_dv_t1_east_of_england +
-                                      #                                         gor_dv_t1_london +
-                                      #                                         gor_dv_t1_north_east +
-                                      #                                         gor_dv_t1_north_west +
-                                      #                                         gor_dv_t1_northern_ireland +
-                                      #                                         gor_dv_t1_scotland +
-                                      #                                         gor_dv_t1_south_east +
-                                      #                                         gor_dv_t1_south_west +
-                                      #                                         gor_dv_t1_wales +
-                                      #                                         gor_dv_t1_west_midlands +
-                                    #                                         gor_dv_t1_yorkshire_and_the_humber +
                                     #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
                                     sic2007_section_lab_t0_administrative_and_support_service_activities +
                                       sic2007_section_lab_t0_construction +
@@ -952,15 +992,12 @@ dr_iptw_srh_f_mod <- glmmTMB( srh_bin_t1 ~
                                       jbft_dv_t0 +
                                       small_firm_t0 +
                                       emp_contract_t0 +
-                                      #  broken_emp_t0_broken_employment +
-                                      broken_emp_t0_no_employment_spells +
-                                      broken_emp_t0_unbroken_employment +
+                                      broken_emp_t0 +
                                       j2has_dv_t0 +
                                       rel_pov_t0 +
-                                      #                                        rel_pov_t1 +
                                       health_t0 +
                                       health_t1 +
-                                      #                                         srh_bin_t0 +
+                                      srh_bin_t0 +
                                       # interaction terms
 #                                      sex_dv_t0*age_dv_t0 +
 #                                      sex_dv_t0*rel_pov_t0 +
@@ -1023,12 +1060,7 @@ dr_iptw_ghq_f_mod <- glmmTMB( ghq_case4_t1 ~
                                       marital_status_t1_divorced_separated_widowed +
                                       marital_status_t1_single +
                                       dep_child_bin_t0 +
-                                      #        hiqual_dv_t0_degree +
-                                      hiqual_dv_t0_other_higher_degree +
-                                      hiqual_dv_t0_a_level_etc +
-                                      hiqual_dv_t0_gcse_etc +
-                                      hiqual_dv_t0_other_qualification +
-                                      hiqual_dv_t0_no_qualification +
+                                      degree_bin_t0 +
                                       #  gor_dv_t0_east_midlands +
                                       gor_dv_t0_east_of_england +
                                       gor_dv_t0_london +
@@ -1041,18 +1073,6 @@ dr_iptw_ghq_f_mod <- glmmTMB( ghq_case4_t1 ~
                                       gor_dv_t0_wales +
                                       gor_dv_t0_west_midlands +
                                       gor_dv_t0_yorkshire_and_the_humber +
-                                      #                                         #  gor_dv_t1_east_midlands +
-                                      #                                         gor_dv_t1_east_of_england +
-                                      #                                         gor_dv_t1_london +
-                                      #                                         gor_dv_t1_north_east +
-                                      #                                         gor_dv_t1_north_west +
-                                      #                                         gor_dv_t1_northern_ireland +
-                                      #                                         gor_dv_t1_scotland +
-                                      #                                         gor_dv_t1_south_east +
-                                      #                                         gor_dv_t1_south_west +
-                                      #                                         gor_dv_t1_wales +
-                                      #                                         gor_dv_t1_west_midlands +
-                                    #                                         gor_dv_t1_yorkshire_and_the_humber +
                                     #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
                                     sic2007_section_lab_t0_administrative_and_support_service_activities +
                                       sic2007_section_lab_t0_construction +
@@ -1076,15 +1096,13 @@ dr_iptw_ghq_f_mod <- glmmTMB( ghq_case4_t1 ~
                                       jbft_dv_t0 +
                                       small_firm_t0 +
                                       emp_contract_t0 +
-                                      #  broken_emp_t0_broken_employment +
-                                      broken_emp_t0_no_employment_spells +
-                                      broken_emp_t0_unbroken_employment +
+                                      broken_emp_t0 +
                                       j2has_dv_t0 +
                                       rel_pov_t0 +
-                                      #                                        rel_pov_t1 +
+                                      rel_pov_t1 +
                                       health_t0 +
                                       health_t1 +
-                                      #                                         ghq_case4_t0 +
+                                      ghq_case4_t0 +
                                       # interaction terms
 #                                      sex_dv_t0*age_dv_t0 +
 #                                      sex_dv_t0*rel_pov_t0 +
@@ -1165,12 +1183,7 @@ dr_iptw_pcs_m_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                 marital_status_t1_divorced_separated_widowed +
                                 marital_status_t1_single +
                                 dep_child_bin_t0 +
-                                #        hiqual_dv_t0_degree +
-                                hiqual_dv_t0_other_higher_degree +
-                                hiqual_dv_t0_a_level_etc +
-                                hiqual_dv_t0_gcse_etc +
-                                hiqual_dv_t0_other_qualification +
-                                hiqual_dv_t0_no_qualification +
+                                degree_bin_t0 +
                                 #  gor_dv_t0_east_midlands +
                                 gor_dv_t0_east_of_england +
                                 gor_dv_t0_london +
@@ -1183,18 +1196,6 @@ dr_iptw_pcs_m_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                 gor_dv_t0_wales +
                                 gor_dv_t0_west_midlands +
                                 gor_dv_t0_yorkshire_and_the_humber +
-                                #                                         #  gor_dv_t1_east_midlands +
-                                #                                         gor_dv_t1_east_of_england +
-                                #                                         gor_dv_t1_london +
-                                #                                         gor_dv_t1_north_east +
-                                #                                         gor_dv_t1_north_west +
-                                #                                         gor_dv_t1_northern_ireland +
-                                #                                         gor_dv_t1_scotland +
-                                #                                         gor_dv_t1_south_east +
-                                #                                         gor_dv_t1_south_west +
-                                #                                         gor_dv_t1_wales +
-                                #                                         gor_dv_t1_west_midlands +
-                              #                                         gor_dv_t1_yorkshire_and_the_humber +
                               #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
                               sic2007_section_lab_t0_administrative_and_support_service_activities +
                                 sic2007_section_lab_t0_construction +
@@ -1218,15 +1219,12 @@ dr_iptw_pcs_m_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                 jbft_dv_t0 +
                                 small_firm_t0 +
                                 emp_contract_t0 +
-                                #  broken_emp_t0_broken_employment +
-                                broken_emp_t0_no_employment_spells +
-                                broken_emp_t0_unbroken_employment +
+                                broken_emp_t0 +
                                 j2has_dv_t0 +
                                 rel_pov_t0 +
-                                #                                        rel_pov_t1 +
                                 health_t0 +
                                 health_t1 +
-                                #                                         sf12pcs_dv_t0 +
+                                sf12pcs_dv_t0 +
                                 # interaction terms
                                 #                                      sex_dv_t0*age_dv_t0 +
                                 #                                      sex_dv_t0*rel_pov_t0 +
@@ -1281,12 +1279,7 @@ dr_iptw_mcs_m_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                 marital_status_t1_divorced_separated_widowed +
                                 marital_status_t1_single +
                                 dep_child_bin_t0 +
-                                #        hiqual_dv_t0_degree +
-                                hiqual_dv_t0_other_higher_degree +
-                                hiqual_dv_t0_a_level_etc +
-                                hiqual_dv_t0_gcse_etc +
-                                hiqual_dv_t0_other_qualification +
-                                hiqual_dv_t0_no_qualification +
+                                degree_bin_t0 +
                                 #  gor_dv_t0_east_midlands +
                                 gor_dv_t0_east_of_england +
                                 gor_dv_t0_london +
@@ -1299,18 +1292,6 @@ dr_iptw_mcs_m_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                 gor_dv_t0_wales +
                                 gor_dv_t0_west_midlands +
                                 gor_dv_t0_yorkshire_and_the_humber +
-                                #                                         #  gor_dv_t1_east_midlands +
-                                #                                         gor_dv_t1_east_of_england +
-                                #                                         gor_dv_t1_london +
-                                #                                         gor_dv_t1_north_east +
-                                #                                         gor_dv_t1_north_west +
-                                #                                         gor_dv_t1_northern_ireland +
-                                #                                         gor_dv_t1_scotland +
-                                #                                         gor_dv_t1_south_east +
-                                #                                         gor_dv_t1_south_west +
-                                #                                         gor_dv_t1_wales +
-                                #                                         gor_dv_t1_west_midlands +
-                              #                                         gor_dv_t1_yorkshire_and_the_humber +
                               #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
                               sic2007_section_lab_t0_administrative_and_support_service_activities +
                                 sic2007_section_lab_t0_construction +
@@ -1334,15 +1315,12 @@ dr_iptw_mcs_m_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                 jbft_dv_t0 +
                                 small_firm_t0 +
                                 emp_contract_t0 +
-                                #  broken_emp_t0_broken_employment +
-                                broken_emp_t0_no_employment_spells +
-                                broken_emp_t0_unbroken_employment +
+                                broken_emp_t0 +
                                 j2has_dv_t0 +
                                 rel_pov_t0 +
-                                #                                        rel_pov_t1 +
                                 health_t0 +
                                 health_t1 +
-                                #                                         sf12mcs_dv_t0 +
+                                sf12mcs_dv_t0 +
                                 # interaction terms
                                 #                                     sex_dv_t0*age_dv_t0 +
                                 #                                     sex_dv_t0*rel_pov_t0 +
@@ -1402,12 +1380,7 @@ dr_iptw_srh_m_mod <- glmmTMB( srh_bin_t1 ~
                                 marital_status_t1_divorced_separated_widowed +
                                 marital_status_t1_single +
                                 dep_child_bin_t0 +
-                                #        hiqual_dv_t0_degree +
-                                hiqual_dv_t0_other_higher_degree +
-                                hiqual_dv_t0_a_level_etc +
-                                hiqual_dv_t0_gcse_etc +
-                                hiqual_dv_t0_other_qualification +
-                                hiqual_dv_t0_no_qualification +
+                                degree_bin_t0 +
                                 #  gor_dv_t0_east_midlands +
                                 gor_dv_t0_east_of_england +
                                 gor_dv_t0_london +
@@ -1420,18 +1393,6 @@ dr_iptw_srh_m_mod <- glmmTMB( srh_bin_t1 ~
                                 gor_dv_t0_wales +
                                 gor_dv_t0_west_midlands +
                                 gor_dv_t0_yorkshire_and_the_humber +
-                                #                                         #  gor_dv_t1_east_midlands +
-                                #                                         gor_dv_t1_east_of_england +
-                                #                                         gor_dv_t1_london +
-                                #                                         gor_dv_t1_north_east +
-                                #                                         gor_dv_t1_north_west +
-                                #                                         gor_dv_t1_northern_ireland +
-                                #                                         gor_dv_t1_scotland +
-                                #                                         gor_dv_t1_south_east +
-                                #                                         gor_dv_t1_south_west +
-                                #                                         gor_dv_t1_wales +
-                                #                                         gor_dv_t1_west_midlands +
-                              #                                         gor_dv_t1_yorkshire_and_the_humber +
                               #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
                               sic2007_section_lab_t0_administrative_and_support_service_activities +
                                 sic2007_section_lab_t0_construction +
@@ -1455,15 +1416,12 @@ dr_iptw_srh_m_mod <- glmmTMB( srh_bin_t1 ~
                                 jbft_dv_t0 +
                                 small_firm_t0 +
                                 emp_contract_t0 +
-                                #  broken_emp_t0_broken_employment +
-                                broken_emp_t0_no_employment_spells +
-                                broken_emp_t0_unbroken_employment +
+                                broken_emp_t0 +
                                 j2has_dv_t0 +
                                 rel_pov_t0 +
-                                #                                        rel_pov_t1 +
                                 health_t0 +
                                 health_t1 +
-                                #                                         srh_bin_t0 +
+                                srh_bin_t0 +
                                 # interaction terms
                                 #                                      sex_dv_t0*age_dv_t0 +
                                 #                                      sex_dv_t0*rel_pov_t0 +
@@ -1526,12 +1484,7 @@ dr_iptw_ghq_m_mod <- glmmTMB( ghq_case4_t1 ~
                                 marital_status_t1_divorced_separated_widowed +
                                 marital_status_t1_single +
                                 dep_child_bin_t0 +
-                                #        hiqual_dv_t0_degree +
-                                hiqual_dv_t0_other_higher_degree +
-                                hiqual_dv_t0_a_level_etc +
-                                hiqual_dv_t0_gcse_etc +
-                                hiqual_dv_t0_other_qualification +
-                                hiqual_dv_t0_no_qualification +
+                                degree_bin_t0 +
                                 #  gor_dv_t0_east_midlands +
                                 gor_dv_t0_east_of_england +
                                 gor_dv_t0_london +
@@ -1544,18 +1497,6 @@ dr_iptw_ghq_m_mod <- glmmTMB( ghq_case4_t1 ~
                                 gor_dv_t0_wales +
                                 gor_dv_t0_west_midlands +
                                 gor_dv_t0_yorkshire_and_the_humber +
-                                #                                         #  gor_dv_t1_east_midlands +
-                                #                                         gor_dv_t1_east_of_england +
-                                #                                         gor_dv_t1_london +
-                                #                                         gor_dv_t1_north_east +
-                                #                                         gor_dv_t1_north_west +
-                                #                                         gor_dv_t1_northern_ireland +
-                                #                                         gor_dv_t1_scotland +
-                                #                                         gor_dv_t1_south_east +
-                                #                                         gor_dv_t1_south_west +
-                                #                                         gor_dv_t1_wales +
-                                #                                         gor_dv_t1_west_midlands +
-                              #                                         gor_dv_t1_yorkshire_and_the_humber +
                               #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
                               sic2007_section_lab_t0_administrative_and_support_service_activities +
                                 sic2007_section_lab_t0_construction +
@@ -1579,15 +1520,12 @@ dr_iptw_ghq_m_mod <- glmmTMB( ghq_case4_t1 ~
                                 jbft_dv_t0 +
                                 small_firm_t0 +
                                 emp_contract_t0 +
-                                #  broken_emp_t0_broken_employment +
-                                broken_emp_t0_no_employment_spells +
-                                broken_emp_t0_unbroken_employment +
+                                broken_emp_t0 +
                                 j2has_dv_t0 +
                                 rel_pov_t0 +
-                                #                                        rel_pov_t1 +
                                 health_t0 +
                                 health_t1 +
-                                #                                         ghq_case4_t0 +
+                                ghq_case4_t0 +
                                 # interaction terms
                                 #                                      sex_dv_t0*age_dv_t0 +
                                 #                                      sex_dv_t0*rel_pov_t0 +
