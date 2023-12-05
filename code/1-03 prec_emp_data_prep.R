@@ -166,6 +166,12 @@ master_raw1 <- master_raw1 %>%
                                        ifelse(hiqual_dv=="inapplicable","missing",
                                        hiqual_dv))))))
 
+## binary version (degree/no degree)
+master_raw1 <- master_raw1 %>% 
+  mutate(degree_bin = ifelse(hiqual_dv %in% c("Degree", "Other higher degree"),
+                             "Degree or higher",
+                             ifelse(hiqual_dv=="missing", "missing",
+                                    "No degree")))
   
 ### region
 master_raw1 <- master_raw1 %>% 
@@ -257,12 +263,18 @@ master_raw1 <- master_raw1 %>%
 master_raw1$jbhrs <- as.numeric(master_raw1$jbhrs)
 
 ### income
-master_raw1$fimnnet_dv <- as.character(master_raw1$fimnnet_dv)
-master_raw1$fimnnet_dv <- as.numeric(master_raw1$fimnnet_dv)
+master_raw1$fihhmnnet1_dv <- as.character(master_raw1$fihhmnnet1_dv)
+master_raw1$fihhmnnet1_dv <- as.numeric(master_raw1$fihhmnnet1_dv)
+master_raw1$ieqmoecd_dv <- as.character(master_raw1$ieqmoecd_dv)
+master_raw1$ieqmoecd_dv <- as.numeric(master_raw1$ieqmoecd_dv)
+
+master_raw1 <- master_raw1 %>% 
+  mutate(eq_fihhmnnet1_dv = fihhmnnet1_dv/ieqmoecd_dv)
+  
 
 
 ## check <0s
-master_raw1 %>% mutate(inc_flag = ifelse(fimnnet_dv<0,1,0)) %>% 
+master_raw1 %>% mutate(inc_flag = ifelse(eq_fihhmnnet1_dv<0,1,0)) %>% 
   group_by(inc_flag) %>% 
   summarise(n=n())
 # can be <0 due to self-employ,ent losses reported
@@ -272,13 +284,13 @@ master_raw1 %>% mutate(inc_flag = ifelse(fimnnet_dv<0,1,0)) %>%
 
 inc_temp <- master_raw1 %>% 
   group_by(wv_n) %>% 
-  summarise(med_inc = median(fimnnet_dv, na.rm=TRUE)) %>% 
+  summarise(med_inc = median(eq_fihhmnnet1_dv, na.rm=TRUE)) %>% 
   mutate(med_inc_60 = 0.6*med_inc) # calculate 60% median income (relative poverty)
 
 # join back onto master df
 master_raw1 <- master_raw1 %>% left_join(inc_temp) %>% 
-  mutate(below_med_inc = ifelse(fimnnet_dv<med_inc,"below median income","median income of above"),
-         rel_pov = ifelse(fimnnet_dv<med_inc_60,"relative poverty","not in relative poverty")) %>% 
+  mutate(below_med_inc = ifelse(eq_fihhmnnet1_dv<med_inc,"below median income","median income of above"),
+         rel_pov = ifelse(eq_fihhmnnet1_dv<med_inc_60,"relative poverty","not in relative poverty")) %>% 
   dplyr::select(-c(med_inc, med_inc_60))
 
 table(master_raw1$below_med_inc)
@@ -374,7 +386,7 @@ sum(master_raw1$unemp_spells_bin=="missing")
 
 ### create broken employment variable ------
 master_raw1 <- master_raw1 %>% 
-  mutate(broken_emp = ifelse(emp_spells_bin=="no","No employment spells", 
+  mutate(broken_emp = ifelse(emp_spells_bin=="no","Broken employment", 
                              ifelse(emp_spells_bin=="yes" & 
                                       non_emp_spells_bin=="no" & 
                                       unemp_spells_bin=="no",
