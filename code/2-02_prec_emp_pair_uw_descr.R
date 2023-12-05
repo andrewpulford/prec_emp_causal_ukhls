@@ -29,6 +29,7 @@ options(scipen = 999)
 library(tidyverse) # all kinds of stuff 
 library(Hmisc) # histogram plotting across cols
 library(tableone) # for creating table one
+library(fastDummies)
 
 ################################################################################
 #####                         load and prepare data                        #####
@@ -38,7 +39,7 @@ library(tableone) # for creating table one
 source("./look_ups/variable_vectors.r")
 
 ####load analytic df -----------------------------------------------------------
-pair_cc_analytic <- readRDS("./working_data/pair_cc_analytic.rds")
+pair_cc_analytic <- readRDS("./working_data/cc/pair_cc_analytic.rds")
 
 # check no NAs
 sapply(pair_cc_analytic, function(x) sum(is.na(x)))
@@ -161,7 +162,7 @@ table_one_smd <- table_one_smd %>%
   mutate(imbalance_flag = ifelse(smd>0.1,"SMD>0.1","SMD<=0.1"),
          matched = "unmatched")
 
-write.csv(table_one_smd, "./working_data/table_one_unmatched_smd.csv")
+write.csv(table_one_smd, "./working_data/cc/table_one_unmatched_smd.csv")
 
 addmargins(table(ExtractSmd(table_one) > 0.1))
 
@@ -186,7 +187,7 @@ table_one_alt_smd <- table_one_alt_smd %>%
   mutate(imbalance_flag = ifelse(smd>0.1,"SMD>0.1","SMD<=0.1"),
          matched = "unmatched")
 
-write.csv(table_one_alt_smd, "./output/unmatched_descriptives/table_one_alt_unmatched_smd.csv")
+write.csv(table_one_alt_smd, "./output/cc/unmatched_descriptives/table_one_alt_unmatched_smd.csv")
 
 # plot unmatched smd's
 table_one_alt_smd %>% 
@@ -205,6 +206,6 @@ table_one_alt_sav <- print(table_one_alt, showAllLevels = TRUE, smd = TRUE,
 
 ### save tables
 
-write.csv(table_one_sav, "./output/unmatched_descriptives/table_one_unmatched.csv")
-write.csv(table_one_alt_sav, "./output/unmatched_descriptives/table_one_alt_unmatched.csv")
+write.csv(table_one_sav, "./output/cc/unmatched_descriptives/table_one_unmatched.csv")
+write.csv(table_one_alt_sav, "./output/cc/unmatched_descriptives/table_one_alt_unmatched.csv")
 
