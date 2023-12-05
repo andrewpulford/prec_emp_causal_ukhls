@@ -143,12 +143,12 @@ pair_cc_analytic <- pair_cc_eligible %>%
 ################################################################################
 
 ## paired eligible complete case df
-#write_rds(pair_cc_eligible, "./working_data/pair_eligible.rds")
+write_rds(pair_cc_eligible, "./working_data/pair_eligible.rds")
 
 
 ## paired analytic complete case df
-write_rds(pair_cc_analytic, "./working_data/pair_cc_analytic.rds")
+write_rds(pair_cc_analytic, "./working_data/cc/pair_cc_analytic.rds")
 
 ## exclusions
-write_rds(pair_cc_eligible_na, "./working_data/pair_cc_eligible_na.rds")
+write_rds(pair_cc_eligible_na, "./working_data/cc/pair_cc_eligible_na.rds")
 
