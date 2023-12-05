@@ -1,7 +1,7 @@
 ################################################################################
 
 # Precarious employment and health - Understanding Society
-# 3-05 - Paired propensity score matched complete case outcome analysis for risk  
+# 2-04- Paired propensity score matched complete case outcome analysis for risk  
 # of job loss 
 # Andrew Pulford
 
@@ -34,7 +34,7 @@ options(scipen = 999)
 
 library(tidyverse) # all kinds of stuff 
 library(fastDummies) # for creating dummy variables
-library(Matching) # PS matching
+#library(Matching) # PS matching
 library(tableone) # for creating table one
 library(survey) # for PS weighting
 library(reshape2) # Reorganizing data
@@ -54,10 +54,10 @@ library(glmmTMB) # for multi-level modelling (faster than lme4)
 source("./look_ups/variable_vectors.r")
 
 #### load propensity matched df ------------------------------------------------
-df_matched <- readRDS("working_data/pair_cc_matched.rds") # PS matched data
+df_matched <- readRDS("working_data/cc/matchit_df.rds") # PS matched data
 
 #### load analytic df
-pair_cc_analytic <- readRDS("./working_data/pair_cc_analytic.rds")
+pair_cc_analytic <- readRDS("./working_data/cc/pair_cc_analytic.rds")
 
 pair_cc_analytic$pidp <- factor(pair_cc_analytic$pidp)
 pair_cc_analytic$sf12mcs_dv_t0 <- as.double(pair_cc_analytic$sf12mcs_dv_t0)
@@ -106,7 +106,7 @@ df_matched$sf12mcs_dv_t1 <- as.numeric(df_matched$sf12mcs_dv_t1)
 
 
 #### load IPTW df --------------------------------------------------------------
-matchit_df <- readRDS("working_data/matchit_df.rds") # analytic df with IPTW from MatchIt package
+matchit_df <- readRDS("working_data/cc/matchit_df.rds") # analytic df with IPTW from MatchIt package
 
 
 ### convert binary outcome and exposure vars to factors and relevel to allow svyglm to work
@@ -180,7 +180,7 @@ table_outcomes_IPTW_sav <- print(table_outcomes_IPTW,
                                      showAllLevels = TRUE,  
                                      smd = TRUE)
 
-write.csv(table_outcomes_IPTW_sav, "./output/weighted_descriptives/table_outcomes_IPTW_sav.csv")
+write.csv(table_outcomes_IPTW_sav, "./output/cc/weighted_descriptives/table_outcomes_IPTW_sav.csv")
 
 ################################################################################
 #####                       matched regression models                     ######
@@ -246,12 +246,7 @@ dr_matched_pcs_glmmTMB_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                          marital_status_t1_divorced_separated_widowed +
                                          marital_status_t1_single +
                                          dep_child_bin_t0 +
-                                         #        hiqual_dv_t0_degree +
-                                         hiqual_dv_t0_other_higher_degree +
-                                         hiqual_dv_t0_a_level_etc +
-                                         hiqual_dv_t0_gcse_etc +
-                                         hiqual_dv_t0_other_qualification +
-                                         hiqual_dv_t0_no_qualification +
+                                         degree_bin_t0 +
                                          #  gor_dv_t0_east_midlands +
                                          gor_dv_t0_east_of_england +
                                          gor_dv_t0_london +
@@ -287,9 +282,7 @@ dr_matched_pcs_glmmTMB_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                          jbft_dv_t0 +
                                          small_firm_t0 +
                                          emp_contract_t0 +
-                                         #  broken_emp_t0_broken_employment +
-                                         broken_emp_t0_no_employment_spells +
-                                         broken_emp_t0_unbroken_employment +
+                                         broken_emp_t0 +
                                          j2has_dv_t0 +
                                          rel_pov_t0 +
                                          health_t0 +
@@ -344,12 +337,7 @@ dr_matched_mcs_glmmTMB_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                          marital_status_t1_divorced_separated_widowed +
                                          marital_status_t1_single +
                                          dep_child_bin_t0 +
-                                         #        hiqual_dv_t0_degree +
-                                         hiqual_dv_t0_other_higher_degree +
-                                         hiqual_dv_t0_a_level_etc +
-                                         hiqual_dv_t0_gcse_etc +
-                                         hiqual_dv_t0_other_qualification +
-                                         hiqual_dv_t0_no_qualification +
+                                         degree_bin_t0 +
                                          #  gor_dv_t0_east_midlands +
                                          gor_dv_t0_east_of_england +
                                          gor_dv_t0_london +
@@ -385,9 +373,7 @@ dr_matched_mcs_glmmTMB_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                          jbft_dv_t0 +
                                          small_firm_t0 +
                                          emp_contract_t0 +
-                                         #  broken_emp_t0_broken_employment +
-                                         broken_emp_t0_no_employment_spells +
-                                         broken_emp_t0_unbroken_employment +
+                                         broken_emp_t0 +
                                          j2has_dv_t0 +
                                          rel_pov_t0 +
                                          health_t0 +
@@ -446,12 +432,7 @@ dr_matched_srh_glmmTMB_mod <- glmmTMB( srh_bin_t1 ~
                                          marital_status_t1_divorced_separated_widowed +
                                          marital_status_t1_single +
                                          dep_child_bin_t0 +
-                                         #        hiqual_dv_t0_degree +
-                                         hiqual_dv_t0_other_higher_degree +
-                                         hiqual_dv_t0_a_level_etc +
-                                         hiqual_dv_t0_gcse_etc +
-                                         hiqual_dv_t0_other_qualification +
-                                         hiqual_dv_t0_no_qualification +
+                                         degree_bin_t0 +
                                          #  gor_dv_t0_east_midlands +
                                          gor_dv_t0_east_of_england +
                                          gor_dv_t0_london +
@@ -487,9 +468,7 @@ dr_matched_srh_glmmTMB_mod <- glmmTMB( srh_bin_t1 ~
                                          jbft_dv_t0 +
                                          small_firm_t0 +
                                          emp_contract_t0 +
-                                         #  broken_emp_t0_broken_employment +
-                                         broken_emp_t0_no_employment_spells +
-                                         broken_emp_t0_unbroken_employment +
+                                         broken_emp_t0 +
                                          j2has_dv_t0 +
                                          rel_pov_t0 +
                                          health_t0 +
@@ -549,12 +528,7 @@ dr_matched_ghq_glmmTMB_mod <- glmmTMB( ghq_case4_t1 ~
                                          marital_status_t1_divorced_separated_widowed +
                                          marital_status_t1_single +
                                          dep_child_bin_t0 +
-                                         #        hiqual_dv_t0_degree +
-                                         hiqual_dv_t0_other_higher_degree +
-                                         hiqual_dv_t0_a_level_etc +
-                                         hiqual_dv_t0_gcse_etc +
-                                         hiqual_dv_t0_other_qualification +
-                                         hiqual_dv_t0_no_qualification +
+                                         degree_bin_t0 +
                                          #  gor_dv_t0_east_midlands +
                                          gor_dv_t0_east_of_england +
                                          gor_dv_t0_london +
@@ -590,9 +564,7 @@ dr_matched_ghq_glmmTMB_mod <- glmmTMB( ghq_case4_t1 ~
                                          jbft_dv_t0 +
                                          small_firm_t0 +
                                          emp_contract_t0 +
-                                         #  broken_emp_t0_broken_employment +
-                                         broken_emp_t0_no_employment_spells +
-                                         broken_emp_t0_unbroken_employment +
+                                         broken_emp_t0 +
                                          j2has_dv_t0 +
                                          rel_pov_t0 +
                                          health_t0 +
@@ -648,7 +620,7 @@ dr_matched_df <- dr_matched_pcs_df %>%
   dplyr::select(-c(term, Estimate, group, component)) %>% 
   dplyr::select(outcome, effect, est_type, estimate, std.error, p.value, lci, uci)
 
-write.csv(dr_matched_df, "./output/matched_outcomes/cc/dr_matched_df.csv")
+write.csv(dr_matched_df, "./output/cc/matched_outcomes/dr_matched_df.csv")
 
 diagnose(dr_matched_pcs_glmmTMB_mod)
 diagnose(dr_matched_mcs_glmmTMB_mod)
