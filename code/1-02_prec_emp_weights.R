@@ -33,6 +33,7 @@ library(janitor) # cleaning up
 #####                         load and prepare data                        #####
 ################################################################################
 
+
 ### load in master raw file
 master_raw1 <- readRDS("./raw_data/master_raw1.rds")
 
@@ -70,3 +71,4 @@ weight_spine_trio <- weight_spine %>%   filter(wt_flag_trio==1) %>%
 table(weight_spine_trio$wt_flag_trio)
 
 write_rds(weight_spine_trio, "./look_ups/weight_spine_trio.rds")
+
