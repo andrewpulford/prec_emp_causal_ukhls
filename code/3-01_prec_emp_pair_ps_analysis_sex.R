@@ -521,220 +521,226 @@ write.csv(m_table_one_matchit_smd, "./working_data/cc/subgroup/sex/m_table_one_m
 #####                      IPTW using WeightIt package                     #####
 ################################################################################
 
-## here <<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 #### female --------------------------------------------------------------------
-f_iptw <- female_df %>% 
-  mutate(exp1_bin = ifelse(exposure1=="exposed (employed at t1)",
-                           1,0))
 
-f_iptw$srh_bin_t1 <- as.character(f_iptw$srh_bin_t1)
-f_iptw$ghq_case4_t1 <- as.character(f_iptw$ghq_case4_t1)
+### convert SF-12 outcomes to numeric to allow svyglm to work
+f_weightit_df <- female_df  %>%  
+  mutate(exp1_bin = ifelse(exposure1=="exposed (employed at t1)",
+                           0,1)) # 1 = unexposed as in PS matching
+
+### convert SF-12 outcomes to numeric to allow svyglm to work
+f_weightit_df$sf12pcs_dv_t0 <- as.numeric(f_weightit_df$sf12pcs_dv_t0)
+f_weightit_df$sf12mcs_dv_t0 <- as.numeric(f_weightit_df$sf12mcs_dv_t0)
+f_weightit_df$sf12pcs_dv_t1 <- as.numeric(f_weightit_df$sf12pcs_dv_t1)
+f_weightit_df$sf12mcs_dv_t1 <- as.numeric(f_weightit_df$sf12mcs_dv_t1)
+
+f_weightit_df$srh_bin_t1 <- as.character(f_weightit_df$srh_bin_t1)
+f_weightit_df$ghq_case4_t1 <- as.character(f_weightit_df$ghq_case4_t1)
 
 
 start_time <- Sys.time()
-f_iptw_mod <- matchit(exp1_bin ~
-                        # sex_dv_t0 + 
-                        age_dv_t0 +
-                         non_white_t0 +
-                         #        marital_status_t0_married_civil_partnership +
-                         marital_status_t0_divorced_separated_widowed +
-                         marital_status_t0_single +
-                         dep_child_bin_t0 +
-                        degree_bin_t0 +
-                         #  gor_dv_t0_east_midlands +
-                         gor_dv_t0_east_of_england +
-                         gor_dv_t0_london +
-                         gor_dv_t0_north_east +
-                         gor_dv_t0_north_west +
-                         gor_dv_t0_northern_ireland +
-                         gor_dv_t0_scotland +
-                         gor_dv_t0_south_east +
-                         gor_dv_t0_south_west +
-                         gor_dv_t0_wales +
-                         gor_dv_t0_west_midlands +
-                         gor_dv_t0_yorkshire_and_the_humber +
-                         #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
-                         sic2007_section_lab_t0_administrative_and_support_service_activities +
-                         sic2007_section_lab_t0_construction +
-                         sic2007_section_lab_t0_education +
-                         sic2007_section_lab_t0_human_health_and_social_work_activities +
-                         sic2007_section_lab_t0_manufacturing +
-                         sic2007_section_lab_t0_other_industry +
-                         sic2007_section_lab_t0_professional_scientific_and_technical_activities +
-                         sic2007_section_lab_t0_public_administration_and_defence_compulsory_social_security +
-                         sic2007_section_lab_t0_transportation_and_storage +
-                         sic2007_section_lab_t0_wholesale_and_retail_trade_repair_of_motor_vehicles_and_motorcycles +
-                         #  soc2000_major_group_title_t0_administrative_and_secretarial_occupations +
-                         soc2000_major_group_title_t0_associate_professional_and_technical_occupations +
-                         soc2000_major_group_title_t0_elementary_occupations +
-                         soc2000_major_group_title_t0_managers_and_senior_officials +
-                         soc2000_major_group_title_t0_personal_service_occupations +
-                         soc2000_major_group_title_t0_process_plant_and_machine_operatives +
-                         soc2000_major_group_title_t0_sales_and_customer_service_occupations +
-                         soc2000_major_group_title_t0_science_and_technology_professionals +
-                         soc2000_major_group_title_t0_skilled_trades_occupations +
-                         jbft_dv_t0 +
-                         small_firm_t0 +
-                         emp_contract_t0 +
-                         broken_emp_t0 +
-                         j2has_dv_t0 +
-                         rel_pov_t0 +
-                         health_t0 +
-                         srh_bin_t0 +
-                         ghq_case4_t0 +
-                         sf12mcs_dv_t0 +
-                         sf12pcs_dv_t0, 
-                       data = f_iptw,
-                       method = "quick", # Generalized Full Matching
-                       distance = "glm",
-                       estimand = "ATT")
+f_weight_weightit <- weightit(exposure1 ~
+                              #sex_dv_t0 +
+                              age_dv_t0 +
+                              non_white_t0 +
+                              #        marital_status_t0_married_civil_partnership +
+                              marital_status_t0_divorced_separated_widowed +
+                              marital_status_t0_single +
+                              dep_child_bin_t0 +
+                              degree_bin_t0 +
+                              #  gor_dv_t0_east_midlands +
+                              gor_dv_t0_east_of_england +
+                              gor_dv_t0_london +
+                              gor_dv_t0_north_east +
+                              gor_dv_t0_north_west +
+                              gor_dv_t0_northern_ireland +
+                              gor_dv_t0_scotland +
+                              gor_dv_t0_south_east +
+                              gor_dv_t0_south_west +
+                              gor_dv_t0_wales +
+                              gor_dv_t0_west_midlands +
+                              gor_dv_t0_yorkshire_and_the_humber +
+                              #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
+                              sic2007_section_lab_t0_administrative_and_support_service_activities +
+                              sic2007_section_lab_t0_construction +
+                              sic2007_section_lab_t0_education +
+                              sic2007_section_lab_t0_human_health_and_social_work_activities +
+                              sic2007_section_lab_t0_manufacturing +
+                              sic2007_section_lab_t0_other_industry +
+                              sic2007_section_lab_t0_professional_scientific_and_technical_activities +
+                              sic2007_section_lab_t0_public_administration_and_defence_compulsory_social_security +
+                              sic2007_section_lab_t0_transportation_and_storage +
+                              sic2007_section_lab_t0_wholesale_and_retail_trade_repair_of_motor_vehicles_and_motorcycles +
+                              #  soc2000_major_group_title_t0_administrative_and_secretarial_occupations +
+                              soc2000_major_group_title_t0_associate_professional_and_technical_occupations +
+                              soc2000_major_group_title_t0_elementary_occupations +
+                              soc2000_major_group_title_t0_managers_and_senior_officials +
+                              soc2000_major_group_title_t0_personal_service_occupations +
+                              soc2000_major_group_title_t0_process_plant_and_machine_operatives +
+                              soc2000_major_group_title_t0_sales_and_customer_service_occupations +
+                              soc2000_major_group_title_t0_science_and_technology_professionals +
+                              soc2000_major_group_title_t0_skilled_trades_occupations +
+                              jbft_dv_t0 +
+                              small_firm_t0 +
+                              emp_contract_t0 +
+                              broken_emp_t0 +
+                              j2has_dv_t0 +
+                              rel_pov_t0 +
+                              health_t0 +
+                              srh_bin_t0 +
+                              ghq_case4_t0 +
+                              sf12mcs_dv_t0 +
+                              sf12pcs_dv_t0 ,
+                                     data = f_weightit_df, 
+                                     stabilize = TRUE,
+                                     estimand = "ATE",  
+                                     method = "ps")  
+f_weight_weightit
 end_time <- Sys.time()
 end_time - start_time
 
-#test_summary <- summary(test)
-#write.csv(test_summary, "./output/temp_output/test_sumary.csv")
+summary(f_weight_weightit)
+summary(f_weight_weightit$weights)
+density(f_weight_weightit$weights)
 
-f_iptw$weights_ps <- f_iptw_mod$weights
+f_weightit_df$weightit_ipw <- f_weight_weightit$weights
 
-### create weighted data
-f_iptw_svy <- svydesign(ids = ~1,
-                            data = f_iptw,
-                            weights = ~weights_ps)
+f_weightit_df %>% group_by(exposure1) %>% summarise(n=sum(weightit_ipw))##
 
+### created IPTW dataframe
+f_weightit_df_svy <- svydesign(ids = ~1,
+                             data = f_weightit_df,
+                             weights = ~weightit_ipw)
 
-### weighted table one
-table_one_f_iptw <- svyCreateTableOne(vars = cov_vector3,
-                                       strata = "exposure1",
-                                       data = f_iptw_svy,
-                                       test = FALSE)
+### create IPTW table one
+f_table_one_weightit <- svyCreateTableOne(vars = cov_vector3,
+                                   strata = "exposure1",
+                                   data = f_weightit_df_svy,
+                                   factorVars = c(catVars_vec),
+                                   test = FALSE)
 
-table_one_f_iptw_sav <- print(table_one_f_iptw, showAllLevels = TRUE, smd = TRUE,
-                               nonnormal = nonnorm_vec,
-                               formatOptions = list(big.mark = ","))
+table_one_weightit_sav <- print(f_table_one_weightit, showAllLevels = TRUE, smd = TRUE,
+                           nonnormal = nonnorm_vec,
+                           factorVars = c(catVars_vec),
+                           formatOptions = list(big.mark = ","))
 
-write.csv(table_one_f_iptw_sav, "./output/weighted_descriptives/subgroups/sex/table_one_f_iptw_sav.csv")
-
+write.csv(f_table_one_weightit_sav, "./output/cc/weighted_descriptives/f_table_one_weightit_sav.csv")
 
 ### count covariates with an important imbalance (>0.1 or >0.2)
-addmargins(table(ExtractSmd(table_one_f_iptw) > 0.1))
-addmargins(table(ExtractSmd(table_one_f_iptw) > 0.2))
+addmargins(table(ExtractSmd(f_table_one_weightit) > 0.1))
+addmargins(table(ExtractSmd(f_table_one_weightit) > 0.2))
 
-table_one_f_iptw_smd <- data.frame(ExtractSmd(table_one_f_iptw))
-table_one_f_iptw_smd <- table_one_f_iptw_smd %>% 
-  rownames_to_column("var") %>% # Apply rownames_to_column
-  rename("smd" = "X1.vs.2") %>% 
-  mutate(imbalance_flag = ifelse(smd>0.1,"SMD>0.1","SMD<=0.1"),
-         matched = "unmatched")
-
-write.csv(table_one_f_iptw_smd, "./working_data/cc/subgroup/sex/table_one_f_iptw_smd.csv")
 
 #### male ----------------------------------------------------------------------
-m_iptw <- male_df %>% 
-  mutate(exp1_bin = ifelse(exposure1=="exposed (employed at t1)",
-                           1,0))
 
-m_iptw$srh_bin_t1 <- as.character(m_iptw$srh_bin_t1)
-m_iptw$ghq_case4_t1 <- as.character(m_iptw$ghq_case4_t1)
+### convert SF-12 outcomes to numeric to allow svyglm to work
+m_weightit_df <- male_df  %>%  
+  mutate(exp1_bin = ifelse(exposure1=="exposed (employed at t1)",
+                           0,1)) # 1 = unexposed as in PS matching
+
+### convert SF-12 outcomes to numeric to allow svyglm to work
+m_weightit_df$sf12pcs_dv_t0 <- as.numeric(m_weightit_df$sf12pcs_dv_t0)
+m_weightit_df$sf12mcs_dv_t0 <- as.numeric(m_weightit_df$sf12mcs_dv_t0)
+m_weightit_df$sf12pcs_dv_t1 <- as.numeric(m_weightit_df$sf12pcs_dv_t1)
+m_weightit_df$sf12mcs_dv_t1 <- as.numeric(m_weightit_df$sf12mcs_dv_t1)
+
+m_weightit_df$srh_bin_t1 <- as.character(m_weightit_df$srh_bin_t1)
+m_weightit_df$ghq_case4_t1 <- as.character(m_weightit_df$ghq_case4_t1)
 
 
 start_time <- Sys.time()
-m_iptw_mod <- matchit(exp1_bin ~
-                        # sex_dv_t0 +
-                        age_dv_t0 +
-                        non_white_t0 +
-                        #        marital_status_t0_married_civil_partnership +
-                        marital_status_t0_divorced_separated_widowed +
-                        marital_status_t0_single +
-                        dep_child_bin_t0 +
-                        degree_bin_t0 +
-                        #  gor_dv_t0_east_midlands +
-                        gor_dv_t0_east_of_england +
-                        gor_dv_t0_london +
-                        gor_dv_t0_north_east +
-                        gor_dv_t0_north_west +
-                        gor_dv_t0_northern_ireland +
-                        gor_dv_t0_scotland +
-                        gor_dv_t0_south_east +
-                        gor_dv_t0_south_west +
-                        gor_dv_t0_wales +
-                        gor_dv_t0_west_midlands +
-                        gor_dv_t0_yorkshire_and_the_humber +
-                        #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
-                        sic2007_section_lab_t0_administrative_and_support_service_activities +
-                        sic2007_section_lab_t0_construction +
-                        sic2007_section_lab_t0_education +
-                        sic2007_section_lab_t0_human_health_and_social_work_activities +
-                        sic2007_section_lab_t0_manufacturing +
-                        sic2007_section_lab_t0_other_industry +
-                        sic2007_section_lab_t0_professional_scientific_and_technical_activities +
-                        sic2007_section_lab_t0_public_administration_and_defence_compulsory_social_security +
-                        sic2007_section_lab_t0_transportation_and_storage +
-                        sic2007_section_lab_t0_wholesale_and_retail_trade_repair_of_motor_vehicles_and_motorcycles +
-                        #  soc2000_major_group_title_t0_administrative_and_secretarial_occupations +
-                        soc2000_major_group_title_t0_associate_professional_and_technical_occupations +
-                        soc2000_major_group_title_t0_elementary_occupations +
-                        soc2000_major_group_title_t0_managers_and_senior_officials +
-                        soc2000_major_group_title_t0_personal_service_occupations +
-                        soc2000_major_group_title_t0_process_plant_and_machine_operatives +
-                        soc2000_major_group_title_t0_sales_and_customer_service_occupations +
-                        soc2000_major_group_title_t0_science_and_technology_professionals +
-                        soc2000_major_group_title_t0_skilled_trades_occupations +
-                        jbft_dv_t0 +
-                        small_firm_t0 +
-                        emp_contract_t0 +
-                        broken_emp_t0 +
-                        j2has_dv_t0 +
-                        rel_pov_t0 +
-                        health_t0 +
-                        srh_bin_t0 +
-                        ghq_case4_t0 +
-                        sf12mcs_dv_t0 +
-                        sf12pcs_dv_t0, 
-                      data = m_iptw,
-                      method = "quick", # Generalized Full Matching
-                      distance = "glm",
-                      estimand = "ATT")
+m_weight_weightit <- weightit(exposure1 ~
+                                #sex_dv_t0 +
+                                age_dv_t0 +
+                                non_white_t0 +
+                                #        marital_status_t0_married_civil_partnership +
+                                marital_status_t0_divorced_separated_widowed +
+                                marital_status_t0_single +
+                                dep_child_bin_t0 +
+                                degree_bin_t0 +
+                                #  gor_dv_t0_east_midlands +
+                                gor_dv_t0_east_of_england +
+                                gor_dv_t0_london +
+                                gor_dv_t0_north_east +
+                                gor_dv_t0_north_west +
+                                gor_dv_t0_northern_ireland +
+                                gor_dv_t0_scotland +
+                                gor_dv_t0_south_east +
+                                gor_dv_t0_south_west +
+                                gor_dv_t0_wales +
+                                gor_dv_t0_west_midlands +
+                                gor_dv_t0_yorkshire_and_the_humber +
+                                #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
+                                sic2007_section_lab_t0_administrative_and_support_service_activities +
+                                sic2007_section_lab_t0_construction +
+                                sic2007_section_lab_t0_education +
+                                sic2007_section_lab_t0_human_health_and_social_work_activities +
+                                sic2007_section_lab_t0_manufacturing +
+                                sic2007_section_lab_t0_other_industry +
+                                sic2007_section_lab_t0_professional_scientific_and_technical_activities +
+                                sic2007_section_lab_t0_public_administration_and_defence_compulsory_social_security +
+                                sic2007_section_lab_t0_transportation_and_storage +
+                                sic2007_section_lab_t0_wholesale_and_retail_trade_repair_of_motor_vehicles_and_motorcycles +
+                                #  soc2000_major_group_title_t0_administrative_and_secretarial_occupations +
+                                soc2000_major_group_title_t0_associate_professional_and_technical_occupations +
+                                soc2000_major_group_title_t0_elementary_occupations +
+                                soc2000_major_group_title_t0_managers_and_senior_officials +
+                                soc2000_major_group_title_t0_personal_service_occupations +
+                                soc2000_major_group_title_t0_process_plant_and_machine_operatives +
+                                soc2000_major_group_title_t0_sales_and_customer_service_occupations +
+                                soc2000_major_group_title_t0_science_and_technology_professionals +
+                                soc2000_major_group_title_t0_skilled_trades_occupations +
+                                jbft_dv_t0 +
+                                small_firm_t0 +
+                                emp_contract_t0 +
+                                broken_emp_t0 +
+                                j2has_dv_t0 +
+                                rel_pov_t0 +
+                                health_t0 +
+                                srh_bin_t0 +
+                                ghq_case4_t0 +
+                                sf12mcs_dv_t0 +
+                                sf12pcs_dv_t0 ,
+                              data = m_weightit_df, 
+                              stabilize = TRUE,
+                              estimand = "ATE",  
+                              method = "ps")  
+m_weight_weightit
 end_time <- Sys.time()
 end_time - start_time
 
-#test_summary <- summary(test)
-#write.csv(test_summary, "./output/temp_output/test_sumary.csv")
+summary(m_weight_weightit)
+summary(m_weight_weightit$weights)
+density(m_weight_weightit$weights)
 
-m_iptw$weights_ps <- m_iptw_mod$weights
-#matchit_df$weights <- unname(matchit_df$weights)
+m_weightit_df$weightit_ipw <- m_weight_weightit$weights
 
-### create weighted data
-m_iptw_svy <- svydesign(ids = ~1,
-                        data = m_iptw,
-                        weights = ~weights_ps)
+m_weightit_df %>% group_by(exposure1) %>% summarise(n=sum(weightit_ipw))##
 
+### created IPTW dataframe
+m_weightit_df_svy <- svydesign(ids = ~1,
+                               data = m_weightit_df,
+                               weights = ~weightit_ipw)
 
-### weighted table one
-table_one_m_iptw <- svyCreateTableOne(vars = cov_vector3,
-                                      strata = "exposure1",
-                                      data = m_iptw_svy,
-                                      test = FALSE)
+### create IPTW table one
+m_table_one_weightit <- svyCreateTableOne(vars = cov_vector3,
+                                          strata = "exposure1",
+                                          data = m_weightit_df_svy,
+                                          factorVars = c(catVars_vec),
+                                          test = FALSE)
 
-table_one_m_iptw_sav <- print(table_one_m_iptw, showAllLevels = TRUE, smd = TRUE,
-#                              nonnormal = nonnorm_vec,
-                              formatOptions = list(big.mark = ","))
+m_table_one_weightit_sav <- print(m_table_one_weightit, showAllLevels = TRUE, smd = TRUE,
+                                nonnormal = nonnorm_vec,
+                                factorVars = c(catVars_vec),
+                                formatOptions = list(big.mark = ","))
 
-write.csv(table_one_m_iptw_sav, "./output/weighted_descriptives/subgroups/sex/table_one_m_iptw_sav.csv")
-
+write.csv(m_table_one_weightit_sav, "./output/cc/weighted_descriptives/m_table_one_weightit_sav.csv")
 
 ### count covariates with an important imbalance (>0.1 or >0.2)
-addmargins(table(ExtractSmd(table_one_m_iptw) > 0.1))
-addmargins(table(ExtractSmd(table_one_m_iptw) > 0.2))
+addmargins(table(ExtractSmd(m_table_one_weightit) > 0.1))
+addmargins(table(ExtractSmd(m_table_one_weightit) > 0.2))
 
-table_one_m_iptw_smd <- data.frame(ExtractSmd(table_one_m_iptw))
-table_one_m_iptw_smd <- table_one_m_iptw_smd %>% 
-  rownames_to_column("var") %>% # Apply rownames_to_column
-  rename("smd" = "X1.vs.2") %>% 
-  mutate(imbalance_flag = ifelse(smd>0.1,"SMD>0.1","SMD<=0.1"),
-         matched = "unmatched")
-
-write.csv(table_one_m_iptw_smd, "./working_data/cc/subgroup/sex/table_one_m_iptw_smd.csv")
 
 ################################################################################
 #####                               outcomes                              ######
@@ -795,7 +801,7 @@ dr_iptw_pcs_f_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                       jbft_dv_t0 +
                                       small_firm_t0 +
                                       emp_contract_t0 +
-                                      broken_emp_t +
+                                      broken_emp_t0 +
                                       j2has_dv_t0 +
                                       rel_pov_t0 +
                                       health_t0 +
@@ -806,8 +812,8 @@ dr_iptw_pcs_f_mod <- glmmTMB( sf12pcs_dv_t1 ~
 #                                      sex_dv_t0*rel_pov_t0 +
                                       age_dv_t0*rel_pov_t0 +
                                       (1|pidp),
-                                    weights = weights_ps,
-                                    data = f_iptw)
+                                    weights = weightit_ipw,
+                                    data = f_weightit_df)
 end_time <- Sys.time()
 end_time-start_time
 
@@ -902,8 +908,8 @@ dr_iptw_mcs_f_mod <- glmmTMB( sf12mcs_dv_t1 ~
  #                                     sex_dv_t0*rel_pov_t0 +
                                       age_dv_t0*rel_pov_t0 +
                                       (1|pidp),
-                                    weights = weights_ps,
-                                    data = f_iptw)
+                                      weights = weightit_ipw,
+                                      data = f_weightit_df)
 end_time <- Sys.time()
 end_time-start_time
 
@@ -937,7 +943,7 @@ dr_iptw_mcs_f_df <- dr_iptw_mcs_f_df %>%
 
 ### poor self-rated health -------------------
 
-f_iptw$srh_bin_t1 <- factor(f_iptw$srh_bin_t1,
+f_weightit_df$srh_bin_t1 <- factor(f_weightit_df$srh_bin_t1,
                                       levels = c("excellent/very good", 
                                                  "good/fair/poor"))
 
@@ -1004,8 +1010,9 @@ dr_iptw_srh_f_mod <- glmmTMB( srh_bin_t1 ~
                                       age_dv_t0*rel_pov_t0 +
                                       (1|pidp),
                                     family = binomial(link="logit"),
-                                    weights = weights_ps,
-                                    data = f_iptw)
+                                    weights = weightit_ipw,
+                                    data = f_weightit_df)
+
 end_time <- Sys.time()
 end_time-start_time
 
@@ -1042,7 +1049,7 @@ dr_iptw_srh_f_df <- dr_iptw_srh_f_df %>%
 
 ### GHQ-12 caseness -----------------
 
-f_iptw$ghq_case4_t1 <- factor(f_iptw$ghq_case4_t1,
+f_weightit_df$ghq_case4_t1 <- factor(f_weightit_df$ghq_case4_t1,
                                         levels = c("0-3", "4 or more"))
 
 
@@ -1099,7 +1106,6 @@ dr_iptw_ghq_f_mod <- glmmTMB( ghq_case4_t1 ~
                                       broken_emp_t0 +
                                       j2has_dv_t0 +
                                       rel_pov_t0 +
-                                      rel_pov_t1 +
                                       health_t0 +
                                       health_t1 +
                                       ghq_case4_t0 +
@@ -1109,8 +1115,9 @@ dr_iptw_ghq_f_mod <- glmmTMB( ghq_case4_t1 ~
                                       age_dv_t0*rel_pov_t0 +
                                       (1|pidp),
                                     family = binomial(link="logit"),
-                                    weights = weights_ps,
-                                    data = f_iptw)
+                                    weights = weightit_ipw,
+                                    data = f_weightit_df)
+
 end_time <- Sys.time()
 end_time-start_time
 
@@ -1155,7 +1162,7 @@ dr_iptw_f_df <- dr_iptw_pcs_f_df %>%
   dplyr::select(-c(term, Estimate, group, component)) %>% 
   dplyr::select(outcome, effect, est_type, estimate, std.error, p.value, lci, uci)
 
-write.csv(dr_iptw_f_df, "./output/weighted_outcomes/cc/sub_groups/sex/dr_iptw_f_df.csv")
+write.csv(dr_iptw_f_df, "./output/cc/weighted_outcomes/sub_groups/sex/dr_iptw_f_df.csv")
 
 
 diagnose(dr_iptw_pcs_f_mod)
@@ -1167,6 +1174,7 @@ diagnose(dr_iptw_ghq_f_mod)
 
 
 #### male ----------------------------------------------------------------------
+
 
 ### SF-12 PCS -----------------------
 start_time <- Sys.time()
@@ -1196,8 +1204,8 @@ dr_iptw_pcs_m_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                 gor_dv_t0_wales +
                                 gor_dv_t0_west_midlands +
                                 gor_dv_t0_yorkshire_and_the_humber +
-                              #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
-                              sic2007_section_lab_t0_administrative_and_support_service_activities +
+                                #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
+                                sic2007_section_lab_t0_administrative_and_support_service_activities +
                                 sic2007_section_lab_t0_construction +
                                 sic2007_section_lab_t0_education +
                                 sic2007_section_lab_t0_human_health_and_social_work_activities +
@@ -1230,12 +1238,12 @@ dr_iptw_pcs_m_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                 #                                      sex_dv_t0*rel_pov_t0 +
                                 age_dv_t0*rel_pov_t0 +
                                 (1|pidp),
-                              weights = weights_ps,
-                              data = m_iptw)
+                              weights = weightit_ipw,
+                              data = m_weightit_df)
 end_time <- Sys.time()
 end_time-start_time
 
-dr_iptw_pcs_m <- summary(dr_iptw_pcs_m_mod)
+dr_iptw_pcs_f <- summary(dr_iptw_pcs_m_mod)
 
 #fixef(dr_iptw_pcs_glmmTMB_mod)
 
@@ -1292,8 +1300,8 @@ dr_iptw_mcs_m_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                 gor_dv_t0_wales +
                                 gor_dv_t0_west_midlands +
                                 gor_dv_t0_yorkshire_and_the_humber +
-                              #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
-                              sic2007_section_lab_t0_administrative_and_support_service_activities +
+                                #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
+                                sic2007_section_lab_t0_administrative_and_support_service_activities +
                                 sic2007_section_lab_t0_construction +
                                 sic2007_section_lab_t0_education +
                                 sic2007_section_lab_t0_human_health_and_social_work_activities +
@@ -1326,8 +1334,8 @@ dr_iptw_mcs_m_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                 #                                     sex_dv_t0*rel_pov_t0 +
                                 age_dv_t0*rel_pov_t0 +
                                 (1|pidp),
-                              weights = weights_ps,
-                              data = m_iptw)
+                              weights = weightit_ipw,
+                              data = m_weightit_df)
 end_time <- Sys.time()
 end_time-start_time
 
@@ -1361,9 +1369,9 @@ dr_iptw_mcs_m_df <- dr_iptw_mcs_m_df %>%
 
 ### poor self-rated health -------------------
 
-m_iptw$srh_bin_t1 <- factor(m_iptw$srh_bin_t1,
-                            levels = c("excellent/very good", 
-                                       "good/fair/poor"))
+m_weightit_df$srh_bin_t1 <- factor(m_weightit_df$srh_bin_t1,
+                                   levels = c("excellent/very good", 
+                                              "good/fair/poor"))
 
 
 start_time <- Sys.time()
@@ -1393,8 +1401,8 @@ dr_iptw_srh_m_mod <- glmmTMB( srh_bin_t1 ~
                                 gor_dv_t0_wales +
                                 gor_dv_t0_west_midlands +
                                 gor_dv_t0_yorkshire_and_the_humber +
-                              #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
-                              sic2007_section_lab_t0_administrative_and_support_service_activities +
+                                #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
+                                sic2007_section_lab_t0_administrative_and_support_service_activities +
                                 sic2007_section_lab_t0_construction +
                                 sic2007_section_lab_t0_education +
                                 sic2007_section_lab_t0_human_health_and_social_work_activities +
@@ -1428,8 +1436,9 @@ dr_iptw_srh_m_mod <- glmmTMB( srh_bin_t1 ~
                                 age_dv_t0*rel_pov_t0 +
                                 (1|pidp),
                               family = binomial(link="logit"),
-                              weights = weights_ps,
-                              data = m_iptw)
+                              weights = weightit_ipw,
+                              data = m_weightit_df)
+
 end_time <- Sys.time()
 end_time-start_time
 
@@ -1466,8 +1475,8 @@ dr_iptw_srh_m_df <- dr_iptw_srh_m_df %>%
 
 ### GHQ-12 caseness -----------------
 
-m_iptw$ghq_case4_t1 <- factor(m_iptw$ghq_case4_t1,
-                              levels = c("0-3", "4 or more"))
+m_weightit_df$ghq_case4_t1 <- factor(m_weightit_df$ghq_case4_t1,
+                                     levels = c("0-3", "4 or more"))
 
 
 start_time <- Sys.time()
@@ -1497,8 +1506,8 @@ dr_iptw_ghq_m_mod <- glmmTMB( ghq_case4_t1 ~
                                 gor_dv_t0_wales +
                                 gor_dv_t0_west_midlands +
                                 gor_dv_t0_yorkshire_and_the_humber +
-                              #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
-                              sic2007_section_lab_t0_administrative_and_support_service_activities +
+                                #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
+                                sic2007_section_lab_t0_administrative_and_support_service_activities +
                                 sic2007_section_lab_t0_construction +
                                 sic2007_section_lab_t0_education +
                                 sic2007_section_lab_t0_human_health_and_social_work_activities +
@@ -1532,8 +1541,9 @@ dr_iptw_ghq_m_mod <- glmmTMB( ghq_case4_t1 ~
                                 age_dv_t0*rel_pov_t0 +
                                 (1|pidp),
                               family = binomial(link="logit"),
-                              weights = weights_ps,
-                              data = m_iptw)
+                              weights = weightit_ipw,
+                              data = m_weightit_df)
+
 end_time <- Sys.time()
 end_time-start_time
 
@@ -1567,6 +1577,34 @@ dr_iptw_ghq_m_df <- dr_iptw_ghq_m_df %>%
                           ifelse(p.value<0.01,"<0.01",
                                  ifelse(p.value<0.05,"<0.05",       
                                         p.value))))
+
+#### create single summary df for iptw double-robust cc outcomes ------------
+
+dr_iptw_m_df <- dr_iptw_pcs_m_df %>% 
+  bind_rows(dr_iptw_mcs_m_df,
+            dr_iptw_srh_m_df,
+            dr_iptw_ghq_m_df) %>% 
+  filter(term=="exposed (employed at t1)") %>% 
+  dplyr::select(-c(term, Estimate, group, component)) %>% 
+  dplyr::select(outcome, effect, est_type, estimate, std.error, p.value, lci, uci)
+
+write.csv(dr_iptw_m_df, "./output/cc/weighted_outcomes/sub_groups/sex/dr_iptw_m_df.csv")
+
+
+diagnose(dr_iptw_pcs_m_mod)
+diagnose(dr_iptw_mcs_m_mod)
+diagnose(dr_iptw_srh_m_mod)
+diagnose(dr_iptw_ghq_m_mod)
+
+
+
+
+
+
+
+
+
+
 
 #### create single summary df for iptw double-robust cc outcomes ------------
 
