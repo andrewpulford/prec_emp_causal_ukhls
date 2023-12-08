@@ -620,12 +620,12 @@ f_table_one_weightit <- svyCreateTableOne(vars = cov_vector3,
                                    factorVars = c(catVars_vec),
                                    test = FALSE)
 
-table_one_weightit_sav <- print(f_table_one_weightit, showAllLevels = TRUE, smd = TRUE,
+f_table_one_weightit_sav <- print(f_table_one_weightit, showAllLevels = TRUE, smd = TRUE,
                            nonnormal = nonnorm_vec,
                            factorVars = c(catVars_vec),
                            formatOptions = list(big.mark = ","))
 
-write.csv(f_table_one_weightit_sav, "./output/cc/weighted_descriptives/f_table_one_weightit_sav.csv")
+write.csv(f_table_one_weightit_sav, "./output/cc/weighted_descriptives/subgroups/sex/f_table_one_weightit_sav.csv")
 
 ### count covariates with an important imbalance (>0.1 or >0.2)
 addmargins(table(ExtractSmd(f_table_one_weightit) > 0.1))
@@ -735,7 +735,7 @@ m_table_one_weightit_sav <- print(m_table_one_weightit, showAllLevels = TRUE, sm
                                 factorVars = c(catVars_vec),
                                 formatOptions = list(big.mark = ","))
 
-write.csv(m_table_one_weightit_sav, "./output/cc/weighted_descriptives/m_table_one_weightit_sav.csv")
+write.csv(m_table_one_weightit_sav, "./output/cc/weighted_descriptives/subgroups/sex/m_table_one_weightit_sav.csv")
 
 ### count covariates with an important imbalance (>0.1 or >0.2)
 addmargins(table(ExtractSmd(m_table_one_weightit) > 0.1))
@@ -1616,7 +1616,7 @@ dr_iptw_m_df <- dr_iptw_pcs_m_df %>%
   dplyr::select(-c(term, Estimate, group, component)) %>% 
   dplyr::select(outcome, effect, est_type, estimate, std.error, p.value, lci, uci)
 
-write.csv(dr_iptw_m_df, "./output/weighted_outcomes/cc/sub_groups/sex/dr_iptw_m_df.csv")
+write.csv(dr_iptw_m_df, "./output/cc/weighted_outcomes/sub_groups/sex/dr_iptw_m_df.csv")
 
 
 diagnose(dr_iptw_pcs_m_mod)
