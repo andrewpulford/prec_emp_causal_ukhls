@@ -582,7 +582,7 @@ dr_iptw_df <- dr_iptw_pcs_df %>%
   dplyr::select(-c(term, Estimate, group, component)) %>% 
   dplyr::select(outcome, effect, est_type, estimate, std.error, p.value, lci, uci)
 
-write.csv(dr_iptw_df, "./output/weighted_outcomes/cc/dr_iptw_df.csv")
+write.csv(dr_iptw_df, "./output/cc/weighted_outcomes/dr_iptw_df.csv")
 
 
 diagnose(dr_iptw_pcs_glmmTMB_mod)
