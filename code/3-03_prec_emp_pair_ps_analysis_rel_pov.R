@@ -826,10 +826,7 @@ dr_iptw_pcs_rel_pov_df_ci <- data.frame(confint(dr_iptw_pcs_rel_pov_mod)) %>%
          uci = X97.5..) 
 
 # add in row names
-dr_iptw_pcs_rel_pov_df_ci <- cbind(rownames(dr_iptw_pcs_rel_pov_df_ci),dr_iptw_pcs_rel_pov_df_ci, row.names=NULL)
-
-dr_iptw_pcs_rel_pov_df_ci <- dr_iptw_pcs_rel_pov_df_ci %>% 
-  rename(term = `rownames(dr_iptw_pcs_rel_pov_df_ci)`)
+dr_iptw_pcs_rel_pov_df_ci$term <- rownames(dr_iptw_pcs_rel_pov_df_ci)
 
 ## join dfs together
 dr_iptw_pcs_rel_pov_df <- dr_iptw_pcs_rel_pov_df %>% 
@@ -918,10 +915,7 @@ dr_iptw_mcs_rel_pov_df_ci <- data.frame(confint(dr_iptw_mcs_rel_pov_mod)) %>%
          uci = X97.5..) 
 
 # add in row names
-dr_iptw_mcs_rel_pov_df_ci <- cbind(rownames(dr_iptw_mcs_rel_pov_df_ci),dr_iptw_mcs_rel_pov_df_ci, row.names=NULL)
-
-dr_iptw_mcs_rel_pov_df_ci <- dr_iptw_mcs_rel_pov_df_ci %>% 
-  rename(term = `rownames(dr_iptw_mcs_rel_pov_df_ci)`)
+dr_iptw_mcs_rel_pov_df_ci$term <- rownames(dr_iptw_mcs_rel_pov_df_ci)
 
 ## join dfs together
 dr_iptw_mcs_rel_pov_df <- dr_iptw_mcs_rel_pov_df %>% 
@@ -1020,10 +1014,7 @@ dr_iptw_srh_rel_pov_df_ci <- data.frame(confint(dr_iptw_srh_rel_pov_mod)) %>%
          uci = exp(uci))
 
 # add in row names
-dr_iptw_srh_rel_pov_df_ci <- cbind(rownames(dr_iptw_srh_rel_pov_df_ci),dr_iptw_srh_rel_pov_df_ci, row.names=NULL)
-
-dr_iptw_srh_rel_pov_df_ci <- dr_iptw_srh_rel_pov_df_ci %>% 
-  rename(term = `rownames(dr_iptw_srh_rel_pov_df_ci)`)
+dr_iptw_srh_rel_pov_df_ci$term <- rownames(dr_iptw_srh_rel_pov_df_ci)
 
 ## join dfs together
 dr_iptw_srh_rel_pov_df <- dr_iptw_srh_rel_pov_df %>% 
@@ -1121,10 +1112,7 @@ dr_iptw_ghq_rel_pov_df_ci <- data.frame(confint(dr_iptw_ghq_rel_pov_mod)) %>%
          uci = exp(uci))
 
 # add in row names
-dr_iptw_ghq_rel_pov_df_ci <- cbind(rownames(dr_iptw_ghq_rel_pov_df_ci),dr_iptw_ghq_rel_pov_df_ci, row.names=NULL)
-
-dr_iptw_ghq_rel_pov_df_ci <- dr_iptw_ghq_rel_pov_df_ci %>% 
-  rename(term = `rownames(dr_iptw_ghq_rel_pov_df_ci)`)
+dr_iptw_ghq_rel_pov_df_ci$term <- rownames(dr_iptw_ghq_rel_pov_df_ci)
 
 ## join dfs together
 dr_iptw_ghq_rel_pov_df <- dr_iptw_ghq_rel_pov_df %>% 
@@ -1237,10 +1225,7 @@ dr_iptw_pcs_not_pov_df_ci <- data.frame(confint(dr_iptw_pcs_not_pov_mod)) %>%
          uci = X97.5..) 
 
 # add in row names
-dr_iptw_pcs_not_pov_df_ci <- cbind(rownames(dr_iptw_pcs_not_pov_df_ci),dr_iptw_pcs_not_pov_df_ci, row.names=NULL)
-
-dr_iptw_pcs_not_pov_df_ci <- dr_iptw_pcs_not_pov_df_ci %>% 
-  rename(term = `rownames(dr_iptw_pcs_not_pov_df_ci)`)
+dr_iptw_pcs_not_pov_df_ci$term <- rownames(dr_iptw_pcs_not_pov_df_ci)
 
 ## join dfs together
 dr_iptw_pcs_not_pov_df <- dr_iptw_pcs_not_pov_df %>% 
@@ -1329,10 +1314,7 @@ dr_iptw_mcs_not_pov_df_ci <- data.frame(confint(dr_iptw_mcs_not_pov_mod)) %>%
          uci = X97.5..) 
 
 # add in row names
-dr_iptw_mcs_not_pov_df_ci <- cbind(rownames(dr_iptw_mcs_not_pov_df_ci),dr_iptw_mcs_not_pov_df_ci, row.names=NULL)
-
-dr_iptw_mcs_not_pov_df_ci <- dr_iptw_mcs_not_pov_df_ci %>% 
-  rename(term = `rownames(dr_iptw_mcs_not_pov_df_ci)`)
+dr_iptw_mcs_not_pov_df_ci$term <- rownames(dr_iptw_mcs_not_pov_df_ci)
 
 ## join dfs together
 dr_iptw_mcs_not_pov_df <- dr_iptw_mcs_not_pov_df %>% 
@@ -1431,10 +1413,7 @@ dr_iptw_srh_not_pov_df_ci <- data.frame(confint(dr_iptw_srh_not_pov_mod)) %>%
          uci = exp(uci))
 
 # add in row names
-dr_iptw_srh_not_pov_df_ci <- cbind(rownames(dr_iptw_srh_not_pov_df_ci),dr_iptw_srh_not_pov_df_ci, row.names=NULL)
-
-dr_iptw_srh_not_pov_df_ci <- dr_iptw_srh_not_pov_df_ci %>% 
-  rename(term = `rownames(dr_iptw_srh_not_pov_df_ci)`)
+dr_iptw_srh_not_pov_df_ci$term <- rownames(dr_iptw_srh_not_pov_df_ci)
 
 ## join dfs together
 dr_iptw_srh_not_pov_df <- dr_iptw_srh_not_pov_df %>% 
@@ -1532,10 +1511,7 @@ dr_iptw_ghq_not_pov_df_ci <- data.frame(confint(dr_iptw_ghq_not_pov_mod)) %>%
          uci = exp(uci))
 
 # add in row names
-dr_iptw_ghq_not_pov_df_ci <- cbind(rownames(dr_iptw_ghq_not_pov_df_ci),dr_iptw_ghq_not_pov_df_ci, row.names=NULL)
-
-dr_iptw_ghq_not_pov_df_ci <- dr_iptw_ghq_not_pov_df_ci %>% 
-  rename(term = `rownames(dr_iptw_ghq_not_pov_df_ci)`)
+dr_iptw_ghq_not_pov_df_ci$term <- rownames(dr_iptw_ghq_not_pov_df_ci)
 
 ## join dfs together
 dr_iptw_ghq_not_pov_df <- dr_iptw_ghq_not_pov_df %>% 
