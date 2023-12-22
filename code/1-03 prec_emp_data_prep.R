@@ -471,11 +471,13 @@ master_raw1 <- master_raw1 %>%
                          "fair",
                   ifelse(srh_dv %in% c("poor", "Poor", "or Poor?"),
                          "poor",
-                  ifelse(srh_dv %in% c("don't know", "inapplicable",
-                                       "missing", "proxy",  "refusal"),
+                  ifelse(srh_dv %in% c("don't know", 
+                                       "missing", "refusal"),
                          "missing",
-                         "check"
-                         )))))))
+                  ifelse(srh_dv %in% c("inapplicable","proxy"),
+                         "inapplicable/proxy",
+                                srh_dv
+                         ))))))))
            
 ## binary version for outcome analysis
 master_raw1 <- master_raw1 %>% 
@@ -483,7 +485,7 @@ master_raw1 <- master_raw1 %>%
                           "excellent/very good",
                    ifelse(srh_dv %in% c("good","fair","poor"),
                           "good/fair/poor",
-                          "missing")))
+                          srh_dv)))
 
 
 #### recode GHQ-12 caseness for analysis
@@ -507,11 +509,12 @@ master_raw1 <- master_raw1 %>%
 master_raw1 <- master_raw1 %>% 
   mutate(ghq_case4 = ifelse(ghq_case4=="0","0-3",
                             ifelse(ghq_case4=="1","4 or more",
-                                   ifelse(ghq_case4 %in% c("inapplicable", 
-                                                           "missing", 
-                                                           "proxy"),
+                                   ifelse(ghq_case4 %in% c("don't know", 
+                                                        "missing", "refusal"),
                                           "missing",
-                                          ghq_case4))))
+                                          ifelse(ghq_case4 %in% c("inapplicable","proxy"),
+                                                 "inapplicable/proxy",
+                                                 ghq_case4)))))
 
 ## calculate caseness for sensitivity analysis (cut point = 3)
 master_raw1 <- master_raw1 %>% mutate(ghq_case3 = ifelse(grepl("0",as.character(scghq2_dv)),0,
@@ -532,30 +535,32 @@ master_raw1 <- master_raw1 %>% mutate(ghq_case3 = ifelse(grepl("0",as.character(
 master_raw1 <- master_raw1 %>% 
   mutate(ghq_case3 = ifelse(ghq_case3=="0","0-2",
                             ifelse(ghq_case3=="1","3 or more",
-                                   ifelse(ghq_case3 %in% c("inapplicable", 
-                                                           "missing", 
-                                                           "proxy"),
+                                   ifelse(ghq_case3 %in% c("don't know", 
+                                                        "missing", "refusal"),
                                           "missing",
-                                          ghq_case3))))
+                                          ifelse(ghq_case3 %in% c("inapplicable","proxy"),
+                                                 "inapplicable/proxy",
+                                                 ghq_case3)))))
 
 
 #### sf-12 PCS
 master_raw1 <- master_raw1 %>% 
-  mutate(sf12pcs_dv = as.character(sf12pcs_dv)) %>% 
-  mutate(sf12pcs_dv = ifelse(sf12pcs_dv %in%c("inapplicable", 
-                                              "missing", 
-                                              "proxy",
-                                              "(Other)"),
-                             "missing", sf12pcs_dv))
+  mutate(sf12pcs_dv = as.character(sf12pcs_dv)) %>%                   
+  mutate(sf12pcs_dv = ifelse(sf12pcs_dv %in% c("don't know", "missing", "refusal"),
+                   "missing",
+  ifelse(sf12pcs_dv %in% c("inapplicable","proxy"),
+                   "inapplicable/proxy",
+   sf12pcs_dv)))
 
 #### sf-12 MCS
 master_raw1 <- master_raw1 %>% 
   mutate(sf12mcs_dv = as.character(sf12mcs_dv)) %>% 
-  mutate(sf12mcs_dv = ifelse(sf12mcs_dv %in%c("inapplicable", 
-                                              "missing", 
-                                              "proxy",
-                                              "(Other)"),
-                             "missing", sf12mcs_dv))
+  mutate(sf12mcs_dv = ifelse(sf12mcs_dv %in% c("don't know", 
+                       "missing", "refusal"),
+         "missing",
+         ifelse(sf12mcs_dv %in% c("inapplicable","proxy"),
+                "inapplicable/proxy",
+                sf12mcs_dv)))
 
 
 ################################################################################
