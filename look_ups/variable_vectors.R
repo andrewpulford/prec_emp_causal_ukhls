@@ -168,6 +168,12 @@ catVars_vec <- c(
   "soc2000_major_group_title_t0_skilled_trades_occupations"
 )
 
+catVars_short_vec <- c(
+  "marital_status_t0",
+  "gor_dv_t0",
+  "sic2007_section_lab_t0",
+  "soc2000_major_group_title_t0"
+)
 
 #######################xxxxxxxxxxxxxxxxxx
 
