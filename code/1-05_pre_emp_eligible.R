@@ -75,6 +75,7 @@ pair_cc_raw <- pair_cc_raw %>%
 # not caring for family or home at T1
 # not long-term sick or disabled at T1
 # not other unspecified employment status at t1
+# not inapplicable or proxy outcome meaure at t0 or t1
 
 ### create df and exclusions df
 ## 16-64 t0
@@ -221,7 +222,32 @@ temp2 <- temp_df %>% summarise(n=n()) %>%
 pair_cc_exc <- pair_cc_exc %>% 
   bind_rows(temp2)
 
+## not inapplicable or proxy outcome measure at t0 or t1
+# include
+valid_outcomes <- not_other %>% 
+  filter(sf12pcs_dv_t0!="inapplicable/proxy"|
+           sf12pcs_dv_t1!="inapplicable/proxy"|
+           sf12mcs_dv_t0!="inapplicable/proxy"|
+           sf12pcs_dv_t1!="inapplicable/proxy"|
+           srh_bin_t0!="inapplicable/proxy"|
+           srh_bin_t1!="inapplicable/proxy"|
+           ghq_case4_t0!="inapplicable/proxy"|
+           ghq_case4_t1!="inapplicable/proxy")
 
+
+# exclude
+temp_df <- valid_outcomes %>% filter(sf12pcs_dv_t0=="inapplicable/proxy"|
+                                   sf12pcs_dv_t1=="inapplicable/proxy"|
+                                   sf12mcs_dv_t0=="inapplicable/proxy"|
+                                   sf12pcs_dv_t1=="inapplicable/proxy"|
+                                   srh_bin_t0=="inapplicable/proxy"|
+                                   srh_bin_t1=="inapplicable/proxy"|
+                                   ghq_case4_t0=="inapplicable/proxy"|
+                                   ghq_case4_t1=="inapplicable/proxy") 
+temp2 <- temp_df %>% summarise(n=n()) %>% 
+  mutate(exc_reason = "health outcomes not measured at t0 or t1")
+pair_cc_exc <- pair_cc_exc %>% 
+  bind_rows(temp2)
 ## valid weight at t1
 # include
 #valid_wt <- not_retired %>% 
@@ -236,7 +262,7 @@ pair_cc_exc <- pair_cc_exc %>%
 
 
 #### final df's
-pair_eligible <- not_other
+pair_eligible <- valid_outcomes
 
 ################################################################################
 #####                       create exposure variables                      #####
