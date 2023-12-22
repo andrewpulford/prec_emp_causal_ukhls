@@ -13,6 +13,7 @@
 #### What this script does:
 # (a) Checks item missingness across survey waves 
 # (b) create final MI df 
+# (c) produce unweighted/matched descriptives and outcomes analysis
 
 
 ################################################################################
@@ -30,6 +31,9 @@ library(mice) # for multiple imputation
 library(ggmice) # for plotting MI
 library(glmmTMB) # for multi-level modelling
 library(broom.mixed) # for tidying glmmTMB models into df's
+library(tableone)
+
+`%notin%` <- Negate(`%in%`)
 
 ################################################################################
 #####                         load and prepare data                        #####
@@ -61,6 +65,9 @@ sapply(pair_eligible, function(x) sum(is.na(x)))
 #                    "Not available for IEMB",
 #                    "don't know")
 #
+
+sapply(pair_eligible, function(x) sum(is.na(x)))
+
 
 pair_eligible_na <- pair_eligible %>% 
   #  mutate(across(everything(), as.character)) %>% 
@@ -129,7 +136,8 @@ no_NAs <- c("exposure1",
             "rel_pov_t0",
             "pidp",
             "age_dv_t0",
-            "nunmpsp_dv_t0")
+            "nunmpsp_dv_t0",
+            "dep_child_bin_t0")
 
 # melt into format for ggplot
 cor_melt <- reshape2::melt(lower_tri) %>% 
@@ -180,12 +188,26 @@ mi_subset1$exposure1 <- factor(mi_subset1$exposure1,
 set.seed(7341)
 
 ## imputations
-imps <- mice(mi_subset1, m=10, maxit=1)
+imps <- mice(mi_subset1, m=20, maxit=5)
 summary(imps)
 
 ## log reg on SF-12 PCS with one covariate
 fit <- with(imps, exp=glm(sf12pcs_dv_t1~sex_dv_t0, family="gaussian"))
 summary(pool(fit), conf.int = TRUE)
+
+### convert data from mids format to standard df
+temp <- complete(imps, "long", include = FALSE)
+
+## sum number of NAs by var
+temp %>% 
+  summarise(across(.cols=everything(),
+                   .fns = ~sum(is.na(.x))))
+
+## compare with non-imputed data
+mi_subset1  %>% 
+  summarise(across(.cols=everything(),
+                   .fns = ~sum(is.na(.x))))
+
 
 ################################################################################
 #####             Multiple imputation for multiple variables               #####
@@ -251,34 +273,77 @@ mi_subset2$marital_status_t0 <- factor(mi_subset2$marital_status_t0,
                                           "single",
                                           "divorced/separated/widowed"))
 
-## highest qualification
-mi_subset2$hiqual_dv_t0 <- factor(mi_subset2$hiqual_dv_t0,
-                                       levels = c("Degree",
-                                                  "Other higher degree",
-                                                  "A-level etc",
-                                                  "GCSE etc",
-                                                  "Other qualification",
-                                                  "No qualification"))
+mi_subset2$marital_status_t1 <- factor(mi_subset2$marital_status_t1,
+                                       levels = c("married/civil partnership",
+                                                  "single",
+                                                  "divorced/separated/widowed"))
+
+## degree
+mi_subset2$degree_bin_t0 <- factor(mi_subset2$degree_bin_t0,
+                                   levels = c("No degree",
+                                              "Degree or higher"))
+
+
+## region
+mi_subset2$gor_dv_t0 <- factor(mi_subset2$gor_dv_t0)
+
+## industry
+mi_subset2$sic2007_section_lab_t0 <- factor(mi_subset2$sic2007_section_lab_t0)
+
+## occupation
+mi_subset2$soc2000_major_group_title_t0 <- factor(mi_subset2$soc2000_major_group_title_t0)
+
+## part-time/full-time
+mi_subset2$jbft_dv_t0 <- factor(mi_subset2$jbft_dv_t0)#,
+#                                levels = "FT employee", "PT employee")
+
+
+## small firm
+mi_subset2$small_firm_t0 <- factor(mi_subset2$small_firm_t0)#,
+#                                levels = "over 50 employees under", "under 50 employees")
+
 
 ## employment contract
 mi_subset2$emp_contract_t0 <- factor(mi_subset2$emp_contract_t0,
                                   levels = c("permanent",
                                              "fixed-term"))
 
-## employment continuity
+
+## broken employment
+
 mi_subset2$broken_emp_t0 <- factor(mi_subset2$broken_emp_t0,
-                                     levels = c("Unbroken employment",
-                                                "Broken employment",
-                                                "No employment spells"))
+                                     levels = c("Unbroken employment", "Broken employment"))
+
+## second job
+mi_subset2$j2has_dv_t0 <- factor(mi_subset2$j2has_dv_t0,
+                                   levels = c("no", "yes"))
+
+## relative poverty
+mi_subset2$rel_pov_t0 <- factor(mi_subset2$rel_pov_t0,
+                                 levels = c("not in relative poverty", "relative poverty"))
+
+## long-term health condition
+mi_subset2$health_t0 <- factor(mi_subset2$health_t0,
+                               levels = c("no", "yes"))
+
+mi_subset2$health_t1 <- factor(mi_subset2$health_t1,
+                               levels = c("no", "yes"))
+
+## reverse binary exposure var for matching 3:1
+mi_subset2 <- mi_subset2 %>% 
+  mutate(exp1_bin = ifelse(exposure1=="exposed (employed at t1)",
+                           0,1)) # 1 = unexposed as in PS matching
 
 
-# take a random sample for testing code (if it's running slow)
-mi_subset2 <- sample_n(mi_subset2, 30000)
+### take a random sample for testing code (if it's running slow)
+mi_subset2 <- sample_n(mi_subset2, 3000)
 
 mi_subset2_str <- mi_subset2 %>% 
   summary.default() %>% as.data.frame %>% 
   dplyr::group_by(Var1) %>%  
   tidyr::spread(key = Var2, value = Freq)
+
+write_rds(mi_subset2, "./working_data/mi/mi_subset2.rds")
 
 #### set method type depending on variable type --------------------------------
 # specify method for each incomplete variable in data
@@ -295,7 +360,7 @@ mi_subset2_str$method[mi_subset2_str$Var1=="sex_dv_t0"] <- "logreg"
 mi_subset2_str$method[mi_subset2_str$Var1=="age_dv_t0"] <- "norm"
 mi_subset2_str$method[mi_subset2_str$Var1=="non_white_t0"] <- "logreg"
 mi_subset2_str$method[mi_subset2_str$Var1=="marital_status_t0"] <- "polyreg"
-mi_subset2_str$method[mi_subset2_str$Var1=="hiqual_dv_t0"] <- "polyreg"  # haven't ordered as unclear where other qual would sit
+mi_subset2_str$method[mi_subset2_str$Var1=="degree_bin_t0"] <- "logreg" 
 mi_subset2_str$method[mi_subset2_str$Var1=="gor_dv_t0"] <- "polyreg"
 mi_subset2_str$method[mi_subset2_str$Var1=="sic2007_section_lab_t0"] <- "polyreg"
 mi_subset2_str$method[mi_subset2_str$Var1=="soc2000_major_group_title_t0"] <- "polyreg"
@@ -311,9 +376,10 @@ mi_subset2_str$method[mi_subset2_str$Var1=="sf12mcs_dv_t0"] <- "norm"
 mi_subset2_str$method[mi_subset2_str$Var1=="srh_bin_t0"] <- "logreg"
 mi_subset2_str$method[mi_subset2_str$Var1=="ghq_case4_t0"] <- "logreg"
 mi_subset2_str$method[mi_subset2_str$Var1=="dep_child_bin_t0"] <- "logreg"
-mi_subset2_str$method[mi_subset2_str$Var1=="age_dv_t1"] <- "norm"
-mi_subset2_str$method[mi_subset2_str$Var1=="marital_status_t1"] <- "polyreg"
+mi_subset2_str$method[mi_subset2_str$Var1=="age_dv_t1"] <- "norm" # norm if including
+mi_subset2_str$method[mi_subset2_str$Var1=="marital_status_t1"] <- "polyreg" #polyreg if including
 mi_subset2_str$method[mi_subset2_str$Var1=="health_t1"] <- "logreg"
+mi_subset2_str$method[mi_subset2_str$Var1=="exp1_bin"] <- ""
 
 
 ## check mi_subset2_str order matches vars in mi_subset2
@@ -327,23 +393,56 @@ myDefaultMethod <- as.vector(mi_subset2_str$method)
 myPredictorMatrix <- make.predictorMatrix(mi_subset2)
 myPredictorMatrix[,"pidp"] <- 0
 myPredictorMatrix["pidp",] <- 0
+myPredictorMatrix[,"exp1_bin"] <- 0
+myPredictorMatrix["exp1_bin",] <- 0
 myPredictorMatrix
 
 #### imputation ----------------------------------------------------------------
 
 set.seed(52267)
-imps2 <- mice(mi_subset2, m=5, maxit = 10,
-              defaultMethod=myDefaultMethod, predictorMatrix=myPredictorMatrix,
+imps2 <- mice(mi_subset2, m=5, maxit = 5,
+              #defaultMethod=myDefaultMethod, 
+              predictorMatrix=myPredictorMatrix,
              printFlag = FALSE)
 summary(imps2)
 
+### check NAs are removed
+## convert data from mids format to standard df
+temp2 <- complete(imps2, "long", include = FALSE)
+
+## sum number of NAs by var
+temp2_na <- temp2 %>% 
+  summarise(across(.cols=everything(),
+                   .fns = ~sum(is.na(.x)))) %>% 
+  pivot_longer(cols = everything()) %>% 
+  mutate(df="mi")
+
+## compare with non-imputed data
+mi_subset2_na <- mi_subset2  %>% 
+  summarise(across(.cols=everything(),
+                   .fns = ~sum(is.na(.x)))) %>% 
+  pivot_longer(cols = everything()) %>% 
+  mutate(df="og")
+
+temp3 <- temp2_na %>% bind_rows(mi_subset2_na) %>% 
+  pivot_wider(names_from = df, values_from = value)
+
+write_csv(temp3, "./output/temp_output/temp3_micheck.csv")
+
+#### save imputed data 
 write_rds(imps2, "./working_data/mi/imputed_data.rds")
+
 
 ################################################################################
 #####                               Descriptives                           #####
 ################################################################################
 
-
+# use createtableone and leave SMDs for next script
+table_one_unweighted <- with(imps2, CreateTableOne(
+  vars = cov_vector,
+  data=as.data.frame(mget(ls())), 
+  factorVars=catVars_short_vec,
+  strata = "exposure1", test =TRUE))
 
 ################################################################################
 #####                                 Outcomes                             #####
@@ -363,7 +462,7 @@ pcs_fit <- with(data = imps2, exp = glmmTMB(sf12pcs_dv_t1 ~
                                      non_white_t0 +
                                      marital_status_t0 +
                                      dep_child_bin_t0 +
-                                     hiqual_dv_t0 +
+                                     degree_bin_t0 +
                                      gor_dv_t0 +
                                      sic2007_section_lab_t0 +
                                      soc2000_major_group_title_t0 +
@@ -414,7 +513,7 @@ mcs_fit <- with(data = imps2, exp = glmmTMB(sf12mcs_dv_t1 ~
                                               non_white_t0 +
                                               marital_status_t0 +
                                               dep_child_bin_t0 +
-                                              hiqual_dv_t0 +
+                                              degree_bin_t0 +
                                               gor_dv_t0 +
                                               sic2007_section_lab_t0 +
                                               soc2000_major_group_title_t0 +
@@ -468,7 +567,7 @@ srh_fit <- with(data = imps2, exp = glmmTMB(srh_bin_t1 ~
                                               age_dv_t0 +
                                               non_white_t0 +
                                               marital_status_t0 +
-                                              hiqual_dv_t0 +
+                                              degree_bin_t0 +
                                               gor_dv_t0 +
                                               sic2007_section_lab_t0 +
                                               soc2000_major_group_title_t0 +
@@ -494,7 +593,9 @@ srh_mi_mod2 <- summary(srh_pooled, conf.int = TRUE)
 
 srh_mi_mod2 <- srh_mi_mod2 %>% 
   rename(lci = `2.5 %`,
-         uci = `97.5 %`) %>% 
+         uci = `97.5 %`)   %>% 
+  mutate(lci = exp(lci),
+         uci = exp(uci)) %>% 
   mutate(term = str_remove(term, "exposure1"),
          outcome = "Poor self-rated health",
          est_type = "OR",
@@ -520,7 +621,7 @@ ghq_fit <- with(data = imps2, exp = glmmTMB(ghq_case4_t1 ~
                                               age_dv_t0 +
                                               non_white_t0 +
                                               marital_status_t0 +
-                                              hiqual_dv_t0 +
+                                              degree_bin_t0 +
                                               gor_dv_t0 +
                                               sic2007_section_lab_t0 +
                                               soc2000_major_group_title_t0 +
@@ -547,8 +648,10 @@ ghq_mi_mod2 <- summary(ghq_pooled, conf.int = TRUE)
 ghq_mi_mod2 <- ghq_mi_mod2 %>% 
   rename(lci = `2.5 %`,
          uci = `97.5 %`) %>% 
+  mutate(lci = exp(lci),
+         uci = exp(uci)) %>% 
   mutate(term = str_remove(term, "exposure1"),
-         outcome = "Poor self-rated health",
+         outcome = "GHQ-12 caseness (4+)",
          est_type = "OR",
          p.value = ifelse(p.value<0.001,"<0.001",
                           ifelse(p.value<0.01,"<0.01",
@@ -558,5 +661,21 @@ ghq_mi_mod2 <- ghq_mi_mod2 %>%
   dplyr::select("outcome", "term",	"est_type",	"estimate",	"std.error",	"p.value",	"lci",	"uci")
 
 
+#### create single summary df for unweighted MI outcomes ------------
+
+mi_uw_df <- pcs_mi_mod2 %>% 
+  bind_rows(mcs_mi_mod2,
+            srh_mi_mod2,
+            ghq_mi_mod2) %>% 
+  filter(term=="exposed (employed at t1)") %>% 
+#  dplyr::select(-c(term, Estimate, group, component)) %>% 
+  dplyr::select(outcome, est_type, estimate, std.error, p.value, lci, uci)
+
+write.csv(mi_uw_df, "./output/mi/unweighted_outcomes/mi_uw_df.csv")
+
+
+
+
 
 # number of MIs and iterations?
+
