@@ -235,6 +235,7 @@ summary(matched_ghq_glmmTMB_mod)
 start_time <- Sys.time()
 dr_matched_pcs_glmmTMB_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                          exposure1 +
+                                         sf12pcs_dv_t0 +
                                          sex_dv_t0 +
                                          age_dv_t0 +
                                          age_dv_t1 +
@@ -306,10 +307,7 @@ dr_matched_pcs_df_ci <- data.frame(confint(dr_matched_pcs_glmmTMB_mod)) %>%
          uci = X97.5..) 
 
 # add in row names
-dr_matched_pcs_df_ci <- cbind(rownames(dr_matched_pcs_df_ci),dr_matched_pcs_df_ci, row.names=NULL)
-
-dr_matched_pcs_df_ci <- dr_matched_pcs_df_ci %>% 
-  rename(term = `rownames(dr_matched_pcs_df_ci)`)
+dr_matched_pcs_df_ci$term <- rownames(dr_matched_pcs_df_ci)
 
 ## join dfs together
 dr_matched_pcs_df <- dr_matched_pcs_df %>% 
@@ -326,6 +324,7 @@ dr_matched_pcs_df <- dr_matched_pcs_df %>%
 start_time <- Sys.time()
 dr_matched_mcs_glmmTMB_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                          exposure1 +
+                                         sf12mcs_dv_t0 +
                                          sex_dv_t0 +
                                          age_dv_t0 +
                                          age_dv_t1 +
@@ -378,7 +377,6 @@ dr_matched_mcs_glmmTMB_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                          rel_pov_t0 +
                                          health_t0 +
                                          health_t1 +
-                                         sf12mcs_dv_t0 +
   # interaction terms
   sex_dv_t0*age_dv_t0 +
   sex_dv_t0*rel_pov_t0 +
@@ -400,10 +398,8 @@ dr_matched_mcs_df_ci <- data.frame(confint(dr_matched_mcs_glmmTMB_mod)) %>%
          uci = X97.5..) 
 
 # add in row names
-dr_matched_mcs_df_ci <- cbind(rownames(dr_matched_mcs_df_ci),dr_matched_mcs_df_ci, row.names=NULL)
+dr_matched_mcs_df_ci$term <- rownames(dr_matched_mcs_df_ci)
 
-dr_matched_mcs_df_ci <- dr_matched_mcs_df_ci %>% 
-  rename(term = `rownames(dr_matched_mcs_df_ci)`)
 
 ## join dfs together
 dr_matched_mcs_df <- dr_matched_mcs_df %>% 
@@ -421,6 +417,7 @@ dr_matched_mcs_df <- dr_matched_mcs_df %>%
 start_time <- Sys.time()
 dr_matched_srh_glmmTMB_mod <- glmmTMB( srh_bin_t1 ~
                                          exposure1 +
+                                         srh_bin_t0 +
                                          sex_dv_t0 +
                                          age_dv_t0 +
                                          age_dv_t1 +
@@ -497,10 +494,8 @@ dr_matched_srh_df_ci <- data.frame(confint(dr_matched_srh_glmmTMB_mod)) %>%
          uci = exp(uci))
 
 # add in row names
-dr_matched_srh_df_ci <- cbind(rownames(dr_matched_srh_df_ci),dr_matched_srh_df_ci, row.names=NULL)
+dr_matched_srh_df_ci$term <- rownames(dr_matched_srh_df_ci)
 
-dr_matched_srh_df_ci <- dr_matched_srh_df_ci %>% 
-  rename(term = `rownames(dr_matched_srh_df_ci)`)
 
 ## join dfs together
 dr_matched_srh_df <- dr_matched_srh_df %>% 
@@ -517,6 +512,7 @@ dr_matched_srh_df <- dr_matched_srh_df %>%
 start_time <- Sys.time()
 dr_matched_ghq_glmmTMB_mod <- glmmTMB( ghq_case4_t1 ~
                                          exposure1 +
+                                         ghq_case4_t0 +
                                          sex_dv_t0 +
                                          age_dv_t0 +
                                          age_dv_t1 +
@@ -569,7 +565,6 @@ dr_matched_ghq_glmmTMB_mod <- glmmTMB( ghq_case4_t1 ~
                                          rel_pov_t0 +
                                          health_t0 +
                                          health_t1 +
-                                         ghq_case4_t0 +
    # interaction terms
    sex_dv_t0*age_dv_t0 +
    sex_dv_t0*rel_pov_t0 +
@@ -594,10 +589,8 @@ dr_matched_ghq_df_ci <- data.frame(confint(dr_matched_ghq_glmmTMB_mod)) %>%
          uci = exp(uci))
 
 # add in row names
-dr_matched_ghq_df_ci <- cbind(rownames(dr_matched_ghq_df_ci),dr_matched_ghq_df_ci, row.names=NULL)
+dr_matched_ghq_df_ci$term <- rownames(dr_matched_ghq_df_ci)
 
-dr_matched_ghq_df_ci <- dr_matched_ghq_df_ci %>% 
-  rename(term = `rownames(dr_matched_ghq_df_ci)`)
 
 ## join dfs together
 dr_matched_ghq_df <- dr_matched_ghq_df %>% 
