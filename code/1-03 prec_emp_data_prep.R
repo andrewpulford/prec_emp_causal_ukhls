@@ -490,21 +490,20 @@ master_raw1 <- master_raw1 %>%
 
 #### recode GHQ-12 caseness for analysis
 ## calculate caseness for main analysis (cut point = 4)
-master_raw1 <- master_raw1 %>% 
-  mutate(ghq_case4 = ifelse(grepl("0",as.character(scghq2_dv)),0,
-                          ifelse(grepl("1",as.character(scghq2_dv)),0,
-                                 ifelse(grepl("2",as.character(scghq2_dv)),0,
-                                        ifelse(grepl("3",as.character(scghq2_dv)),0,
-                                               ifelse(grepl("4",as.character(scghq2_dv)),1,
-                                                      ifelse(grepl("5",as.character(scghq2_dv)),1,
-                                                             ifelse(grepl("6",as.character(scghq2_dv)),1,
-                                                                    ifelse(grepl("7",as.character(scghq2_dv)),1,
-                                                                           ifelse(grepl("8",as.character(scghq2_dv)),1,
-                                                                                  ifelse(grepl("9",as.character(scghq2_dv)),1,
-                                                                                         ifelse(grepl("10",as.character(scghq2_dv)),1,
-                                                                                                ifelse(grepl("11",as.character(scghq2_dv)),1,
-                                                                                                       ifelse(grepl("12",as.character(scghq2_dv)),1,
-                                                                                                              as.character(scghq2_dv))))))))))))))) 
+master_raw1 <-  master_raw1 %>% mutate(ghq_case4 = ifelse(scghq2_dv=="0",0,
+                                                          ifelse(scghq2_dv=="1",0,                                                                
+                                                                 ifelse(scghq2_dv=="2",0,                                                                
+                                                                        ifelse(scghq2_dv=="3",0,                                                                
+                                                                               ifelse(scghq2_dv=="4",1,                                                                
+                                                                                      ifelse(scghq2_dv=="5",1,                                                                
+                                                                                             ifelse(scghq2_dv=="6",1,                                                                
+                                                                                                    ifelse(scghq2_dv=="7",1,                                                                
+                                                                                                           ifelse(scghq2_dv=="8",1,                                                                
+                                                                                                                  ifelse(scghq2_dv=="9",1,                                                                
+                                                                                                                         ifelse(scghq2_dv=="10",1,                                                                
+                                                                                                                                ifelse(scghq2_dv=="11",1,                                                                
+                                                                                                                                       ifelse(scghq2_dv=="12",1,                                                                
+                                                                                                                                              as.character(scghq2_dv)))))))))))))))
 
 master_raw1 <- master_raw1 %>% 
   mutate(ghq_case4 = ifelse(ghq_case4=="0","0-3",
@@ -516,21 +515,23 @@ master_raw1 <- master_raw1 %>%
                                                  "inapplicable/proxy",
                                                  ghq_case4)))))
 
+table(master_raw1$scghq2_dv,master_raw1$ghq_case4)
+
 ## calculate caseness for sensitivity analysis (cut point = 3)
-master_raw1 <- master_raw1 %>% mutate(ghq_case3 = ifelse(grepl("0",as.character(scghq2_dv)),0,
-                                                         ifelse(grepl("1",as.character(scghq2_dv)),0,
-                                                                ifelse(grepl("2",as.character(scghq2_dv)),0,
-                                                                       ifelse(grepl("3",as.character(scghq2_dv)),1,
-                                                                              ifelse(grepl("4",as.character(scghq2_dv)),1,
-                                                                                     ifelse(grepl("5",as.character(scghq2_dv)),1,
-                                                                                            ifelse(grepl("6",as.character(scghq2_dv)),1,
-                                                                                                   ifelse(grepl("7",as.character(scghq2_dv)),1,
-                                                                                                          ifelse(grepl("8",as.character(scghq2_dv)),1,
-                                                                                                                 ifelse(grepl("9",as.character(scghq2_dv)),1,
-                                                                                                                        ifelse(grepl("10",as.character(scghq2_dv)),1,
-                                                                                                                               ifelse(grepl("11",as.character(scghq2_dv)),1,
-                                                                                                                                      ifelse(grepl("12",as.character(scghq2_dv)),1,
-                                                                                                                                             as.character(scghq2_dv))))))))))))))) 
+master_raw1 <-  master_raw1 %>% mutate(ghq_case3 = ifelse(scghq2_dv=="0",0,
+                                                          ifelse(scghq2_dv=="1",0,                                                                
+                                                                 ifelse(scghq2_dv=="2",0,                                                                
+                                                                        ifelse(scghq2_dv=="3",1,                                                                
+                                                                               ifelse(scghq2_dv=="4",1,                                                                
+                                                                                      ifelse(scghq2_dv=="5",1,                                                                
+                                                                                             ifelse(scghq2_dv=="6",1,                                                                
+                                                                                                    ifelse(scghq2_dv=="7",1,                                                                
+                                                                                                           ifelse(scghq2_dv=="8",1,                                                                
+                                                                                                                  ifelse(scghq2_dv=="9",1,                                                                
+                                                                                                                         ifelse(scghq2_dv=="10",1,                                                                
+                                                                                                                                ifelse(scghq2_dv=="11",1,                                                                
+                                                                                                                                       ifelse(scghq2_dv=="12",1,                                                                
+                                                                                                                                              as.character(scghq2_dv)))))))))))))))
 
 master_raw1 <- master_raw1 %>% 
   mutate(ghq_case3 = ifelse(ghq_case3=="0","0-2",
@@ -542,6 +543,7 @@ master_raw1 <- master_raw1 %>%
                                                  "inapplicable/proxy",
                                                  ghq_case3)))))
 
+table(master_raw1$scghq2_dv,master_raw1$ghq_case3)
 
 #### sf-12 PCS
 master_raw1 <- master_raw1 %>% 
@@ -551,6 +553,7 @@ master_raw1 <- master_raw1 %>%
   ifelse(sf12pcs_dv %in% c("inapplicable","proxy"),
                    "inapplicable/proxy",
    sf12pcs_dv)))
+
 
 #### sf-12 MCS
 master_raw1 <- master_raw1 %>% 
