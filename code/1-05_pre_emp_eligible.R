@@ -41,7 +41,8 @@ source("./look_ups/variable_vectors.r")
 
 ## extra vars for 
 extra_vars <- c("jbstat_t0", "jbstat_t1","nunmpsp_dv_t0", 
-                "nunmpsp_dv_t1", "retchk_flag_t1")
+                "nunmpsp_dv_t1", "retchk_flag_t1",
+                "scghq2_dv_t0", "scghq2_dv_t1")
 
 #### read in data
 pair_cc_raw <- readRDS("./working_data/pair_cc_raw.rds")
@@ -75,7 +76,7 @@ pair_cc_raw <- pair_cc_raw %>%
 # not caring for family or home at T1
 # not long-term sick or disabled at T1
 # not other unspecified employment status at t1
-# not inapplicable or proxy outcome meaure at t0 or t1
+# not inapplicable or proxy outcome measure at t0 or t1
 
 ### create df and exclusions df
 ## 16-64 t0
@@ -225,18 +226,18 @@ pair_cc_exc <- pair_cc_exc %>%
 ## not inapplicable or proxy outcome measure at t0 or t1
 # include
 valid_outcomes <- not_other %>% 
-  filter(sf12pcs_dv_t0!="inapplicable/proxy"|
-           sf12pcs_dv_t1!="inapplicable/proxy"|
-           sf12mcs_dv_t0!="inapplicable/proxy"|
-           sf12pcs_dv_t1!="inapplicable/proxy"|
-           srh_bin_t0!="inapplicable/proxy"|
-           srh_bin_t1!="inapplicable/proxy"|
-           ghq_case4_t0!="inapplicable/proxy"|
-           ghq_case4_t1!="inapplicable/proxy")
+  filter(sf12pcs_dv_t0%notin%c("inapplicable/proxy","missing")&
+           sf12pcs_dv_t1%notin%c("inapplicable/proxy","missing")&
+           sf12mcs_dv_t0%notin%c("inapplicable/proxy","missing")&
+           sf12pcs_dv_t1%notin%c("inapplicable/proxy","missing")&
+           srh_bin_t0%notin%c("inapplicable/proxy","missing")&
+           srh_bin_t1%notin%c("inapplicable/proxy","missing")&
+           ghq_case4_t0%notin%c("inapplicable/proxy","missing")&
+           ghq_case4_t1%notin%c("inapplicable/proxy","missing"))
 
 
 # exclude
-temp_df <- valid_outcomes %>% filter(sf12pcs_dv_t0=="inapplicable/proxy"|
+temp_df <- not_other %>% filter(sf12pcs_dv_t0=="inapplicable/proxy"|
                                    sf12pcs_dv_t1=="inapplicable/proxy"|
                                    sf12mcs_dv_t0=="inapplicable/proxy"|
                                    sf12pcs_dv_t1=="inapplicable/proxy"|
