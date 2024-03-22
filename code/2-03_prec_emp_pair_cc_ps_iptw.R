@@ -1,7 +1,7 @@
 ################################################################################
 
 # Precarious employment and health - Understanding Society
-# 3-04 - Paired unweighted complete case analysis propensity scores for risk of 
+# 2-03 - Paired unweighted complete case analysis propensity scores for risk of 
 # job loss 
 # Andrew Pulford
 
@@ -57,11 +57,17 @@ nonnorm_vec <- (c("age_dv_t0", "sf12mcs_dv_t0", "sf12pcs_dv_t0"))
 ####load eligible cases --------------------------------------------------------
 pair_cc_analytic <- readRDS("./working_data/cc/pair_cc_analytic.rds")
 
+
+sapply(pair_cc_analytic, function(x) sum(is.na(x)))
+
+
 ### convert binary outcome vars to factors to allow svyglm to work
 pair_cc_analytic$srh_bin_t1 <- factor(pair_cc_analytic$srh_bin_t1)
 pair_cc_analytic$ghq_case4_t1 <- factor(pair_cc_analytic$ghq_case4_t1)
 
 ### convert SF-12 outcomes to numeric to allow svyglm to work
+pair_cc_analytic$sf12pcs_dv_t0 <- as.numeric(pair_cc_analytic$sf12pcs_dv_t0)
+pair_cc_analytic$sf12mcs_dv_t0 <- as.numeric(pair_cc_analytic$sf12mcs_dv_t0)
 pair_cc_analytic$sf12pcs_dv_t1 <- as.numeric(pair_cc_analytic$sf12pcs_dv_t1)
 pair_cc_analytic$sf12mcs_dv_t1 <- as.numeric(pair_cc_analytic$sf12mcs_dv_t1)
 
@@ -69,7 +75,8 @@ pair_cc_analytic$sf12mcs_dv_t1 <- as.numeric(pair_cc_analytic$sf12mcs_dv_t1)
 
 #### keep only variables required for propensity score (and other analysis) ----
 pair_cc_ps <- pair_cc_analytic %>% 
-  dplyr::select(pidp, all_of(c(cov_vector, cov_vector2, outcome_vector))) #%>% 
+  dplyr::select(pidp, scghq2_dv_t0, scghq2_dv_t1, 
+                all_of(c(cov_vector, cov_vector2, outcome_vector))) #%>% 
 #  dplyr::select(-c(psu, strata, wt_name, wt_value))
 
 #### convert pidp to factor 
