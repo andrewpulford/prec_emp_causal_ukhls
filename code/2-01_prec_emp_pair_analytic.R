@@ -36,7 +36,8 @@ library(tidyverse) # all kinds of stuff
 source("./look_ups/variable_vectors.r")
 
 ## extra vars for creating exposure vars
-extra_vars <- c("jbstat_t1", "nunmpsp_dv_t1")
+extra_vars <- c("jbstat_t1", "nunmpsp_dv_t1",
+                "sf12mcs_dv_t0", "sf12mcs_dv_t1")
 
 #### load in variable spine and create vector ----------------------------------
 #vars <- readRDS("./variables/vars_master.rds")
@@ -53,12 +54,12 @@ extra_vars <- c("jbstat_t1", "nunmpsp_dv_t1")
 #rm(temp1,temp2)
 
 ####load eligible cases --------------------------------------------------------
-pair_cc_eligible <- readRDS("./working_data/pair_eligible.rds") %>% 
+pair_cc_eligible <- readRDS("./working_data/pair_eligible.rds") #%>% 
 #  dplyr::select(pidp, all_of(c(id_wt_vector, 
 #                         cov_vector, cov_vector2, 
 #                         outcome_vector2,
 #                         extra_vars))) %>% 
-  dplyr::select(-all_of(extra_vars))
+#  dplyr::select(-all_of(extra_vars))
 
 ################################################################################
 #####                             create NAs df                            #####
@@ -95,10 +96,25 @@ pair_cc_eligible_na <- pair_cc_eligible_na %>%
 #####                     create final complete case df                    #####
 ################################################################################
 
+## sort out baseline sf-12 vars to ID missing vars
+pair_cc_eligible$sf12pcs_dv_t0 <- as.character(pair_cc_eligible$sf12pcs_dv_t0)
+pair_cc_eligible$sf12pcs_dv_t0 <- as.numeric(pair_cc_eligible$sf12pcs_dv_t0)
+
+pair_cc_eligible$sf12mcs_dv_t0 <- as.character(pair_cc_eligible$sf12mcs_dv_t0)
+pair_cc_eligible$sf12mcs_dv_t0 <- as.numeric(pair_cc_eligible$sf12mcs_dv_t0)
+
+
 
 ### remove any incomplete cases for CC analysis
 pair_cc_analytic <- pair_cc_eligible %>% 
   na.omit()
+
+
+
+
+# check
+sapply(pair_cc_analytic, function(x) sum(is.na(x)))
+
 
 #### VVV retain for now - may need for MI VVV ####
 # Exclude:
@@ -152,3 +168,18 @@ write_rds(pair_cc_analytic, "./working_data/cc/pair_cc_analytic.rds")
 ## exclusions
 write_rds(pair_cc_eligible_na, "./working_data/cc/pair_cc_eligible_na.rds")
 
+###### check for GHQ-12 scores
+
+pair_cc_analytic %>% 
+  ggplot(aes(x = as.numeric(scghq2_dv_t0))) +
+  geom_histogram() +
+  facet_wrap(~exposure1)
+
+
+pair_cc_analytic %>% 
+  ggplot(aes(x = as.numeric(scghq2_dv_t1))) +
+  geom_histogram() +
+  facet_wrap(~exposure1)
+
+table(pair_cc_analytic$scghq2_dv_t0)
+table(pair_cc_analytic$scghq2_dv_t1)
