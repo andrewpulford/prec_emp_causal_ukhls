@@ -1,7 +1,7 @@
 ################################################################################
 
 # Precarious employment and health - Understanding Society
-# 2-06 - Paired inverse probability of treatment weighted complete case outcome   
+# 2-05 - Paired inverse probability of treatment weighted complete case outcome   
 # analysis for risk of job loss 
 # Andrew Pulford
 
@@ -55,7 +55,7 @@ source("./look_ups/variable_vectors.r")
 
 
 #### load IPTW df --------------------------------------------------------------
-iptw_df <- readRDS("working_data/matchit_df.rds") # analytic df with IPTW from MatchIt package
+iptw_df <- readRDS("working_data/cc/weightit_df.rds") # analytic df with IPTW from WeightIt package
 
 iptw_df <- iptw_df %>% 
   dummy_cols(select_columns = c("marital_status_t1",
@@ -73,11 +73,16 @@ iptw_df$srh_bin_t1 <- factor(iptw_df$srh_bin_t1,
                                 levels = c("excellent/very good", 
                                            "good/fair/poor"))
 
+
 iptw_df$ghq_case4_t0 <- factor(iptw_df$ghq_case4_t0,
                                   levels = c("0-3", "4 or more"))
 iptw_df$ghq_case4_t1 <- factor(iptw_df$ghq_case4_t1,
                                   levels = c("0-3", "4 or more"))
 
+iptw_df <- iptw_df %>% 
+  mutate(ghq4_outcome_bin = ifelse(ghq_case4_t1=="0-3",0,
+                                   ifelse(ghq_case4_t1=="4 or more",1,
+                                          "CHECK")))
 
 iptw_df$exposure1 <- factor(iptw_df$exposure1,
                                levels = c("unexposed",
@@ -93,10 +98,16 @@ iptw_df$sf12mcs_dv_t0 <- as.numeric(iptw_df$sf12mcs_dv_t0)
 iptw_df$sf12pcs_dv_t1 <- as.numeric(iptw_df$sf12pcs_dv_t1)
 iptw_df$sf12mcs_dv_t1 <- as.numeric(iptw_df$sf12mcs_dv_t1)
 
+### ghq-12 change var for checking findings
+iptw_df <- iptw_df %>% 
+  mutate(ghq_change = paste0(ghq_case4_t0," to ", ghq_case4_t1))
+
+table(iptw_df$ghq_change)
+
 ### create weighted data
 iptw_svy <- svydesign(ids = ~1,
                          data = iptw_df,
-                         weights = ~weights_ps)
+                         weights = ~weightit_ipw)
 
 
 ################################################################################
@@ -110,7 +121,7 @@ start_time <- Sys.time()
 iptw_pcs_glmmTMB_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                       exposure1 +
                                       (1|pidp),
-                                    weights = weights_ps,
+                                    weights = weightit_ipw,
                                     data = iptw_df)
 
 summary(iptw_pcs_glmmTMB_mod)
@@ -121,7 +132,7 @@ end_time - start_time
 iptw_mcs_glmmTMB_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                       exposure1 +
                                       (1|pidp),
-                                 weights = weights_ps,
+                                 weights = weightit_ipw,
                                  data = iptw_df)
 
 summary(iptw_mcs_glmmTMB_mod)
@@ -131,7 +142,7 @@ summary(iptw_mcs_glmmTMB_mod)
 iptw_srh_glmmTMB_mod <- glmmTMB(srh_bin_t1 ~ exposure1  +
                                      (1|pidp),
                                    family = binomial(link="logit"),
-                                weights = weights_ps,
+                                weights = weightit_ipw,
                                 data = iptw_df, 
                                    na.action = na.omit)
 
@@ -139,11 +150,11 @@ summary(iptw_srh_glmmTMB_mod)
 
 ### GHQ-12 caseness (4+) -------------------
 
-iptw_ghq_glmmTMB_mod <- glmmTMB(ghq_case4_t1 ~ exposure1  +
+iptw_ghq_glmmTMB_mod <- glmmTMB(ghq4_outcome_bin ~ exposure1  +
                                      (1|pidp),
                                    family = binomial(link="logit"),
                                    data = iptw_df, 
-                                weights = weights_ps,
+                                weights = weightit_ipw,
                                 na.action = na.omit)
 
 summary(iptw_ghq_glmmTMB_mod)
@@ -223,7 +234,7 @@ dr_iptw_pcs_glmmTMB_mod <- glmmTMB( sf12pcs_dv_t1 ~
   sex_dv_t0*rel_pov_t0 +
   age_dv_t0*rel_pov_t0 +
                                          (1|pidp),
-                                    weights = weights_ps,
+                                    weights = weightit_ipw,
                                     data = iptw_df)
 end_time <- Sys.time()
 end_time-start_time
@@ -326,7 +337,7 @@ dr_iptw_mcs_glmmTMB_mod <- glmmTMB( sf12mcs_dv_t1 ~
   sex_dv_t0*rel_pov_t0 +
   age_dv_t0*rel_pov_t0 +
                                          (1|pidp),
-                                    weights = weights_ps,
+                                    weights = weightit_ipw,
                                     data = iptw_df)
 end_time <- Sys.time()
 end_time-start_time
@@ -430,7 +441,7 @@ dr_iptw_srh_glmmTMB_mod <- glmmTMB( srh_bin_t1 ~
   age_dv_t0*rel_pov_t0 +
                                          (1|pidp),
                                        family = binomial(link="logit"),
-                                    weights = weights_ps,
+                                    weights = weightit_ipw,
                                     data = iptw_df)
 end_time <- Sys.time()
 end_time-start_time
@@ -468,7 +479,7 @@ dr_iptw_srh_df <- dr_iptw_srh_df %>%
 
 ### GHQ-12 caseness -----------------
 start_time <- Sys.time()
-dr_iptw_ghq_glmmTMB_mod <- glmmTMB( ghq_case4_t1 ~
+dr_iptw_ghq_glmmTMB_mod <- glmmTMB( ghq4_outcome_bin ~
                                       exposure1 +
                                       sex_dv_t0 +
                                          age_dv_t0 +
@@ -536,7 +547,7 @@ dr_iptw_ghq_glmmTMB_mod <- glmmTMB( ghq_case4_t1 ~
   age_dv_t0*rel_pov_t0 +
                                            (1|pidp),
                                        family = binomial(link="logit"),
-                                    weights = weights_ps,
+                                    weights = weightit_ipw,
                                     data = iptw_df)
 end_time <- Sys.time()
 end_time-start_time
@@ -590,4 +601,22 @@ diagnose(dr_iptw_mcs_glmmTMB_mod)
 diagnose(dr_iptw_srh_glmmTMB_mod)
 diagnose(dr_iptw_ghq_glmmTMB_mod)
 
+############## GHQ-12 checks
 
+iptw_df %>% group_by(exposure1,ghq_case4_t0,ghq_case4_t1) %>% 
+  summarise(n=n()) %>% 
+  ungroup() %>% 
+  group_by(exposure1) %>% 
+  mutate(d=sum(n)) %>% 
+  ungroup() %>% 
+  mutate(pc=n/d*100)
+
+
+
+ghq_change_summary <- svyCreateTableOne(vars=c("ghq_case4_t0","ghq_case4_t1","ghq_change"),
+                  strata="exposure1",
+                  data=iptw_svy)
+
+ghq_change_summary_sav <- print(ghq_change_summary)
+
+write.csv(ghq_change_summary_sav, "./output/scrapbook/ghq_change_summary_cc.csv")
