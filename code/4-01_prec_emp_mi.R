@@ -177,9 +177,13 @@ mi_subset1$sf12pcs_dv_t1 <- as.numeric(mi_subset1$sf12pcs_dv_t1)
 mi_subset1$exposure1 <- factor(mi_subset1$exposure1,
                                levels = c("unexposed",
                                           "exposed (employed at t1)"))
+# change sex to factor
+mi_subset1$sex_dv_t0 <- factor(mi_subset1$sex_dv_t0,
+                               levels = c("Female",
+                                          "Male"))
 
 # take a random sample for testing code (if it's running slow)
-#mi_subset1 <- sample_n(mi_subset1, 1000)
+#mi_subset1 <- sample_n(mi_subset1, 10000)
 
 
 #### create imputations --------------------------------------------------------
@@ -262,6 +266,11 @@ mi_subset2$exposure1 <- factor(mi_subset2$exposure1,
                                           "exposed (employed at t1)"))
 
 ### reorder covariates as required
+## sex
+mi_subset2$sex_dv_t0 <- factor(mi_subset2$sex_dv_t0,
+levels = c("Female",
+           "Male"))
+
 ## ethnicity
 mi_subset2$non_white_t0 <- factor(mi_subset2$non_white_t0,
                                levels = c("White",
@@ -335,13 +344,17 @@ mi_subset2 <- mi_subset2 %>%
                            0,1)) # 1 = unexposed as in PS matching
 
 
-### take a random sample for testing code (if it's running slow)
-mi_subset2 <- sample_n(mi_subset2, 3000)
+# check var structure is OK for glm
+str(mi_subset2)
+
 
 mi_subset2_str <- mi_subset2 %>% 
   summary.default() %>% as.data.frame %>% 
   dplyr::group_by(Var1) %>%  
   tidyr::spread(key = Var2, value = Freq)
+
+### take a random sample for testing code (if it's running slow)
+#mi_subset2 <- sample_n(mi_subset2, 3000)
 
 write_rds(mi_subset2, "./working_data/mi/mi_subset2.rds")
 
@@ -400,7 +413,7 @@ myPredictorMatrix
 #### imputation ----------------------------------------------------------------
 
 set.seed(52267)
-imps2 <- mice(mi_subset2, m=5, maxit = 5,
+imps2 <- mice(mi_subset2, m=25, maxit = 10,
               #defaultMethod=myDefaultMethod, 
               predictorMatrix=myPredictorMatrix,
              printFlag = FALSE)
