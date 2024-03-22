@@ -490,6 +490,7 @@ master_raw1 <- master_raw1 %>%
 
 #### recode GHQ-12 caseness for analysis
 ## calculate caseness for main analysis (cut point = 4)
+master_raw1$scghq2_dv <- as.character(master_raw1$scghq2_dv)
 master_raw1 <-  master_raw1 %>% mutate(ghq_case4 = ifelse(scghq2_dv=="0",0,
                                                           ifelse(scghq2_dv=="1",0,                                                                
                                                                  ifelse(scghq2_dv=="2",0,                                                                
