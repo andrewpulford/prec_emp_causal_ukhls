@@ -118,6 +118,19 @@ love.plot(matchit_df, thresholds = 0.1, stats = "m",
 # var.names() - to clean up names
 
 ################################################################################
+#####                               Descriptives                           #####
+################################################################################
+
+### leave for now
+# use createtableone and leave SMDs for next script
+#table_one_ps <- with(matchit_df, CreateTableOne(
+#  vars = cov_vector,
+#  data=as.data.frame(mget(ls())), 
+#  factorVars=catVars_short_vec,
+#  strata = "exposure1", test =TRUE))
+
+
+################################################################################
 ####  #           propensity score matched double-robust model             #####
 ################################################################################
 
