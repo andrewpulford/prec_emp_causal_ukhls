@@ -1,7 +1,7 @@
 ################################################################################
 
 # Precarious employment and health - Understanding Society
-# 4-02 - Propensity score matched multiple imputed analytic sample 
+# 4-02a - Propensity score matched multiple imputed analytic sample 
 # Andrew Pulford
 
 # Data source:
