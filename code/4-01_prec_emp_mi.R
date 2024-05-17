@@ -51,8 +51,41 @@ pair_eligible <- readRDS("./working_data/pair_eligible.rds") %>%
 
 
 
-# check number of missing cases by vartiable
+# check number of missing cases by variable
 sapply(pair_eligible, function(x) sum(is.na(x)))
+
+# check number of missing cases by row
+
+temp <- pair_eligible %>% 
+  dplyr::select(# person identifier
+    pidp,
+    # outcomes vars
+    sf12pcs_dv_t1,
+    sf12mcs_dv_t1, 
+    srh_bin_t1,
+    ghq_case4_t1,
+    # exposure 
+    exposure1, 
+    # t0 covariates
+    all_of(cov_vector),
+    # t1 covariates
+    age_dv_t1,
+    marital_status_t1,
+    health_t1
+  )
+temp$na_count <- rowSums(is.na(temp))
+
+table(temp$na_count)
+
+
+## calculate propotion of rows with missing data - use for number of imputations
+df_rows <- nrow(pair_eligible)
+
+cc_rows <- nrow(na.omit(pair_eligible))
+
+1-cc_rows/df_rows
+
+rm(temp)
 
 ################################################################################
 #####                             create NAs df                            #####
@@ -183,7 +216,7 @@ mi_subset1$sex_dv_t0 <- factor(mi_subset1$sex_dv_t0,
                                           "Male"))
 
 # take a random sample for testing code (if it's running slow)
-#mi_subset1 <- sample_n(mi_subset1, 10000)
+mi_subset1 <- sample_n(mi_subset1, 3000)
 
 
 #### create imputations --------------------------------------------------------
@@ -192,7 +225,7 @@ mi_subset1$sex_dv_t0 <- factor(mi_subset1$sex_dv_t0,
 set.seed(7341)
 
 ## imputations
-imps <- mice(mi_subset1, m=20, maxit=5)
+imps <- mice(mi_subset1, m=15, maxit=10)
 summary(imps)
 
 ## log reg on SF-12 PCS with one covariate
@@ -413,10 +446,17 @@ myPredictorMatrix
 #### imputation ----------------------------------------------------------------
 
 set.seed(52267)
+start_time <- Sys.time()
+### for final MI model run 25 imputations and 10 iterations
+## run fewer when testing code
 imps2 <- mice(mi_subset2, m=25, maxit = 10,
-              #defaultMethod=myDefaultMethod, 
+#imps2 <- mice(mi_subset2, m=15, maxit = 10,
+                            #defaultMethod=myDefaultMethod, 
               predictorMatrix=myPredictorMatrix,
              printFlag = FALSE)
+end_time <- Sys.time()
+end_time - start_time
+
 summary(imps2)
 
 ### check NAs are removed
@@ -442,253 +482,11 @@ temp3 <- temp2_na %>% bind_rows(mi_subset2_na) %>%
 
 write_csv(temp3, "./output/temp_output/temp3_micheck.csv")
 
+## check NAs
+sapply(complete(imps2,2), function(x) sum(is.na(x)))
+
 #### save imputed data 
 write_rds(imps2, "./working_data/mi/imputed_data.rds")
 
 
-################################################################################
-#####                               Descriptives                           #####
-################################################################################
-
-# use createtableone and leave SMDs for next script
-table_one_unweighted <- with(imps2, CreateTableOne(
-  vars = cov_vector,
-  data=as.data.frame(mget(ls())), 
-  factorVars=catVars_short_vec,
-  strata = "exposure1", test =TRUE))
-
-################################################################################
-#####                                 Outcomes                             #####
-################################################################################
-
-#### SF12-PCS ------------------------------------------------------------------
-
-## fit model to the imputations and pool the results:
-pcs_fit <- with(data = imps2, exp = glmmTMB(sf12pcs_dv_t1 ~
-                                     # exposure         
-                                     exposure1 +
-                                     # t0 outcome measure
-                                     sf12pcs_dv_t0 +
-                                     #t0 covariates
-                                     sex_dv_t0 +
-                                     age_dv_t0 +
-                                     non_white_t0 +
-                                     marital_status_t0 +
-                                     dep_child_bin_t0 +
-                                     degree_bin_t0 +
-                                     gor_dv_t0 +
-                                     sic2007_section_lab_t0 +
-                                     soc2000_major_group_title_t0 +
-                                     jbft_dv_t0 +
-                                     small_firm_t0 +
-                                     emp_contract_t0 +
-                                     broken_emp_t0 +
-                                     j2has_dv_t0 +
-                                     rel_pov_t0 +
-                                     health_t0 +
-                                     # t1 covariates
-                                     age_dv_t1 +
-                                     marital_status_t1 +
-                                     health_t1 +
-                                     # interaction terms
-                                     sex_dv_t0*age_dv_t0 +
-                                     sex_dv_t0*rel_pov_t0 +
-                                     age_dv_t0*rel_pov_t0 +
-                                     # multilevel component
-                                     (1|pidp), 
-                                   family="gaussian"))
-pcs_pooled <- pool(pcs_fit)
-pcs_mi_mod2 <- summary(pcs_pooled, conf.int = TRUE)
-
-pcs_mi_mod2 <- pcs_mi_mod2 %>% 
-  rename(lci = `2.5 %`,
-         uci = `97.5 %`) %>% 
-  mutate(term = str_remove(term, "exposure1"),
-         outcome = "SF-12 PCS",
-         est_type = "coefficient",
-         p.value = ifelse(p.value<0.001,"<0.001",
-                          ifelse(p.value<0.01,"<0.01",
-                                 ifelse(p.value<0.05,"<0.05",       
-                                        p.value)))) %>% 
-  dplyr::select("outcome", "term",	"est_type",	"estimate",	"std.error",	"p.value",	"lci",	"uci")
-
-#### SF12-MCS ------------------------------------------------------------------
-
-## fit model to the imputations and pool the results:
-mcs_fit <- with(data = imps2, exp = glmmTMB(sf12mcs_dv_t1 ~
-                                              # exposure
-                                              exposure1 +
-                                              # t0 outcome measure
-                                              sf12mcs_dv_t1 +
-                                              # t0 covariates
-                                              sex_dv_t0 +
-                                              age_dv_t0 +
-                                              non_white_t0 +
-                                              marital_status_t0 +
-                                              dep_child_bin_t0 +
-                                              degree_bin_t0 +
-                                              gor_dv_t0 +
-                                              sic2007_section_lab_t0 +
-                                              soc2000_major_group_title_t0 +
-                                              jbft_dv_t0 +
-                                              small_firm_t0 +
-                                              emp_contract_t0 +
-                                              broken_emp_t0 +
-                                              j2has_dv_t0 +
-                                              rel_pov_t0 +
-                                              health_t0 +
-                                              srh_bin_t0 +
-                                              ghq_case4_t0 +
-                                              sf12mcs_dv_t0 +
-                                              # t1 covariates
-                                              age_dv_t1 +
-                                              marital_status_t1 +
-                                              health_t1 +
-                                              # interaction terms
-                                              sex_dv_t0*age_dv_t0 +
-                                              sex_dv_t0*rel_pov_t0 +
-                                              age_dv_t0*rel_pov_t0 +
-                                              (1|pidp), 
-                                            family="gaussian"))
-mcs_pooled <- pool(mcs_fit)
-mcs_mi_mod2 <- summary(mcs_pooled, conf.int = TRUE)
-
-mcs_mi_mod2 <- mcs_mi_mod2 %>% 
-  rename(lci = `2.5 %`,
-         uci = `97.5 %`) %>% 
-  mutate(term = str_remove(term, "exposure1"),
-         outcome = "SF-12 PCS",
-         est_type = "coefficient",
-         p.value = ifelse(p.value<0.001,"<0.001",
-                          ifelse(p.value<0.01,"<0.01",
-                                 ifelse(p.value<0.05,"<0.05",       
-                                        p.value)))) %>% 
-  dplyr::select("outcome", "term",	"est_type",	"estimate",	"std.error",	"p.value",	"lci",	"uci")
-
-#### Self-rated health ---------------------------------------------------------
-
-# need to recode SRH and prob GHQ into 0-1 binary vars
-
-## fit model to the imputations and pool the results:
-srh_fit <- with(data = imps2, exp = glmmTMB(srh_bin_t1 ~
-                                              # exposure
-                                              exposure1 +
-                                              # t0 outcome measure
-                                              srh_bin_t0 +
-                                              # t0 covariates
-                                              sex_dv_t0 +
-                                              age_dv_t0 +
-                                              non_white_t0 +
-                                              marital_status_t0 +
-                                              degree_bin_t0 +
-                                              gor_dv_t0 +
-                                              sic2007_section_lab_t0 +
-                                              soc2000_major_group_title_t0 +
-                                              jbft_dv_t0 +
-                                              small_firm_t0 +
-                                              emp_contract_t0 +
-                                              broken_emp_t0 +
-                                              j2has_dv_t0 +
-                                              rel_pov_t0 +
-                                              health_t0 +
-                                              # t1 covariates
-                                              age_dv_t1 +
-                                              marital_status_t1 +
-                                              health_t1 +
-                                              # interaction terms
-                                              sex_dv_t0*age_dv_t0 +
-                                              sex_dv_t0*rel_pov_t0 +
-                                              age_dv_t0*rel_pov_t0 +
-                                              (1|pidp), 
-                                            family=binomial(link="logit")))
-srh_pooled <- pool(srh_fit)
-srh_mi_mod2 <- summary(srh_pooled, conf.int = TRUE)
-
-srh_mi_mod2 <- srh_mi_mod2 %>% 
-  rename(lci = `2.5 %`,
-         uci = `97.5 %`)   %>% 
-  mutate(lci = exp(lci),
-         uci = exp(uci)) %>% 
-  mutate(term = str_remove(term, "exposure1"),
-         outcome = "Poor self-rated health",
-         est_type = "OR",
-         p.value = ifelse(p.value<0.001,"<0.001",
-                          ifelse(p.value<0.01,"<0.01",
-                                 ifelse(p.value<0.05,"<0.05",       
-                                        p.value)))) %>% 
-  mutate(estimate = exp(estimate)) %>% 
-  dplyr::select("outcome", "term",	"est_type",	"estimate",	"std.error",	"p.value",	"lci",	"uci")
-
-
-
-#### GHQ-12 caseness (4+) ------------------------------------------------------
-
-## fit model to the imputations and pool the results:
-ghq_fit <- with(data = imps2, exp = glmmTMB(ghq_case4_t1 ~
-                                              # exposure
-                                              exposure1 +
-                                              # t0 outcome measure
-                                              ghq_case4_t0 +
-                                              # t0 covariates
-                                              sex_dv_t0 +
-                                              age_dv_t0 +
-                                              non_white_t0 +
-                                              marital_status_t0 +
-                                              degree_bin_t0 +
-                                              gor_dv_t0 +
-                                              sic2007_section_lab_t0 +
-                                              soc2000_major_group_title_t0 +
-                                              jbft_dv_t0 +
-                                              small_firm_t0 +
-                                              emp_contract_t0 +
-                                              broken_emp_t0 +
-                                              j2has_dv_t0 +
-                                              rel_pov_t0 +
-                                              health_t0 +
-                                              # t1 covariates
-                                              age_dv_t1 +
-                                              marital_status_t1 +
-                                              health_t1 +
-                                              # interaction terms
-                                              sex_dv_t0*age_dv_t0 +
-                                              sex_dv_t0*rel_pov_t0 +
-                                              age_dv_t0*rel_pov_t0 +
-                                              (1|pidp), 
-                                            family=binomial(link="logit")))
-ghq_pooled <- pool(ghq_fit)
-ghq_mi_mod2 <- summary(ghq_pooled, conf.int = TRUE)
-
-ghq_mi_mod2 <- ghq_mi_mod2 %>% 
-  rename(lci = `2.5 %`,
-         uci = `97.5 %`) %>% 
-  mutate(lci = exp(lci),
-         uci = exp(uci)) %>% 
-  mutate(term = str_remove(term, "exposure1"),
-         outcome = "GHQ-12 caseness (4+)",
-         est_type = "OR",
-         p.value = ifelse(p.value<0.001,"<0.001",
-                          ifelse(p.value<0.01,"<0.01",
-                                 ifelse(p.value<0.05,"<0.05",       
-                                        p.value)))) %>% 
-  mutate(estimate = exp(estimate)) %>% 
-  dplyr::select("outcome", "term",	"est_type",	"estimate",	"std.error",	"p.value",	"lci",	"uci")
-
-
-#### create single summary df for unweighted MI outcomes ------------
-
-mi_uw_df <- pcs_mi_mod2 %>% 
-  bind_rows(mcs_mi_mod2,
-            srh_mi_mod2,
-            ghq_mi_mod2) %>% 
-  filter(term=="exposed (employed at t1)") %>% 
-#  dplyr::select(-c(term, Estimate, group, component)) %>% 
-  dplyr::select(outcome, est_type, estimate, std.error, p.value, lci, uci)
-
-write.csv(mi_uw_df, "./output/mi/unweighted_outcomes/mi_uw_df.csv")
-
-
-
-
-
-# number of MIs and iterations?
 
