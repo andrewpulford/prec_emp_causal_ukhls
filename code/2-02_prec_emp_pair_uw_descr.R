@@ -209,3 +209,128 @@ table_one_alt_sav <- print(table_one_alt, showAllLevels = TRUE, smd = TRUE,
 write.csv(table_one_sav, "./output/cc/unmatched_descriptives/table_one_unmatched.csv")
 write.csv(table_one_alt_sav, "./output/cc/unmatched_descriptives/table_one_alt_unmatched.csv")
 
+################################################################################
+#####                       unweighted outcome models                      #####
+################################################################################
+
+library(glmmTMB) # for multi-level modelling (faster than lme4)
+
+#### load IPTW df --------------------------------------------------------------
+# use without weights
+iptw_df <- readRDS("working_data/cc/weightit_df.rds") # analytic df with IPTW from WeightIt package
+
+iptw_df <- iptw_df %>% 
+  dummy_cols(select_columns = c("marital_status_t1",
+                                "health_t1"
+  ))
+
+iptw_df <- iptw_df %>% janitor::clean_names()
+
+
+### convert binary outcome and exposure vars to factors and relevel to allow svyglm to work
+iptw_df$srh_bin_t0 <- factor(iptw_df$srh_bin_t0,
+                             levels = c("excellent/very good", 
+                                        "good/fair/poor"))
+iptw_df$srh_bin_t1 <- factor(iptw_df$srh_bin_t1,
+                             levels = c("excellent/very good", 
+                                        "good/fair/poor"))
+
+
+iptw_df$ghq_case4_t0 <- factor(iptw_df$ghq_case4_t0,
+                               levels = c("0-3", "4 or more"))
+iptw_df$ghq_case4_t1 <- factor(iptw_df$ghq_case4_t1,
+                               levels = c("0-3", "4 or more"))
+
+iptw_df <- iptw_df %>% 
+  mutate(ghq4_outcome_bin = ifelse(ghq_case4_t1=="0-3",0,
+                                   ifelse(ghq_case4_t1=="4 or more",1,
+                                          "CHECK")))
+
+iptw_df$exposure1 <- factor(iptw_df$exposure1,
+                            levels = c("unexposed",
+                                       "exposed (employed at t1)"))
+iptw_df$exposure2 <- factor(iptw_df$exposure2,
+                            levels = c("unexposed",
+                                       "exposed (no job loss between t0 and t1"))
+# error with exposure 2 to correct at some point
+
+### convert SF-12 outcomes to numeric to allow svyglm to work
+iptw_df$sf12pcs_dv_t0 <- as.numeric(iptw_df$sf12pcs_dv_t0)
+iptw_df$sf12mcs_dv_t0 <- as.numeric(iptw_df$sf12mcs_dv_t0)
+iptw_df$sf12pcs_dv_t1 <- as.numeric(iptw_df$sf12pcs_dv_t1)
+iptw_df$sf12mcs_dv_t1 <- as.numeric(iptw_df$sf12mcs_dv_t1)
+
+### ghq-12 change var for checking findings
+iptw_df <- iptw_df %>% 
+  mutate(ghq_change = paste0(ghq_case4_t0," to ", ghq_case4_t1))
+
+table(iptw_df$ghq_change)
+
+#### GHQ-12 --------------------------------------------------------------------
+start_time <- Sys.time()
+dr_ghq_glmmTMB_mod <- glmmTMB( ghq_case4_t1 ~
+                                         exposure1 +
+                                         ghq_case4_t0 +
+                                         sex_dv_t0 +
+                                         age_dv_t0 +
+                                         age_dv_t1 +
+                                         non_white_t0 +
+                                         #        marital_status_t0_married_civil_partnership +
+                                         marital_status_t0_divorced_separated_widowed +
+                                         marital_status_t0_single +
+                                         #        marital_status_t1_married_civil_partnership +
+                                         marital_status_t1_divorced_separated_widowed +
+                                         marital_status_t1_single +
+                                         dep_child_bin_t0 +
+                                         degree_bin_t0 +
+                                         #  gor_dv_t0_east_midlands +
+                                         gor_dv_t0_east_of_england +
+                                         gor_dv_t0_london +
+                                         gor_dv_t0_north_east +
+                                         gor_dv_t0_north_west +
+                                         gor_dv_t0_northern_ireland +
+                                         gor_dv_t0_scotland +
+                                         gor_dv_t0_south_east +
+                                         gor_dv_t0_south_west +
+                                         gor_dv_t0_wales +
+                                         gor_dv_t0_west_midlands +
+                                         gor_dv_t0_yorkshire_and_the_humber +
+                                         #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
+                                         sic2007_section_lab_t0_administrative_and_support_service_activities +
+                                         sic2007_section_lab_t0_construction +
+                                         sic2007_section_lab_t0_education +
+                                         sic2007_section_lab_t0_human_health_and_social_work_activities +
+                                         sic2007_section_lab_t0_manufacturing +
+                                         sic2007_section_lab_t0_other_industry +
+                                         sic2007_section_lab_t0_professional_scientific_and_technical_activities +
+                                         sic2007_section_lab_t0_public_administration_and_defence_compulsory_social_security +
+                                         sic2007_section_lab_t0_transportation_and_storage +
+                                         sic2007_section_lab_t0_wholesale_and_retail_trade_repair_of_motor_vehicles_and_motorcycles +
+                                         #  soc2000_major_group_title_t0_administrative_and_secretarial_occupations +
+                                         soc2000_major_group_title_t0_associate_professional_and_technical_occupations +
+                                         soc2000_major_group_title_t0_elementary_occupations +
+                                         soc2000_major_group_title_t0_managers_and_senior_officials +
+                                         soc2000_major_group_title_t0_personal_service_occupations +
+                                         soc2000_major_group_title_t0_process_plant_and_machine_operatives +
+                                         soc2000_major_group_title_t0_sales_and_customer_service_occupations +
+                                         soc2000_major_group_title_t0_science_and_technology_professionals +
+                                         soc2000_major_group_title_t0_skilled_trades_occupations +
+                                         jbft_dv_t0 +
+                                         small_firm_t0 +
+                                         emp_contract_t0 +
+                                         broken_emp_t0 +
+                                         j2has_dv_t0 +
+                                         rel_pov_t0 +
+                                         health_t0 +
+                                         health_t1 +
+                                         # interaction terms
+                                         sex_dv_t0*age_dv_t0 +
+                                         sex_dv_t0*rel_pov_t0 +
+                                         age_dv_t0*rel_pov_t0 +
+                                         (1|pidp),
+                                       family = binomial(link="logit"),
+                                       data = iptw_df)
+end_time <- Sys.time()
+end_time-start_time
+
+summary(dr_ghq_glmmTMB_mod)
