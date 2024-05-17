@@ -150,7 +150,7 @@ summary(iptw_srh_glmmTMB_mod)
 
 ### GHQ-12 caseness (4+) -------------------
 
-iptw_ghq_glmmTMB_mod <- glmmTMB(ghq4_outcome_bin ~ exposure1  +
+iptw_ghq_glmmTMB_mod <- glmmTMB(ghq_case4_t1 ~ exposure1  +
                                      (1|pidp),
                                    family = binomial(link="logit"),
                                    data = iptw_df, 
@@ -158,6 +158,26 @@ iptw_ghq_glmmTMB_mod <- glmmTMB(ghq4_outcome_bin ~ exposure1  +
                                 na.action = na.omit)
 
 summary(iptw_ghq_glmmTMB_mod)
+
+## check without multi-level component
+
+ghq_check <- glmmTMB(ghq_case4_t1 ~ exposure1,  
+                                family = binomial(link="logit"),
+                                data = iptw_df, 
+#                                weights = weightit_ipw,
+                                na.action = na.omit)
+
+summary(ghq_check)
+
+# add some covariates
+ghq_check2 <- glmmTMB(ghq_case4_t1 ~ exposure1 +
+                      sex_dv_t0 + age_dv_t0 + degree_bin_t0,  
+                     family = binomial(link="logit"),
+                     data = iptw_df, 
+                     #                                weights = weightit_ipw,
+                     na.action = na.omit)
+
+summary(ghq_check2)
 
 
 ################################################################################
@@ -174,61 +194,21 @@ dr_iptw_pcs_glmmTMB_mod <- glmmTMB( sf12pcs_dv_t1 ~
                                          age_dv_t0 +
                                          age_dv_t1 +
                                          non_white_t0 +
-                                         #        marital_status_t0_married_civil_partnership +
-                                         marital_status_t0_divorced_separated_widowed +
-                                         marital_status_t0_single +
-                                         #        marital_status_t1_married_civil_partnership +
-                                         marital_status_t1_divorced_separated_widowed +
-                                         marital_status_t1_single +
+                                         marital_status_t0 +
                                          dep_child_bin_t0 +
-                                      #        hiqual_dv_t0_degree +
-                                         hiqual_dv_t0_other_higher_degree +
-                                         hiqual_dv_t0_a_level_etc +
-                                         hiqual_dv_t0_gcse_etc +
-                                         hiqual_dv_t0_other_qualification +
-                                         hiqual_dv_t0_no_qualification +
-                                         #  gor_dv_t0_east_midlands +
-                                         gor_dv_t0_east_of_england +
-                                         gor_dv_t0_london +
-                                         gor_dv_t0_north_east +
-                                         gor_dv_t0_north_west +
-                                         gor_dv_t0_northern_ireland +
-                                         gor_dv_t0_scotland +
-                                         gor_dv_t0_south_east +
-                                         gor_dv_t0_south_west +
-                                         gor_dv_t0_wales +
-                                         gor_dv_t0_west_midlands +
-                                         gor_dv_t0_yorkshire_and_the_humber +
-                                       #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
-                                       sic2007_section_lab_t0_administrative_and_support_service_activities +
-                                         sic2007_section_lab_t0_construction +
-                                         sic2007_section_lab_t0_education +
-                                         sic2007_section_lab_t0_human_health_and_social_work_activities +
-                                         sic2007_section_lab_t0_manufacturing +
-                                         sic2007_section_lab_t0_other_industry +
-                                         sic2007_section_lab_t0_professional_scientific_and_technical_activities +
-                                         sic2007_section_lab_t0_public_administration_and_defence_compulsory_social_security +
-                                         sic2007_section_lab_t0_transportation_and_storage +
-                                         sic2007_section_lab_t0_wholesale_and_retail_trade_repair_of_motor_vehicles_and_motorcycles +
-                                         #  soc2000_major_group_title_t0_administrative_and_secretarial_occupations +
-                                         soc2000_major_group_title_t0_associate_professional_and_technical_occupations +
-                                         soc2000_major_group_title_t0_elementary_occupations +
-                                         soc2000_major_group_title_t0_managers_and_senior_officials +
-                                         soc2000_major_group_title_t0_personal_service_occupations +
-                                         soc2000_major_group_title_t0_process_plant_and_machine_operatives +
-                                         soc2000_major_group_title_t0_sales_and_customer_service_occupations +
-                                         soc2000_major_group_title_t0_science_and_technology_professionals +
-                                         soc2000_major_group_title_t0_skilled_trades_occupations +
+                                         degree_bin_t0 +
+                                         gor_dv_t0 +
+                                         sic2007_section_lab_t0 +
+                                         soc2000_major_group_title_t0 +
                                          jbft_dv_t0 +
                                          small_firm_t0 +
                                          emp_contract_t0 +
-                                         broken_emp_t0_no_employment_spells +
-                                         broken_emp_t0_unbroken_employment +
+                                         broken_emp_t0 +
                                          j2has_dv_t0 +
                                          rel_pov_t0 +
                                          health_t0 +
                                          health_t1 +
-                                      sf12pcs_dv_t1 +
+                                      sf12pcs_dv_t0 +
   # interaction terms
   sex_dv_t0*age_dv_t0 +
   sex_dv_t0*rel_pov_t0 +
@@ -273,65 +253,24 @@ start_time <- Sys.time()
 dr_iptw_mcs_glmmTMB_mod <- glmmTMB( sf12mcs_dv_t1 ~
                                       exposure1 +
                                       sex_dv_t0 +
-                                         age_dv_t0 +
-                                         age_dv_t1 +
-                                         non_white_t0 +
-                                         #        marital_status_t0_married_civil_partnership +
-                                         marital_status_t0_divorced_separated_widowed +
-                                         marital_status_t0_single +
-                                         #        marital_status_t1_married_civil_partnership +
-                                         marital_status_t1_divorced_separated_widowed +
-                                         marital_status_t1_single +
-                                         dep_child_bin_t0 +
-                                      #        hiqual_dv_t0_degree +
-                                         hiqual_dv_t0_other_higher_degree +
-                                         hiqual_dv_t0_a_level_etc +
-                                         hiqual_dv_t0_gcse_etc +
-                                         hiqual_dv_t0_other_qualification +
-                                         hiqual_dv_t0_no_qualification +
-                                         #  gor_dv_t0_east_midlands +
-                                         gor_dv_t0_east_of_england +
-                                         gor_dv_t0_london +
-                                         gor_dv_t0_north_east +
-                                         gor_dv_t0_north_west +
-                                         gor_dv_t0_northern_ireland +
-                                         gor_dv_t0_scotland +
-                                         gor_dv_t0_south_east +
-                                         gor_dv_t0_south_west +
-                                         gor_dv_t0_wales +
-                                         gor_dv_t0_west_midlands +
-                                         gor_dv_t0_yorkshire_and_the_humber +
-                                       #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
-                                       sic2007_section_lab_t0_administrative_and_support_service_activities +
-                                         sic2007_section_lab_t0_construction +
-                                         sic2007_section_lab_t0_education +
-                                         sic2007_section_lab_t0_human_health_and_social_work_activities +
-                                         sic2007_section_lab_t0_manufacturing +
-                                         sic2007_section_lab_t0_other_industry +
-                                         sic2007_section_lab_t0_professional_scientific_and_technical_activities +
-                                         sic2007_section_lab_t0_public_administration_and_defence_compulsory_social_security +
-                                         sic2007_section_lab_t0_transportation_and_storage +
-                                         sic2007_section_lab_t0_wholesale_and_retail_trade_repair_of_motor_vehicles_and_motorcycles +
-                                         #  soc2000_major_group_title_t0_administrative_and_secretarial_occupations +
-                                         soc2000_major_group_title_t0_associate_professional_and_technical_occupations +
-                                         soc2000_major_group_title_t0_elementary_occupations +
-                                         soc2000_major_group_title_t0_managers_and_senior_officials +
-                                         soc2000_major_group_title_t0_personal_service_occupations +
-                                         soc2000_major_group_title_t0_process_plant_and_machine_operatives +
-                                         soc2000_major_group_title_t0_sales_and_customer_service_occupations +
-                                         soc2000_major_group_title_t0_science_and_technology_professionals +
-                                         soc2000_major_group_title_t0_skilled_trades_occupations +
-                                         jbft_dv_t0 +
-                                         small_firm_t0 +
-                                         emp_contract_t0 +
-                                         #  broken_emp_t0_broken_employment +
-                                         broken_emp_t0_no_employment_spells +
-                                         broken_emp_t0_unbroken_employment +
-                                         j2has_dv_t0 +
-                                         rel_pov_t0 +
-                                         health_t0 +
-                                         health_t1 +
-                                         sf12mcs_dv_t0 +
+                                      age_dv_t0 +
+                                      age_dv_t1 +
+                                      non_white_t0 +
+                                      marital_status_t0 +
+                                      dep_child_bin_t0 +
+                                      degree_bin_t0 +
+                                      gor_dv_t0 +
+                                      sic2007_section_lab_t0 +
+                                      soc2000_major_group_title_t0 +
+                                      jbft_dv_t0 +
+                                      small_firm_t0 +
+                                      emp_contract_t0 +
+                                      broken_emp_t0 +
+                                      j2has_dv_t0 +
+                                      rel_pov_t0 +
+                                      health_t0 +
+                                      health_t1 +
+                                      sf12mcs_dv_t0 +
   # interaction terms
   sex_dv_t0*age_dv_t0 +
   sex_dv_t0*rel_pov_t0 +
@@ -376,65 +315,24 @@ start_time <- Sys.time()
 dr_iptw_srh_glmmTMB_mod <- glmmTMB( srh_bin_t1 ~
                                       exposure1 +
                                       sex_dv_t0 +
-                                         age_dv_t0 +
-                                         age_dv_t1 +
-                                         non_white_t0 +
-                                         #        marital_status_t0_married_civil_partnership +
-                                         marital_status_t0_divorced_separated_widowed +
-                                         marital_status_t0_single +
-                                         #        marital_status_t1_married_civil_partnership +
-                                         marital_status_t1_divorced_separated_widowed +
-                                         marital_status_t1_single +
-                                         dep_child_bin_t0 +
-                                      #        hiqual_dv_t0_degree +
-                                         hiqual_dv_t0_other_higher_degree +
-                                         hiqual_dv_t0_a_level_etc +
-                                         hiqual_dv_t0_gcse_etc +
-                                         hiqual_dv_t0_other_qualification +
-                                         hiqual_dv_t0_no_qualification +
-                                         #  gor_dv_t0_east_midlands +
-                                         gor_dv_t0_east_of_england +
-                                         gor_dv_t0_london +
-                                         gor_dv_t0_north_east +
-                                         gor_dv_t0_north_west +
-                                         gor_dv_t0_northern_ireland +
-                                         gor_dv_t0_scotland +
-                                         gor_dv_t0_south_east +
-                                         gor_dv_t0_south_west +
-                                         gor_dv_t0_wales +
-                                         gor_dv_t0_west_midlands +
-                                         gor_dv_t0_yorkshire_and_the_humber +
-                                       #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
-                                         sic2007_section_lab_t0_administrative_and_support_service_activities +
-                                         sic2007_section_lab_t0_construction +
-                                         sic2007_section_lab_t0_education +
-                                         sic2007_section_lab_t0_human_health_and_social_work_activities +
-                                         sic2007_section_lab_t0_manufacturing +
-                                         sic2007_section_lab_t0_other_industry +
-                                         sic2007_section_lab_t0_professional_scientific_and_technical_activities +
-                                         sic2007_section_lab_t0_public_administration_and_defence_compulsory_social_security +
-                                         sic2007_section_lab_t0_transportation_and_storage +
-                                         sic2007_section_lab_t0_wholesale_and_retail_trade_repair_of_motor_vehicles_and_motorcycles +
-                                         #  soc2000_major_group_title_t0_administrative_and_secretarial_occupations +
-                                         soc2000_major_group_title_t0_associate_professional_and_technical_occupations +
-                                         soc2000_major_group_title_t0_elementary_occupations +
-                                         soc2000_major_group_title_t0_managers_and_senior_officials +
-                                         soc2000_major_group_title_t0_personal_service_occupations +
-                                         soc2000_major_group_title_t0_process_plant_and_machine_operatives +
-                                         soc2000_major_group_title_t0_sales_and_customer_service_occupations +
-                                         soc2000_major_group_title_t0_science_and_technology_professionals +
-                                         soc2000_major_group_title_t0_skilled_trades_occupations +
-                                         jbft_dv_t0 +
-                                         small_firm_t0 +
-                                         emp_contract_t0 +
-                                         #  broken_emp_t0_broken_employment +
-                                         broken_emp_t0_no_employment_spells +
-                                         broken_emp_t0_unbroken_employment +
-                                         j2has_dv_t0 +
-                                         rel_pov_t0 +
-                                         health_t0 +
-                                         health_t1 +
-                                         srh_bin_t0 +
+                                      age_dv_t0 +
+                                      age_dv_t1 +
+                                      non_white_t0 +
+                                      marital_status_t0 +
+                                      dep_child_bin_t0 +
+                                      degree_bin_t0 +
+                                      gor_dv_t0 +
+                                      sic2007_section_lab_t0 +
+                                      soc2000_major_group_title_t0 +
+                                      jbft_dv_t0 +
+                                      small_firm_t0 +
+                                      emp_contract_t0 +
+                                      broken_emp_t0 +
+                                      j2has_dv_t0 +
+                                      rel_pov_t0 +
+                                      health_t0 +
+                                      health_t1 +
+                                      srh_bin_t0 +
   # interaction terms
   sex_dv_t0*age_dv_t0 +
   sex_dv_t0*rel_pov_t0 +
@@ -479,68 +377,27 @@ dr_iptw_srh_df <- dr_iptw_srh_df %>%
 
 ### GHQ-12 caseness -----------------
 start_time <- Sys.time()
-dr_iptw_ghq_glmmTMB_mod <- glmmTMB( ghq4_outcome_bin ~
+dr_iptw_ghq_glmmTMB_mod <- glmmTMB( ghq_case4_t1 ~
                                       exposure1 +
                                       sex_dv_t0 +
-                                         age_dv_t0 +
-                                         age_dv_t1 +
-                                         non_white_t0 +
-                                         #        marital_status_t0_married_civil_partnership +
-                                         marital_status_t0_divorced_separated_widowed +
-                                         marital_status_t0_single +
-                                         #        marital_status_t1_married_civil_partnership +
-                                         marital_status_t1_divorced_separated_widowed +
-                                         marital_status_t1_single +
-                                         dep_child_bin_t0 +
-                                      #        hiqual_dv_t0_degree +
-                                         hiqual_dv_t0_other_higher_degree +
-                                         hiqual_dv_t0_a_level_etc +
-                                         hiqual_dv_t0_gcse_etc +
-                                         hiqual_dv_t0_other_qualification +
-                                         hiqual_dv_t0_no_qualification +
-                                         #  gor_dv_t0_east_midlands +
-                                         gor_dv_t0_east_of_england +
-                                         gor_dv_t0_london +
-                                         gor_dv_t0_north_east +
-                                         gor_dv_t0_north_west +
-                                         gor_dv_t0_northern_ireland +
-                                         gor_dv_t0_scotland +
-                                         gor_dv_t0_south_east +
-                                         gor_dv_t0_south_west +
-                                         gor_dv_t0_wales +
-                                         gor_dv_t0_west_midlands +
-                                         gor_dv_t0_yorkshire_and_the_humber +
-                                       #  sic2007_section_lab_t0_accommodation_and_food_service_activities +
-                                         sic2007_section_lab_t0_administrative_and_support_service_activities +
-                                         sic2007_section_lab_t0_construction +
-                                         sic2007_section_lab_t0_education +
-                                         sic2007_section_lab_t0_human_health_and_social_work_activities +
-                                         sic2007_section_lab_t0_manufacturing +
-                                         sic2007_section_lab_t0_other_industry +
-                                         sic2007_section_lab_t0_professional_scientific_and_technical_activities +
-                                         sic2007_section_lab_t0_public_administration_and_defence_compulsory_social_security +
-                                         sic2007_section_lab_t0_transportation_and_storage +
-                                         sic2007_section_lab_t0_wholesale_and_retail_trade_repair_of_motor_vehicles_and_motorcycles +
-                                         #  soc2000_major_group_title_t0_administrative_and_secretarial_occupations +
-                                         soc2000_major_group_title_t0_associate_professional_and_technical_occupations +
-                                         soc2000_major_group_title_t0_elementary_occupations +
-                                         soc2000_major_group_title_t0_managers_and_senior_officials +
-                                         soc2000_major_group_title_t0_personal_service_occupations +
-                                         soc2000_major_group_title_t0_process_plant_and_machine_operatives +
-                                         soc2000_major_group_title_t0_sales_and_customer_service_occupations +
-                                         soc2000_major_group_title_t0_science_and_technology_professionals +
-                                         soc2000_major_group_title_t0_skilled_trades_occupations +
-                                         jbft_dv_t0 +
-                                         small_firm_t0 +
-                                         emp_contract_t0 +
-                                         #  broken_emp_t0_broken_employment +
-                                         broken_emp_t0_no_employment_spells +
-                                         broken_emp_t0_unbroken_employment +
-                                         j2has_dv_t0 +
-                                         rel_pov_t0 +
-                                         health_t0 +
-                                         health_t1 +
-                                         ghq_case4_t0 +
+                                      age_dv_t0 +
+                                      age_dv_t1 +
+                                      non_white_t0 +
+                                      marital_status_t0 +
+                                      dep_child_bin_t0 +
+                                      degree_bin_t0 +
+                                      gor_dv_t0 +
+                                      sic2007_section_lab_t0 +
+                                      soc2000_major_group_title_t0 +
+                                      jbft_dv_t0 +
+                                      small_firm_t0 +
+                                      emp_contract_t0 +
+                                      broken_emp_t0 +
+                                      j2has_dv_t0 +
+                                      rel_pov_t0 +
+                                      health_t0 +
+                                      health_t1 +
+                                      ghq_case4_t0 +
   # interaction terms
   sex_dv_t0*age_dv_t0 +
   sex_dv_t0*rel_pov_t0 +
@@ -552,7 +409,10 @@ dr_iptw_ghq_glmmTMB_mod <- glmmTMB( ghq4_outcome_bin ~
 end_time <- Sys.time()
 end_time-start_time
 
-summary(dr_iptw_ghq_glmmTMB_mod)
+dr_iptw_ghq_glmmTMB_summary <- summary(dr_iptw_ghq_glmmTMB_mod)
+
+write_rds(dr_iptw_ghq_glmmTMB_summary, "./output/scrapbook/dr_iptw_ghq_glmmTMB_summary.rds")
+
 diagnose(dr_iptw_ghq_glmmTMB_mod)
 
 dr_iptw_ghq_df <- tidy(dr_iptw_ghq_glmmTMB_mod) %>% 
@@ -620,3 +480,66 @@ ghq_change_summary <- svyCreateTableOne(vars=c("ghq_case4_t0","ghq_case4_t1","gh
 ghq_change_summary_sav <- print(ghq_change_summary)
 
 write.csv(ghq_change_summary_sav, "./output/scrapbook/ghq_change_summary_cc.csv")
+
+##### regression model for GHQ-12 scale
+start_time <- Sys.time()
+dr_iptw_ghq_scale_glmmTMB_mod <- glmmTMB( scghq2_dv_t1 ~
+                                            exposure1 +
+                                            sex_dv_t0 +
+                                            age_dv_t0 +
+                                            age_dv_t1 +
+                                            non_white_t0 +
+                                            marital_status_t0 +
+                                            dep_child_bin_t0 +
+                                            degree_bin_t0 +
+                                            gor_dv_t0 +
+                                            sic2007_section_lab_t0 +
+                                            soc2000_major_group_title_t0 +
+                                            jbft_dv_t0 +
+                                            small_firm_t0 +
+                                            emp_contract_t0 +
+                                            broken_emp_t0 +
+                                            j2has_dv_t0 +
+                                            rel_pov_t0 +
+                                            health_t0 +
+                                            health_t1 +
+                                            scghq2_dv_t0 +
+                                      # interaction terms
+                                      sex_dv_t0*age_dv_t0 +
+                                      sex_dv_t0*rel_pov_t0 +
+                                      age_dv_t0*rel_pov_t0 +
+                                      (1|pidp),
+                                    weights = weightit_ipw,
+                                    data = iptw_df)
+end_time <- Sys.time()
+end_time-start_time
+
+dr_iptw_ghq_scale_glmmTMB <- summary(dr_iptw_ghq_scale_glmmTMB_mod)
+dr_iptw_ghq_scale_glmmTMB
+#fixef(dr_iptw_ghq_scale_glmmTMB_mod)
+diagnose(dr_iptw_ghq_scale_glmmTMB_mod)
+
+dr_iptw_ghq_scale_df <- tidy(dr_iptw_ghq_scale_glmmTMB_mod)
+
+## confidence intervals
+dr_iptw_ghq_scale_df_ci <- data.frame(confint(dr_iptw_ghq_scale_glmmTMB_mod)) %>% 
+  rename(lci = X2.5..,
+         uci = X97.5..) 
+
+# add in row names
+dr_iptw_ghq_scale_df_ci <- cbind(rownames(dr_iptw_ghq_scale_df_ci),dr_iptw_ghq_scale_df_ci, row.names=NULL)
+
+dr_iptw_ghq_scale_df_ci <- dr_iptw_ghq_scale_df_ci %>% 
+  rename(term = `rownames(dr_iptw_ghq_scale_df_ci)`)
+
+## join dfs together
+dr_iptw_ghq_scale_df <- dr_iptw_ghq_scale_df %>% 
+  left_join(dr_iptw_ghq_scale_df_ci) %>% 
+  mutate(term = str_remove(term, "exposure1"),
+         outcome = "GHQ-12 scale",
+         est_type = "coefficient",
+         p.value = ifelse(p.value<0.001,"<0.001",
+                          ifelse(p.value<0.01,"<0.01",
+                                 ifelse(p.value<0.05,"<0.05",       
+                                        p.value))))
+
