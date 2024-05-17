@@ -518,6 +518,13 @@ master_raw1 <- master_raw1 %>%
 
 table(master_raw1$scghq2_dv,master_raw1$ghq_case4)
 
+ghq_check_tab <- master_raw1 %>% mutate(scghq2_dv = as.numeric(scghq2_dv)) %>% 
+  group_by(ghq_case4, scghq2_dv) %>% 
+  summarise(n=n()) %>% 
+  ungroup()
+
+write.csv(ghq_check_tab, "./output/scrapbook/ghq_check_tab.csv")
+
 ## calculate caseness for sensitivity analysis (cut point = 3)
 master_raw1 <-  master_raw1 %>% mutate(ghq_case3 = ifelse(scghq2_dv=="0",0,
                                                           ifelse(scghq2_dv=="1",0,                                                                
