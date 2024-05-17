@@ -1,0 +1,7 @@
+predictor,parameter_est
+intercept,0.84690
+PCS,0.01261
+MCS,0.00759
+PCSxPCS,?0.00009
+MCSxMCS,?0.00015
+PCSxMCS,?0.00015
