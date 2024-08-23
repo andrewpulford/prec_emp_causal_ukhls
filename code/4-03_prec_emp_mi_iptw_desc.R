@@ -26,6 +26,7 @@ rm(list=ls())
 ################################################################################
 
 library(tidyverse) # all kinds of stuff 
+library(tableone) # for creating table 1
 library(mice) # for multiple imputation
 library(ggmice) # for plotting MI
 library(glmmTMB) # for multi-level modelling
@@ -129,9 +130,33 @@ nonnorm_vec <- colnames(temp)
 table_one_sav <- print(table_one, showAllLevels = TRUE, smd = FALSE,
                        nonnormal = nonnorm_vec,
                        factorVars = c(catVars_vec),
-                       formatOptions = list(big.mark = ","))
+                       formatOptions = list(big.mark = ",",
+                                            scientific = FALSE))
 
 ### save table one
 ## NOTE: will have to divide number of cases by number of imputations to get pooled 
 ## values; other stats should be correct
 write.csv(table_one_sav, "./output/mi/weighted_descriptives/table_one_PAPER.csv")
+
+
+################################################################################
+#####                    T0 and T1 outcome descriptives                    #####
+################################################################################
+
+outcomes_desc <- svyCreateTableOne(vars = c("sf12pcs_dv_t0","sf12pcs_dv_t1",
+                                            "sf12mcs_dv_t0","sf12mcs_dv_t1",
+                                            "srh_bin_t0","srh_bin_t1",
+                                            "ghq_case4_t0", "ghq_case4_t1"),
+                                               data=svy_weightit_df_complete, 
+                                               #  factorVars=catVars_short_vec,
+                                               strata = "exposure1", 
+                                               test =FALSE)
+
+## printed version for saving
+outcomes_desc_sav <- print(outcomes_desc, showAllLevels = FALSE, smd = FALSE,
+ #                      nonnormal = nonnorm_vec,
+                       factorVars = c(catVars_vec),
+                       formatOptions = list(big.mark = ",",
+                                            scientific = FALSE))
+
+write.csv(outcomes_desc_sav, "./output/mi/weighted_descriptives/outcomes_desc.csv")
