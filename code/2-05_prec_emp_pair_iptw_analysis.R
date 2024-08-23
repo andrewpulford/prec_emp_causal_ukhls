@@ -463,6 +463,8 @@ diagnose(dr_iptw_ghq_glmmTMB_mod)
 
 ############## GHQ-12 checks
 
+
+## descriptive table
 iptw_df %>% group_by(exposure1,ghq_case4_t0,ghq_case4_t1) %>% 
   summarise(n=n()) %>% 
   ungroup() %>% 
@@ -471,8 +473,12 @@ iptw_df %>% group_by(exposure1,ghq_case4_t0,ghq_case4_t1) %>%
   ungroup() %>% 
   mutate(pc=n/d*100)
 
+## manual OR calculation
+odds_exp <- (8649+6075)/(66191+8165)
+odd_unexp <- (361+244)/(819+182)
+OR <- odds_exp/odd_unexp
 
-
+## table one
 ghq_change_summary <- svyCreateTableOne(vars=c("ghq_case4_t0","ghq_case4_t1","ghq_change"),
                   strata="exposure1",
                   data=iptw_svy)
@@ -543,3 +549,7 @@ dr_iptw_ghq_scale_df <- dr_iptw_ghq_scale_df %>%
                                  ifelse(p.value<0.05,"<0.05",       
                                         p.value))))
 
+##### basic logistic regression models (no multi-level component)
+
+glm(ghq_case4_t1 ~ exposure1 , family = binomial(link = "logit"), 
+    data = iptw_df)
