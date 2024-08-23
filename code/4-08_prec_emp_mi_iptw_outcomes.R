@@ -34,7 +34,7 @@ library(tidyverse) # all kinds of stuff
 weightit_pooled_pcs_df <- read.csv("./working_data/mi/weightit_pooled_pcs_df.csv")
 weightit_pooled_mcs_df <- read.csv("./working_data/mi/weightit_pooled_mcs_df.csv")
 weightit_pooled_srh_df <- read.csv("./working_data/mi/weightit_pooled_srh_df.csv")
-#weightit_pooled_ghq_df <- read.csv("./working_data/mi/weightit_pooled_ghq_df.csv")
+weightit_pooled_ghq_df <- read.csv("./working_data/mi/weightit_pooled_ghq_df.csv")
 
 ################################################################################
 #####               create single summary df for MI outcomes               #####
@@ -42,8 +42,8 @@ weightit_pooled_srh_df <- read.csv("./working_data/mi/weightit_pooled_srh_df.csv
 
 mi_iptw_df <- weightit_pooled_pcs_df %>% 
   bind_rows(weightit_pooled_mcs_df,
-            weightit_pooled_srh_df) %>% #,
-#            weightit_pooled_ghq_df) %>% 
+            weightit_pooled_srh_df,  
+            weightit_pooled_ghq_df) %>% 
   filter(term=="exposed (employed at t1)") %>% 
   #  dplyr::select(-c(term, Estimate, group, component)) %>% 
   dplyr::select(outcome, est_type, estimate, std.error, p.value, lci, uci) %>% 
