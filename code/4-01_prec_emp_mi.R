@@ -190,8 +190,66 @@ ggplot(data = cor_melt, aes(x=Var1, y=Var2, fill=value)) +
   theme(axis.text.y = element_text(size = 8))+
   coord_fixed()
 
+#####   create interaction terms between outcome vars and sub-group vars   #####
 
+### convert outcomes to numeric
+## SF-12 PCS
+pair_eligible$sf12pcs_dv_t0 <- as.character(pair_eligible$sf12pcs_dv_t0)
+pair_eligible$sf12mcs_dv_t0 <- as.character(pair_eligible$sf12mcs_dv_t0)
+pair_eligible$sf12pcs_dv_t1 <- as.character(pair_eligible$sf12pcs_dv_t1)
+pair_eligible$sf12mcs_dv_t1 <- as.character(pair_eligible$sf12mcs_dv_t1)
 
+## SF-12 MCS
+pair_eligible$sf12pcs_dv_t0 <- as.numeric(pair_eligible$sf12pcs_dv_t0)
+pair_eligible$sf12mcs_dv_t0 <- as.numeric(pair_eligible$sf12mcs_dv_t0)
+pair_eligible$sf12pcs_dv_t1 <- as.numeric(pair_eligible$sf12pcs_dv_t1)
+pair_eligible$sf12mcs_dv_t1 <- as.numeric(pair_eligible$sf12mcs_dv_t1)
+
+## SRH
+pair_eligible <- pair_eligible %>% 
+  mutate(srh_bin2 = ifelse(srh_bin_t1 == "excellent/very good",0,
+                          ifelse(srh_bin_t1 == "good/fair/poor",1,-99)))
+
+## GHQ-12
+pair_eligible <- pair_eligible %>% 
+  mutate(ghq_bin = ifelse(ghq_case4_t1 == "0-3",0,
+                          ifelse(ghq_case4_t1 == "4 or more",1,-99)))
+
+### covert sub-group vars to bin vars
+pair_eligible <- pair_eligible %>% 
+  ## sex
+  mutate(sex_bin = ifelse(sex_dv_t0=="Female",0,
+                          ifelse(sex_dv_t0=="Male",1,-99))) %>% 
+  ## age
+  mutate(age_bin = ifelse(age_dv_t0<median(age_dv_t0),0,
+                          ifelse(age_dv_t0>=median(age_dv_t0),1,-99))) %>% 
+  ## relative poverty
+  mutate(rel_pov_bin = ifelse(rel_pov_t0=="not in relative poverty",0,
+                              ifelse(rel_pov_t0=="relative poverty",1,-99)))
+
+#### sex -----------------------------------------------------------------------
+
+pair_eligible <- pair_eligible %>% 
+  mutate(sex_pcs = sex_bin*sf12pcs_dv_t1, ### SF-12 PCS
+         sex_mcs = sex_bin*sf12mcs_dv_t1,### SF-12 MCS
+         sex_srh = sex_bin*srh_bin2, ### SRH
+         sex_ghq = sex_bin*ghq_bin) ### GHQ-12
+
+#### age -----------------------------------------------------------------------
+
+pair_eligible <- pair_eligible %>% 
+  mutate(age_pcs = age_bin*sf12pcs_dv_t1, ### SF-12 PCS
+         age_mcs = age_bin*sf12mcs_dv_t1,### SF-12 MCS
+         age_srh = age_bin*srh_bin2, ### SRH
+         age_ghq = age_bin*ghq_bin) ### GHQ-12
+
+#### relative poverty ----------------------------------------------------------
+
+pair_eligible <- pair_eligible %>% 
+  mutate(rel_pov_pcs = rel_pov_bin*sf12pcs_dv_t1, ### SF-12 PCS
+         rel_pov_mcs = rel_pov_bin*sf12mcs_dv_t1,### SF-12 MCS
+         rel_pov_srh = rel_pov_bin*srh_bin2, ### SRH
+         rel_pov_ghq = rel_pov_bin*ghq_bin) ### GHQ-12
 
 ################################################################################
 #####                Multiple imputation for one variable                  #####
