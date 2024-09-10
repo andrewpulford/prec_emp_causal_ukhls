@@ -435,4 +435,7 @@ end_time-start_time
 summary(dr_ghq_glmmTMB_mod)
 
 
+###### linear prob model
 
+lm(ghq_case4_t1 ~ exposure1,
+  data=iptw_df)
