@@ -473,9 +473,18 @@ iptw_df %>% group_by(exposure1,ghq_case4_t0,ghq_case4_t1) %>%
   ungroup() %>% 
   mutate(pc=n/d*100)
 
+## descriptive table2
+iptw_df %>% group_by(exposure1,ghq_case4_t1) %>% 
+  summarise(n=n()) %>% 
+  ungroup() %>% 
+  group_by(exposure1) %>% 
+  mutate(d=sum(n)) %>% 
+  ungroup() %>% 
+  mutate(pc=n/d*100)
+
 ## manual OR calculation
-odds_exp <- (8649+6075)/(66191+8165)
-odd_unexp <- (361+244)/(819+182)
+odds_exp <- 14724/74356
+odd_unexp <- 605/1001
 OR <- odds_exp/odd_unexp
 
 ## table one
@@ -553,3 +562,4 @@ dr_iptw_ghq_scale_df <- dr_iptw_ghq_scale_df %>%
 
 glm(ghq_case4_t1 ~ exposure1 , family = binomial(link = "logit"), 
     data = iptw_df)
+exp(-1.1159)
