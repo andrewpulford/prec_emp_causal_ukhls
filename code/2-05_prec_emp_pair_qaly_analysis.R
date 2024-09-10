@@ -145,7 +145,7 @@ unwtd_eq5d_df <- eq5d_mapper(data=pair_cc_analytic,
   rename(eq5d_t0=eq5d_temp)
 
 summary(unwtd_eq5d_df$eq5d_t0)
-hist(unwtd_eq5d_df$eq5d_t0)
+hist(unwtd_eq5d_df$eq5d_t0, breaks = 200)
 
 
 plot(unwtd_eq5d_df$eq5d_t0,unwtd_eq5d_df$sf12pcs_dv_t0)
@@ -161,7 +161,7 @@ unwtd_eq5d_df <- eq5d_mapper(data=unwtd_eq5d_df,
   rename(eq5d_t1=eq5d_temp)
 
 summary(unwtd_eq5d_df$eq5d_t1)
-hist(unwtd_eq5d_df$eq5d_t1)
+hist(unwtd_eq5d_df$eq5d_t1, breaks = 200)
 
 
 plot(unwtd_eq5d_df$eq5d_t1,unwtd_eq5d_df$sf12pcs_dv_t1)
@@ -172,10 +172,10 @@ boxplot(unwtd_eq5d_df$eq5d_t1 ~ unwtd_eq5d_df$exposure1)
 
 
 #### calculate qalys -----------------------------------------------------------
-## this is based on approx 18 months treatment
+## this is based on approx 12 months treatment
 
 unwtd_qaly_df <- unwtd_eq5d_df %>% mutate(qaly_t0 = 0.5 * eq5d_t0,
-                                          qaly_t1 = 1 * eq5d_t1,
+                                          qaly_t1 = 0.5 * eq5d_t1,
                                           qaly_total = qaly_t0+qaly_t1)
 
 
@@ -190,20 +190,26 @@ unwtd_n_grouped <- unwtd_qaly_df %>% group_by(exposure1) %>%
 ## number treated
 unwtd_n_treated <- sum(unwtd_qaly_df$exposure1=="exposed (employed at t1)")
 
-## standardise qalys by sample size of treatment group to get comparable values
+## calculate qalys per person to get comparable values
 unwtd_qaly_grouped <- unwtd_qaly_grouped %>% 
   left_join(unwtd_n_grouped)
 
+## this was old qalys by standardised treatment group approach
+#unwtd_qaly_grouped <- unwtd_qaly_grouped %>% mutate(qaly_total_std=qaly_total/n*unwtd_n_treated)
 
-unwtd_qaly_grouped <- unwtd_qaly_grouped %>% mutate(qaly_total_std=qaly_total/n*unwtd_n_treated)
+unwtd_qaly_grouped <- unwtd_qaly_grouped %>% mutate(qaly_person=qaly_total/n)
 
 
 ### calculate QALY gain
-unwtd_qaly_gain <-  unwtd_qaly_grouped$qaly_total_std[unwtd_qaly_grouped$exposure1=="exposed (employed at t1)"] - unwtd_qaly_grouped$qaly_total_std[unwtd_qaly_grouped$exposure1=="unexposed"]
+## per person
+unwtd_qaly_gain_person <-  unwtd_qaly_grouped$qaly_person[unwtd_qaly_grouped$exposure1=="exposed (employed at t1)"] - unwtd_qaly_grouped$qaly_person[unwtd_qaly_grouped$exposure1=="unexposed"]
+
+## total for treated
+qualy_gain_total <- unwtd_qaly_gain_person*unwtd_n_treated
 
 ### calculate treatment benefit (based on £70k per QALY - UK Govt Green Book)
 # https://www.gov.uk/government/publications/the-green-book-appraisal-and-evaluation-in-central-government/the-green-book-2020#valuation-of-costs-and-benefits
-unwtd_benefit <-  unwtd_qaly_gain*70000
+unwtd_benefit <-  unwtd_qaly_gain_person*70000
 
 ### calculate treatment cost 
 ##  based on £4400 cost per job (Beatty et al 2011) adjusted to £6193 for Jan 2024
@@ -216,16 +222,15 @@ cost_job <- 6193
 unwtd_cost_total <- unwtd_n_treated*cost_job
 
 ## cost per qaly gained
-unwtd_cost_qaly <- unwtd_cost_total/unwtd_qaly_gain
+unwtd_cost_qaly <- cost_job/unwtd_qaly_gain_person
 
 ### create summary df
 unwtd_df <- data.frame(type="unweighted",
-                       measure=c("QALYs gained", "Treatment benefit", 
-                                 "Total cost of intervention", 
+                       measure=c("QALYs gained per person", "Treatment benefit per person", 
+                                 "Cost per intervention", 
                                  "Cost per qaly gained"),
-                       estimate=c(unwtd_qaly_gain, unwtd_benefit, 
-                                  unwtd_cost_total, unwtd_cost_qaly))
-
+                       estimate=c(unwtd_qaly_gain_person, unwtd_benefit, 
+                                  cost_job, unwtd_cost_qaly))
 
 
 ################################################################################
@@ -257,7 +262,7 @@ svyby(~eq5d_t0, ~exposure1, svy_ps_eq5d_df, svymean)
 
 ### create histogram and boxplots
 par(mfrow=c(2,1))
-svyhist(~eq5d_t0, svy_ps_eq5d_df)
+svyhist(~eq5d_t0, svy_ps_eq5d_df, breaks = 200)
 svyboxplot(eq5d_t0~exposure1,svy_ps_eq5d_df)
 
 #### t1 EQ-5D ------------------------------------------------------------------
@@ -285,15 +290,15 @@ svyby(~eq5d_t1, ~exposure1, svy_ps_eq5d_df, svymean)
 
 ### create histogram and boxplots
 par(mfrow=c(2,1))
-svyhist(~eq5d_t1, svy_ps_eq5d_df)
+svyhist(~eq5d_t1, svy_ps_eq5d_df, breaks = 200)
 svyboxplot(eq5d_t1~exposure1,svy_ps_eq5d_df)
 
 
 #### calculate qalys -----------------------------------------------------------
-## this is based on approx 18 months treatment
+## this is based on approx 12 months treatment
 
 ps_qaly_df <- ps_eq5d_df %>% mutate(qaly_t0 = 0.5 * eq5d_t0,
-                                    qaly_t1 = 1 * eq5d_t1,
+                                    qaly_t1 = 0.5 * eq5d_t1,
                                     qaly_total = qaly_t0+qaly_t1)
 
 
@@ -321,19 +326,19 @@ svyby(~qaly_t1, ~exposure1, svy_ps_qaly_df, svytotal)
 ps_n_grouped <- svytotal(~exposure1, svy_ps_qaly_df)
 ps_n_grouped <- data.frame(ps_n_grouped) %>% dplyr::select(-SE)
 
-## standardise qalys by sample size of treatment group to get comparable values
+## calcuate qalys per person
 ps_qaly_grouped <- ps_qaly_grouped %>% 
   bind_cols(ps_n_grouped)
 
 
-ps_qaly_grouped <- ps_qaly_grouped %>% mutate(qaly_total_std=qaly_total/total*unwtd_n_treated)
+ps_qaly_grouped <- ps_qaly_grouped %>% mutate(qaly_person=qaly_total/total)
 
 ### calculate QALY gain
-ps_qaly_gain <-  ps_qaly_grouped$qaly_total_std[ps_qaly_grouped$exposure1=="exposed (employed at t1)"] - ps_qaly_grouped$qaly_total_std[ps_qaly_grouped$exposure1=="unexposed"]
+ps_qaly_gain_person <-  ps_qaly_grouped$qaly_person[ps_qaly_grouped$exposure1=="exposed (employed at t1)"] - ps_qaly_grouped$qaly_person[ps_qaly_grouped$exposure1=="unexposed"]
 
 ### calculate treatment benefit (based on £70k per QALY - UK Govt Green Book)
 # https://www.gov.uk/government/publications/the-green-book-appraisal-and-evaluation-in-central-government/the-green-book-2020#valuation-of-costs-and-benefits
-ps_benefit <-  ps_qaly_gain*70000
+ps_benefit <-  ps_qaly_gain_person*70000
 
 ### calculate treatment cost 
 ##  based on £4400 cost per job (Beatty et al 2011) adjusted to £6193 for Jan 2024
@@ -346,20 +351,20 @@ cost_job <- 6193
 ## number treated
 ps_n_treated <- ps_n_grouped[2,1]
 
-## total cost of intervention (standardised to unweighted n treated)
-ps_cost_total <- unwtd_n_treated*cost_job
+## total cost of intervention 
+ps_cost_total <- ps_n_treated*cost_job
 
 
 ## cost per qaly gained
-ps_cost_qaly <- ps_cost_total/ps_qaly_gain
+ps_cost_qaly <- cost_job/ps_qaly_gain_person
 
 ### create summary df
 ps_df <- data.frame(type="propensity score matched",
-                    measure=c("QALYs gained", "Treatment benefit", 
-                              "Total cost of intervention", 
+                    measure=c("QALYs gained per person", "Treatment benefit per person", 
+                              "Cost per intervention", 
                               "Cost per qaly gained"),
-                    estimate=c(ps_qaly_gain, ps_benefit, 
-                               ps_cost_total, ps_cost_qaly))
+                    estimate=c(ps_qaly_gain_person, ps_benefit, 
+                               cost_job, ps_cost_qaly))
 
 
 
@@ -390,7 +395,7 @@ iptw_eq5d_t0 <- data.frame(print(iptw_eq5d_t0, nonnormal = "eq5d"))
 
 ### create histogram and boxplots
 par(mfrow=c(2,1))
-svyhist(~eq5d_t0, svy_iptw_eq5d_df)
+svyhist(~eq5d_t0, svy_iptw_eq5d_df, breaks = 200)
 svyboxplot(eq5d_t0~exposure1,svy_iptw_eq5d_df)
 
 #### t1 EQ-5D ------------------------------------------------------------------
@@ -415,15 +420,15 @@ iptw_eq5d_t1 <- data.frame(print(iptw_eq5d_t1, nonnormal = "eq5d"))
 
 ### create histogram and boxplots
 par(mfrow=c(2,1))
-svyhist(~eq5d_t1, svy_iptw_eq5d_df)
+svyhist(~eq5d_t1, svy_iptw_eq5d_df, breaks = 200)
 svyboxplot(eq5d_t1~exposure1,svy_iptw_eq5d_df)
 
 
 #### calculate qalys -----------------------------------------------------------
-## this is based on approx 18 months treatment
+## this is based on approx 12 months treatment
 
 iptw_qaly_df <- iptw_eq5d_df %>% mutate(qaly_t0 = 0.5 * eq5d_t0,
-                                        qaly_t1 = 1 * eq5d_t1,
+                                        qaly_t1 = 0.5 * eq5d_t1,
                                         qaly_total = qaly_t0+qaly_t1)
 
 
@@ -451,19 +456,19 @@ svy_qaly_t1 <- svyby(~qaly_t1, ~exposure1, svy_iptw_qaly_df, svytotal) %>% dplyr
 weighted_n_grouped <- svytotal(~exposure1, svy_iptw_qaly_df)
 weighted_n_grouped <- data.frame(weighted_n_grouped) %>% dplyr::select(-SE)
 
-## standardise qalys by sample size of treatment group to get comparable values
+## calcuate qalys per person
 iptw_qaly_grouped <- iptw_qaly_grouped %>% 
-  bind_cols(weighted_n_grouped)
+  bind_cols(weighted_n_grouped) %>% dplyr::select(-se)
 
 
-iptw_qaly_grouped <- iptw_qaly_grouped %>% mutate(qaly_total=qaly_total/total*unwtd_n_treated)
+iptw_qaly_grouped <- iptw_qaly_grouped %>% mutate(qaly_person=qaly_total/total)
 
 ### calculate QALY gain
-iptw_qaly_gain <-  iptw_qaly_grouped$qaly_total[iptw_qaly_grouped$exposure1=="exposed (employed at t1)"] - iptw_qaly_grouped$qaly_total[iptw_qaly_grouped$exposure1=="unexposed"]
+iptw_qaly_gain_person <-  iptw_qaly_grouped$qaly_person[iptw_qaly_grouped$exposure1=="exposed (employed at t1)"] - iptw_qaly_grouped$qaly_person[iptw_qaly_grouped$exposure1=="unexposed"]
 
 ### calculate treatment benefit (based on £70k per QALY - UK Govt Green Book)
 # https://www.gov.uk/government/publications/the-green-book-appraisal-and-evaluation-in-central-government/the-green-book-2020#valuation-of-costs-and-benefits
-iptw_benefit <-  iptw_qaly_gain*70000
+iptw_benefit <-  iptw_qaly_gain_person*70000
 
 ### calculate treatment cost 
 ##  based on £4400 cost per job (Beatty et al 2011) adjusted to £6193 for Jan 2024
@@ -480,15 +485,15 @@ iptw_n_treated <- weighted_n_grouped[2,1]
 iptw_cost_total <- unwtd_n_treated*cost_job
 
 ## cost per qaly gained
-iptw_cost_qaly <- iptw_cost_total/iptw_qaly_gain
+iptw_cost_qaly <- cost_job/iptw_qaly_gain_person
 
 ### create summary df
 iptw_df <- data.frame(type="IPTW",
-                      measure=c("QALYs gained", "Treatment benefit", 
-                                "Total cost of intervention", 
+                      measure=c("QALYs gained per person", "Treatment benefit per person", 
+                                "Cost per intervention", 
                                 "Cost per qaly gained"),
-                      estimate=c(iptw_qaly_gain, iptw_benefit, 
-                                 iptw_cost_total, iptw_cost_qaly))
+                      estimate=c(iptw_qaly_gain_person, iptw_benefit, 
+                                 cost_job, iptw_cost_qaly))
 
 
 
@@ -502,7 +507,7 @@ qaly_df <- iptw_df %>%
   janitor::clean_names() %>% 
   mutate(n_treated = c(iptw_n_treated,ps_n_treated,unwtd_n_treated),
          n_treated_std = unwtd_n_treated) %>% 
-  dplyr::select(type, n_treated, n_treated_std, everything())
+  dplyr::select(type, n_treated, everything())
 
 write.csv(qaly_df, "./output/cc/qaly_df.csv")
 
