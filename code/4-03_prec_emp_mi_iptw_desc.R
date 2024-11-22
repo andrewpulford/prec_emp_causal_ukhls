@@ -136,7 +136,7 @@ table_one_sav <- print(table_one, showAllLevels = TRUE, smd = FALSE,
 ### save table one
 ## NOTE: will have to divide number of cases by number of imputations to get pooled 
 ## values; other stats should be correct
-write.csv(table_one_sav, "./output/mi/weighted_descriptives/table_one_PAPER.csv")
+write.csv(table_one_sav, "./output/mi/weighted_descriptives/table_one_unpooled.csv")
 
 
 ################################################################################
@@ -160,3 +160,65 @@ outcomes_desc_sav <- print(outcomes_desc, showAllLevels = FALSE, smd = FALSE,
                                             scientific = FALSE))
 
 write.csv(outcomes_desc_sav, "./output/mi/weighted_descriptives/outcomes_desc.csv")
+
+################################################################################
+#####                           sort out table 1                           #####
+################################################################################
+
+table_one_sav <- read.csv("./output/mi/weighted_descriptives/table_one_unpooled.csv")
+
+#### unexposed -----------------------------------------------------------------
+
+## trim whitespace at both ends of strings
+table_one_sav$unexposed <- trimws(table_one_sav$unexposed)
+
+### extract first part of string
+table_one_sav$unexposed_temp <- sub("\\ .*","",table_one_sav$unexposed)
+## remove commas to allow conversion to numeric
+table_one_sav$unexposed_temp <- sub(",","",table_one_sav$unexposed_temp)
+## convert to numeric
+table_one_sav$unexposed_temp <- as.numeric(table_one_sav$unexposed_temp)
+
+## extract second part of string
+table_one_sav$unexposed_temp2 <- sub("^[^ ]+.","",table_one_sav$unexposed)
+
+## divide number of cases by number of imputations (n=25)
+table_one_sav <- table_one_sav %>% 
+  mutate(unexposed_temp = ifelse(X %in% c("age_dv_t0 (median [IQR])",
+                                          "sf12mcs_dv_t0 (median [IQR])",
+                                          "sf12pcs_dv_t0 (median [IQR])"),unexposed_temp,
+                                 unexposed_temp/25))
+
+## recreate unexposed var
+table_one_sav$unexposed <- paste(table_one_sav$unexposed_temp,table_one_sav$unexposed_temp2)
+
+#### exposed -------------------------------------------------------------------
+
+## trim whitespace at both ends of strings
+table_one_sav$exposed..employed.at.t1. <- trimws(table_one_sav$exposed..employed.at.t1.)
+
+### extract first part of string
+table_one_sav$exposed_temp <- sub("\\ .*","",table_one_sav$exposed..employed.at.t1.)
+## remove commas to allow conversion to numeric
+table_one_sav$exposed_temp <- sub(",","",table_one_sav$exposed_temp)
+table_one_sav$exposed_temp <- sub(",","",table_one_sav$exposed_temp)
+## convert to numeric
+table_one_sav$exposed_temp <- as.numeric(table_one_sav$exposed_temp)
+
+## extract second part of string
+table_one_sav$exposed_temp2 <- sub("^[^ ]+.","",table_one_sav$exposed..employed.at.t1)
+
+## divide number of cases by number of imputations (n=25)
+table_one_sav <-  table_one_sav %>% 
+  mutate(exposed_temp = ifelse(X %in% c("age_dv_t0 (median [IQR])",
+                                          "sf12mcs_dv_t0 (median [IQR])",
+                                          "sf12pcs_dv_t0 (median [IQR])"),exposed_temp,
+                                 exposed_temp/25))
+
+## recreate exposed var
+table_one_sav$exposed..employed.at.t1. <- paste(table_one_sav$exposed_temp,table_one_sav$exposed_temp2)
+
+## keep only required cols
+table_one_sav  <-  table_one_sav %>% dplyr::select(c("X", "level", "unexposed", "exposed..employed.at.t1."))
+
+write.csv(table_one_sav, "./output/mi/weighted_descriptives/table_one_PAPER.csv")
