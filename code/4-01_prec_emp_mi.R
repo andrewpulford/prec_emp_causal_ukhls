@@ -199,11 +199,19 @@ pair_eligible$sf12mcs_dv_t0 <- as.character(pair_eligible$sf12mcs_dv_t0)
 pair_eligible$sf12pcs_dv_t1 <- as.character(pair_eligible$sf12pcs_dv_t1)
 pair_eligible$sf12mcs_dv_t1 <- as.character(pair_eligible$sf12mcs_dv_t1)
 
+# t1 score - mean for interaction term
+#pair_eligible <- pair_eligible %>% 
+#  mutate(sf12pcs_dv_t1i = sf12pcs_dv_t1-mean(sf12pcs_dv_t1))
+
 ## SF-12 MCS
 pair_eligible$sf12pcs_dv_t0 <- as.numeric(pair_eligible$sf12pcs_dv_t0)
 pair_eligible$sf12mcs_dv_t0 <- as.numeric(pair_eligible$sf12mcs_dv_t0)
 pair_eligible$sf12pcs_dv_t1 <- as.numeric(pair_eligible$sf12pcs_dv_t1)
 pair_eligible$sf12mcs_dv_t1 <- as.numeric(pair_eligible$sf12mcs_dv_t1)
+
+# t1 score - mean for interaction term
+#pair_eligible <- pair_eligible %>% 
+#  mutate(sf12mcs_dv_t1i = sf12mcs_dv_t1-mean(sf12mcs_dv_t1))
 
 ## SRH
 pair_eligible <- pair_eligible %>% 
@@ -220,7 +228,7 @@ pair_eligible <- pair_eligible %>%
   ## sex
   mutate(sex_bin = ifelse(sex_dv_t0=="Female",0,
                           ifelse(sex_dv_t0=="Male",1,-99))) %>% 
-  ## age
+  ## age - for sub-group analysis rather than MI model
   mutate(age_bin = ifelse(age_dv_t0<median(age_dv_t0),0,
                           ifelse(age_dv_t0>=median(age_dv_t0),1,-99))) %>% 
   ## relative poverty
@@ -238,18 +246,25 @@ pair_eligible <- pair_eligible %>%
 #### age -----------------------------------------------------------------------
 
 pair_eligible <- pair_eligible %>% 
-  mutate(age_pcs = age_bin*sf12pcs_dv_t1, ### SF-12 PCS
-         age_mcs = age_bin*sf12mcs_dv_t1,### SF-12 MCS
-         age_srh = age_bin*srh_bin2, ### SRH
-         age_ghq = age_bin*ghq_bin) ### GHQ-12
+  mutate(age_pcs = age_dv_t0*sf12pcs_dv_t1, ### SF-12 PCS
+         age_mcs = age_dv_t0*sf12mcs_dv_t1,### SF-12 MCS
+         age_srh = age_dv_t0*srh_bin2, ### SRH
+         age_ghq = age_dv_t0*ghq_bin) ### GHQ-12
 
 #### relative poverty ----------------------------------------------------------
 
 pair_eligible <- pair_eligible %>% 
-  mutate(rel_pov_pcs = rel_pov_bin*sf12pcs_dv_t1, ### SF-12 PCS
-         rel_pov_mcs = rel_pov_bin*sf12mcs_dv_t1,### SF-12 MCS
+  mutate(rel_pov_pcs = rel_pov_bin*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)), ### SF-12 PCS
+         rel_pov_mcs = rel_pov_bin*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1)),### SF-12 MCS
          rel_pov_srh = rel_pov_bin*srh_bin2, ### SRH
          rel_pov_ghq = rel_pov_bin*ghq_bin) ### GHQ-12
+
+#### interaction variable vector -----------------------------------------------
+
+interactions_vars <- c("srh_bin2","ghq_bin",
+                       "sex_pcs","sex_mcs","sex_srh","sex_ghq",
+                       "age_pcs","age_mcs","age_srh","age_ghq",
+                       "rel_pov_pcs","rel_pov_mcs","rel_pov_srh","rel_pov_ghq")
 
 ################################################################################
 #####                Multiple imputation for one variable                  #####
@@ -257,7 +272,8 @@ pair_eligible <- pair_eligible %>%
 
 #### create sub-set of variables and cases -------------------------------------
 mi_subset1 <- pair_eligible %>% 
-  dplyr::select(sf12pcs_dv_t1, sex_dv_t0, age_dv_t0, exposure1)
+  dplyr::select(sf12pcs_dv_t1, sex_dv_t0, age_dv_t0, rel_pov_bin,
+                rel_pov_pcs, exposure1)
 
 # check var structure is OK for glm
 str(mi_subset1)
@@ -303,6 +319,161 @@ mi_subset1  %>%
   summarise(across(.cols=everything(),
                    .fns = ~sum(is.na(.x))))
 
+################################################################################
+#####             Test passive imputation for sub-group analysis           #####
+################################################################################
+
+#### SF-12(PCS) ---------------------------------------------------------------
+
+## imputations
+imps_passive_pcs <- mice(mi_subset1,maxit=0)
+summary(imps_passive_pcs)
+
+# specify method for each incomplete variable in data
+# (numeric, binary, unordered, ordered)
+# ("norm", "logreg", "polyreg", "polr")
+meth_pcs <- imps_passive_pcs$meth
+meth_pcs["sex_dv_t0"] <- "logreg"
+meth_pcs["age_dv_t0"] <- "norm"
+meth_pcs["exposure1"] <- "logreg"
+meth_pcs["rel_pov_bin"] <- "pmm"
+meth_pcs["sf12pcs_dv_t1"] <- "norm"
+meth_pcs["rel_pov_pcs"] <- "~I(rel_pov_bin*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)))"
+
+pred_pcs_passive <- imps_passive_pcs$pred
+pred_pcs_passive[c("rel_pov_bin","sf12pcs_dv_t1"),"rel_pov_pcs"] <- 0
+
+visit_pcs <- imps_passive_pcs$visitSequence
+visit_pcs2 <- c("sex_dv_t0", "age_dv_t0", "exposure1", "rel_pov_bin", 
+            "sf12pcs_dv_t1", "rel_pov_pcs")
+
+imps_passive_pcs2 <- mice(mi_subset1, pred = pred_pcs_passive, meth = meth_pcs, maxit = 10, 
+                      visitSequence = visit_pcs2)
+
+## log reg on SF-12 PCS with one covariate
+fit_pcs <- with(imps_passive_pcs2, exp=glm(sf12pcs_dv_t1~sex_dv_t0, family="gaussian"))
+summary(pool(fit_pcs), conf.int = TRUE)
+
+### convert data from mids format to standard df
+temp_pcs <- complete(imps_passive_pcs2, "long", include = FALSE)
+
+## sum number of NAs by var
+temp_pcs %>% 
+  summarise(across(.cols=everything(),
+                   .fns = ~sum(is.na(.x))))
+
+temp_pcs %>% head()
+
+#### check ---------------------------------------------------------------------
+
+check_pcs_df1 <- pair_eligible %>% filter(is.na(rel_pov_bin))
+
+check_pcs_df2 <- pair_eligible  %>% 
+  filter(exposure1=="exposed (employed at t1)" & age_dv_t0%in%c(54) & 
+           sf12pcs_dv_t1%in%c(47.37))
+
+check_pcs_df3 <- temp_pcs %>% 
+  filter(exposure1=="exposed (employed at t1)" & age_dv_t0%in%c(54) & 
+           sf12pcs_dv_t1%in%c(47.37))
+
+temp_pcs %>% filter(rel_pov_bin==1) %>% filter(sf12pcs_dv_t1!=rel_pov_pcs)
+
+temp_pcs %>% filter(rel_pov_bin==1) %>% summarise(sum(sf12pcs_dv_t1-rel_pov_pcs))
+
+temp_pcs %>% filter(rel_pov_bin==1) %>% filter(sf12pcs_dv_t1!=rel_pov_pcs) %>% summarise(n=n())
+
+temp_pcs %>% 
+  filter(rel_pov_bin==1) %>% 
+  ggplot() + 
+  geom_point(aes(x = sf12pcs_dv_t1, y = rel_pov_pcs))
+
+#### SRH -----------------------------------------------------------------------
+
+#### create sub-set of variables and cases -------------------------------------
+mi_subset_srh <- pair_eligible %>% 
+  dplyr::select(srh_bin_t1, sex_dv_t0, age_dv_t0, rel_pov_bin,
+                rel_pov_srh, exposure1)
+
+# check var structure is OK for glm
+str(mi_subset_srh)
+
+# change outcome var to factor
+mi_subset_srh$srh_bin_t1 <- factor(mi_subset_srh$srh_bin_t1,
+                                   levels = c("excellent/very good","good/fair/poor"))
+# change exposure to factor so it is ordered correctly for model
+mi_subset_srh$exposure1 <- factor(mi_subset_srh$exposure1,
+                               levels = c("unexposed",
+                                          "exposed (employed at t1)"))
+# change sex to factor
+mi_subset_srh$sex_dv_t0 <- factor(mi_subset_srh$sex_dv_t0,
+                               levels = c("Female",
+                                          "Male"))
+
+# take a random sample for testing code (if it's running slow)
+mi_subset_srh <- sample_n(mi_subset_srh, 3000)
+
+## imputations
+imps_passive_srh <- mice(mi_subset_srh,maxit=0)
+summary(imps_passive_srh)
+
+# specify method for each incomplete variable in data
+# (numeric, binary, unordered, ordered)
+# ("norm", "logreg", "polyreg", "polr")
+meth_srh <- imps_passive_srh$meth
+meth_srh["sex_dv_t0"] <- "logreg"
+meth_srh["age_dv_t0"] <- "norm"
+meth_srh["rel_pov_bin"] <- "pmm"
+meth_srh["exposure1"] <- "logreg"
+meth_srh["srh_bin_t1"] <- "pmm"
+meth_srh["rel_pov_srh"] <- "~I(rel_pov_bin*srh_bin)"
+
+pred_passive_srh <- imps_passive_srh$pred
+pred_passive_srh[c("rel_pov_bin","srh_bin_t1"),"rel_pov_srh"] <- 0
+
+visit_srh <- imps_passive_srh$visitSequence
+visit_srh2 <- c("sex_dv_t0", "age_dv_t0", "exposure1", "rel_pov_bin", 
+            "sf12pcs_dv_t1", "rel_pov_pcs")
+
+imps_passive_srh <- mice(mi_subset_srh, 
+                         pred = pred_passive_srh, 
+                         meth = meth_srh, 
+                         maxit = 10, 
+                      visitSequence = visit_srh2)
+
+## log reg on SF-12 PCS with one covariate
+fit_srh <- with(imps_passive_srh, exp=glm(srh_bin_t1~sex_dv_t0, family = binomial(link = logit)))
+summary(pool(fit_srh), conf.int = TRUE)
+
+### convert data from mids format to standard df
+temp_srh <- complete(imps_passive_srh, "long", include = FALSE)
+
+## sum number of NAs by var
+temp_srh %>% 
+  summarise(across(.cols=everything(),
+                   .fns = ~sum(is.na(.x))))
+
+temp_srh %>% head()
+
+#### check ---------------------------------------------------------------------
+
+check_srh_df1 <- pair_eligible %>% filter(is.na(rel_pov_bin))
+
+check_srh_df2 <- pair_eligible  %>% 
+  filter(exposure1=="exposed (employed at t1)" & age_dv_t0%in%c(54) & 
+           sf12pcs_dv_t1%in%c(47.37))
+
+check_srh_df3 <- temp %>% 
+  filter(exposure1=="exposed (employed at t1)" & age_dv_t0%in%c(54) & 
+           sf12pcs_dv_t1%in%c(47.37))
+
+temp_srh %>% filter(srh_bin_t1==1 & rel_pov_bin==1) %>% filter(rel_pov_srh==1)
+
+temp_srh %>% filter(rel_pov_srh!=1 &rel_pov_srh!=0)
+
+temp_srh %>% 
+  filter(rel_pov_bin==1) %>% 
+  ggplot() + 
+  geom_point(aes(x = srh_bin_t1, y = rel_pov_srh))
 
 ################################################################################
 #####             Multiple imputation for multiple variables               #####
@@ -324,8 +495,9 @@ mi_subset2 <- pair_eligible %>%
                 # t1 covariates
                 age_dv_t1,
                 marital_status_t1,
-                health_t1
-                )
+                health_t1,
+                # sub-group interaction vars
+                all_of(interactions_vars))
 
 # check var structure is OK for glm
 str(mi_subset2)
@@ -484,7 +656,18 @@ mi_subset2_str$method[mi_subset2_str$Var1=="age_dv_t1"] <- "norm" # norm if incl
 mi_subset2_str$method[mi_subset2_str$Var1=="marital_status_t1"] <- "polyreg" #polyreg if including
 mi_subset2_str$method[mi_subset2_str$Var1=="health_t1"] <- "logreg"
 mi_subset2_str$method[mi_subset2_str$Var1=="exp1_bin"] <- ""
-
+mi_subset2_str$method[mi_subset2_str$Var1=="sex_pcs"] <- "~I(sex_dv_t0*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)))"
+mi_subset2_str$method[mi_subset2_str$Var1=="sex_mcs"] <- "~I(sex_dv_t0*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1)))"
+mi_subset2_str$method[mi_subset2_str$Var1=="sex_srh"] <- "~I(sex_dv_t0*srh_bin2)"
+mi_subset2_str$method[mi_subset2_str$Var1=="sex_ghq"] <- "~I(sex_dv_t0*ghq_bin)"
+mi_subset2_str$method[mi_subset2_str$Var1=="age_pcs"] <- "~I(age_dv_t0*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)))"
+mi_subset2_str$method[mi_subset2_str$Var1=="age_mcs"] <- "~I(age_dv_t0*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1)))"
+mi_subset2_str$method[mi_subset2_str$Var1=="age_srh"] <- "~I(age_dv_t0*srh_bin2)"
+mi_subset2_str$method[mi_subset2_str$Var1=="age_ghq"] <- "~I(age_dv_t0*ghq_bin)"
+mi_subset2_str$method[mi_subset2_str$Var1=="rel_pov_pcs"] <- "~I(rel_pov_t0*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)))"
+mi_subset2_str$method[mi_subset2_str$Var1=="rel_pov_mcs"] <- "~I(rel_pov_t0*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1)))"
+mi_subset2_str$method[mi_subset2_str$Var1=="rel_pov_srh"] <- "~I(rel_pov_t0*srh_bin2)"
+mi_subset2_str$method[mi_subset2_str$Var1=="rel_pov_ghq"] <- "~I(rel_pov_t0*ghq_bin)"
 
 ## check mi_subset2_str order matches vars in mi_subset2
 sum(as.vector(mi_subset2_str$Var1)!=as.vector(names(mi_subset2)))
@@ -499,6 +682,25 @@ myPredictorMatrix[,"pidp"] <- 0
 myPredictorMatrix["pidp",] <- 0
 myPredictorMatrix[,"exp1_bin"] <- 0
 myPredictorMatrix["exp1_bin",] <- 0
+# these are needed for interaction term calculation in passive imps but should be ignored otherwise
+myPredictorMatrix[,"srh_bin2"] <- 0
+myPredictorMatrix["srh_bin2",] <- 0
+myPredictorMatrix[,"ghq_bin"] <- 0
+myPredictorMatrix["ghq_bin",] <- 0
+# constituent parts of interaction terms shouldn't predict interaction term
+myPredictorMatrix[c("sex_dv_t0","sf12pcs_dv_t1"),"sex_pcs"] <- 0
+myPredictorMatrix[c("sex_dv_t0","sf12mcs_dv_t1"),"sex_pcs"] <- 0
+myPredictorMatrix[c("sex_dv_t0","srh_bin_t1"),"sex_srh"] <- 0
+myPredictorMatrix[c("sex_dv_t0","ghq_case4_t1"),"sex_ghq"] <- 0
+myPredictorMatrix[c("age_dv_t0","sf12pcs_dv_t1"),"age_pcs"] <- 0
+myPredictorMatrix[c("age_dv_t0","sf12mcs_dv_t1"),"age_pcs"] <- 0
+myPredictorMatrix[c("age_dv_t0","srh_bin_t1"),"age_srh"] <- 0
+myPredictorMatrix[c("age_dv_t0","ghq_case4_t1"),"age_ghq"] <- 0
+myPredictorMatrix[c("rel_pov_t0","sf12pcs_dv_t1"),"rel_pov_pcs"] <- 0
+myPredictorMatrix[c("rel_pov_t0","sf12mcs_dv_t1"),"rel_pov_pcs"] <- 0
+myPredictorMatrix[c("rel_pov_t0","srh_bin_t1"),"rel_pov_srh"] <- 0
+myPredictorMatrix[c("rel_pov_t0","ghq_case4_t1"),"rel_pov_ghq"] <- 0
+
 myPredictorMatrix
 
 #### imputation ----------------------------------------------------------------
