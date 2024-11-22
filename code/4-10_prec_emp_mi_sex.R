@@ -1,7 +1,7 @@
 ################################################################################
 
 # Precarious employment and health - Understanding Society
-# 4-04 - IPTW multiple imputed analytic sample - sub-group analysis by sex
+# 4-04 - IPTW multiple imputed analytic sample - sub-group analysis by sex (FEMALE)
 # Andrew Pulford
 
 # Data source:
@@ -35,6 +35,7 @@ library(MatchThem) # to perform propensity score weighting within each imputatio
 library(survey)
 library(glmmTMB) # for multi-level modelling (faster than lme4)
 #remotes::install_github("ngreifer/MatchIt")
+library(miceadds) # for working with imputed dataset
 
 ################################################################################
 #####                         load and prepare data                        #####
@@ -44,34 +45,161 @@ library(glmmTMB) # for multi-level modelling (faster than lme4)
 #### read in variable vectors --------------------------------------------------
 source("./look_ups/variable_vectors.r")
 
-##### load original data without imoutation ------------------------------------
-#mi_subset2 <-  readRDS("./working_data/mi/mi_subset2.rds")
-
-#### load imputed data --------------------------------------------------------
-imputed_data <- readRDS("./working_data/mi/imputed_data.rds")
-
+##### load original data without imputation ------------------------------------
+mi_subset2 <-  readRDS("./working_data/mi/mi_subset2.rds")
 
 #### prepare data -------------------------------------------------------------- 
 
-## create male and female dfs
-df_long <- complete(imputed_data, "long",include = T)
+### females
+df_f <- subset(mi_subset2, mi_subset2$sex_dv_t0 == "Female")
 
-sapply(df_long, function(x) sum(is.na(x)))
+df_f_str <- df_f %>% 
+  summary.default() %>% as.data.frame %>% 
+  dplyr::group_by(Var1) %>%  
+  tidyr::spread(key = Var2, value = Freq)
+
+### males
+df_m <- subset(mi_subset2, mi_subset2$sex_dv_t0 == "Male")
 
 
-df_long_f <- df_long[which(df_long$sex_dv_t0 == 'Female'),]
-df_long_m <- df_long[which(df_long$sex_dv_t0 == 'Male'),]
+################################################################################
+#####                  Female multiple imputation model                    #####
+################################################################################
 
-imp_f <- as.mids(df_long_f)
-imp_m <- as.mids(df_long_m)
+#### set method type depending on variable type --------------------------------
+# specify method for each incomplete variable in data
+# (numeric, binary, unordered, ordered)
+# ("norm", "logreg", "polyreg", "polr")
+df_f_str$method <- ""
+#df_f_str$method[df_f_str$Var1=="pidp"] <- ""
+df_f_str$method[df_f_str$Var1=="sf12pcs_dv_t1"] <- "norm"
+df_f_str$method[df_f_str$Var1=="sf12mcs_dv_t1"] <- "norm"
+df_f_str$method[df_f_str$Var1=="srh_bin_t1"] <- "logreg"
+df_f_str$method[df_f_str$Var1=="ghq_case4_t1"] <- "logreg"
+df_f_str$method[df_f_str$Var1=="exposure1"] <- "logreg"
+df_f_str$method[df_f_str$Var1=="sex_dv_t0"] <- "logreg"
+df_f_str$method[df_f_str$Var1=="age_dv_t0"] <- "norm"
+df_f_str$method[df_f_str$Var1=="non_white_t0"] <- "logreg"
+df_f_str$method[df_f_str$Var1=="marital_status_t0"] <- "polyreg"
+df_f_str$method[df_f_str$Var1=="degree_bin_t0"] <- "logreg" 
+df_f_str$method[df_f_str$Var1=="gor_dv_t0"] <- "polyreg"
+df_f_str$method[df_f_str$Var1=="sic2007_section_lab_t0"] <- "polyreg"
+df_f_str$method[df_f_str$Var1=="soc2000_major_group_title_t0"] <- "polyreg"
+df_f_str$method[df_f_str$Var1=="jbft_dv_t0"] <- "logreg"
+df_f_str$method[df_f_str$Var1=="small_firm_t0"] <- "logreg"
+df_f_str$method[df_f_str$Var1=="emp_contract_t0"] <- "logreg"
+df_f_str$method[df_f_str$Var1=="broken_emp_t0"] <- "polr" 
+df_f_str$method[df_f_str$Var1=="j2has_dv_t0"] <- "logreg"
+df_f_str$method[df_f_str$Var1=="rel_pov_t0"] <- "logreg"
+df_f_str$method[df_f_str$Var1=="health_t0"] <- "logreg"
+df_f_str$method[df_f_str$Var1=="sf12pcs_dv_t0"] <- "norm"
+df_f_str$method[df_f_str$Var1=="sf12mcs_dv_t0"] <- "norm"
+df_f_str$method[df_f_str$Var1=="srh_bin_t0"] <- "logreg"
+df_f_str$method[df_f_str$Var1=="ghq_case4_t0"] <- "logreg"
+df_f_str$method[df_f_str$Var1=="dep_child_bin_t0"] <- "logreg"
+df_f_str$method[df_f_str$Var1=="age_dv_t1"] <- "norm" # norm if including
+df_f_str$method[df_f_str$Var1=="marital_status_t1"] <- "polyreg" #polyreg if including
+df_f_str$method[df_f_str$Var1=="health_t1"] <- "logreg"
+df_f_str$method[df_f_str$Var1=="exp1_bin"] <- ""
+df_f_str$method[df_f_str$Var1=="sex_pcs"] <- "~I(sex_dv_t0*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)))"
+df_f_str$method[df_f_str$Var1=="sex_mcs"] <- "~I(sex_dv_t0*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1)))"
+df_f_str$method[df_f_str$Var1=="sex_srh"] <- "~I(sex_dv_t0*srh_bin2)"
+df_f_str$method[df_f_str$Var1=="sex_ghq"] <- "~I(sex_dv_t0*ghq_bin)"
+df_f_str$method[df_f_str$Var1=="age_pcs"] <- "~I(age_dv_t0*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)))"
+df_f_str$method[df_f_str$Var1=="age_mcs"] <- "~I(age_dv_t0*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1)))"
+df_f_str$method[df_f_str$Var1=="age_srh"] <- "~I(age_dv_t0*srh_bin2)"
+df_f_str$method[df_f_str$Var1=="age_ghq"] <- "~I(age_dv_t0*ghq_bin)"
+df_f_str$method[df_f_str$Var1=="rel_pov_pcs"] <- "~I(rel_pov_t0*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)))"
+df_f_str$method[df_f_str$Var1=="rel_pov_mcs"] <- "~I(rel_pov_t0*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1)))"
+df_f_str$method[df_f_str$Var1=="rel_pov_srh"] <- "~I(rel_pov_t0*srh_bin2)"
+df_f_str$method[df_f_str$Var1=="rel_pov_ghq"] <- "~I(rel_pov_t0*ghq_bin)"
 
-sapply(complete(imp_f,"long"), function(x) sum(is.na(x)))
-sapply(complete(imp_m,"long"), function(x) sum(is.na(x)))
+## check df_f_str order matches vars in df_f
+sum(as.vector(df_f_str$Var1)!=as.vector(names(df_f)))
+
+## create vector to set new default methods methods for MI
+myDefaultMethod <- as.vector(df_f_str$method)
+
+## define a custom predictorMatrix
+# in matrix 1s are included in model; 0s are not
+myPredictorMatrix <- make.predictorMatrix(df_f)
+myPredictorMatrix[,"pidp"] <- 0
+myPredictorMatrix["pidp",] <- 0
+myPredictorMatrix[,"exp1_bin"] <- 0
+myPredictorMatrix["exp1_bin",] <- 0
+# these are needed for interaction term calculation in passive imps but should be ignored otherwise
+myPredictorMatrix[,"srh_bin2"] <- 0
+myPredictorMatrix["srh_bin2",] <- 0
+myPredictorMatrix[,"ghq_bin"] <- 0
+myPredictorMatrix["ghq_bin",] <- 0
+# constituent parts of interaction terms shouldn't predict interaction term
+myPredictorMatrix[c("sex_dv_t0","sf12pcs_dv_t1"),"sex_pcs"] <- 0
+myPredictorMatrix[c("sex_dv_t0","sf12mcs_dv_t1"),"sex_pcs"] <- 0
+myPredictorMatrix[c("sex_dv_t0","srh_bin_t1"),"sex_srh"] <- 0
+myPredictorMatrix[c("sex_dv_t0","ghq_case4_t1"),"sex_ghq"] <- 0
+myPredictorMatrix[c("age_dv_t0","sf12pcs_dv_t1"),"age_pcs"] <- 0
+myPredictorMatrix[c("age_dv_t0","sf12mcs_dv_t1"),"age_pcs"] <- 0
+myPredictorMatrix[c("age_dv_t0","srh_bin_t1"),"age_srh"] <- 0
+myPredictorMatrix[c("age_dv_t0","ghq_case4_t1"),"age_ghq"] <- 0
+myPredictorMatrix[c("rel_pov_t0","sf12pcs_dv_t1"),"rel_pov_pcs"] <- 0
+myPredictorMatrix[c("rel_pov_t0","sf12mcs_dv_t1"),"rel_pov_pcs"] <- 0
+myPredictorMatrix[c("rel_pov_t0","srh_bin_t1"),"rel_pov_srh"] <- 0
+myPredictorMatrix[c("rel_pov_t0","ghq_case4_t1"),"rel_pov_ghq"] <- 0
+
+myPredictorMatrix
+
+#### imputation ----------------------------------------------------------------
+
+set.seed(52267)
+start_time <- Sys.time()
+### for final MI model run 25 imputations and 10 iterations
+## run fewer when testing code
+imps2_f <- mice(df_f, m=25, maxit = 10,
+              #imps2 <- mice(df_f, m=15, maxit = 10,
+              #defaultMethod=myDefaultMethod, 
+              predictorMatrix=myPredictorMatrix,
+              printFlag = FALSE)
+end_time <- Sys.time()
+end_time - start_time
+
+summary(imps2_f)
+
+### check NAs are removed
+## convert data from mids format to standard df
+temp2 <- complete(imps2_f, "long", include = FALSE)
+
+## sum number of NAs by var
+temp2_na <- temp2 %>% 
+  summarise(across(.cols=everything(),
+                   .fns = ~sum(is.na(.x)))) %>% 
+  pivot_longer(cols = everything()) %>% 
+  mutate(df="mi")
+
+## compare with non-imputed data
+df_f_na <- df_f  %>% 
+  summarise(across(.cols=everything(),
+                   .fns = ~sum(is.na(.x)))) %>% 
+  pivot_longer(cols = everything()) %>% 
+  mutate(df="og")
+
+temp3 <- temp2_na %>% bind_rows(df_f_na) %>% 
+  pivot_wider(names_from = df, values_from = value)
+
+write_csv(temp3, "./output/temp_output/temp3_micheck_f.csv")
+
+## check NAs
+sapply(complete(imps2_f,2), function(x) sum(is.na(x)))
+
+#### save imputed data 
+write_rds(imps2_f, "./working_data/mi/imputed_data_f.rds")
+
 
 
 ################################################################################
 #####               inverse probability of treatment weighting             #####
 ################################################################################
+
+imps2_f <- readRDS("./working_data/mi/imputed_data_f.rds")
 
 #### function ------------------------------------------------------------------
 
@@ -105,14 +233,8 @@ iptw_func_sex <- function(data){
 
 #### females -------------------------------------------------------------------
 
-weightit_f <- iptw_func_sex(data = imp_f)
+weightit_f <- iptw_func_sex(data = imps2_f)
 summary(weightit_f)
-
-#with(weightit_df, summary(as.data.frame(mget(ls()))))
-
-#imputed_data$weights_ps <- weightit_df$weights
-
-#with(imputed_data, sum(imputed_data$weights_ps))
 
 test <- bal.tab(weightit_f, un = TRUE, 
                 binary = "std", continuous = "std")
@@ -141,43 +263,6 @@ dev.off()
 # var.names() - to clean up names
 # https://www.rdocumentation.org/packages/cobalt/versions/3.4.1/topics/var.names
 
-#### males -------------------------------------------------------------------
-
-weightit_m <- iptw_func_sex(data = imp_m)
-summary(weightit_m)
-
-#with(weightit_df, summary(as.data.frame(mget(ls()))))
-
-#imputed_data$weights_ps <- weightit_df$weights
-
-#with(imputed_data, sum(imputed_data$weights_ps))
-
-test <- bal.tab(weightit_m, un = TRUE, 
-                binary = "std", continuous = "std")
-test2 <- test$Balance.Across.Imputations
-
-## probably don't need these....
-#bal.plot(weightit_f, which.imp = 1, 
-#         var.name = "sex_dv_t0", 
-#         which = "both")
-bal.plot(weightit_m, which.imp = 1, 
-         var.name = "age_dv_t0", 
-         which = "both")
-bal.plot(weightit_m, which.imp = 1, 
-         var.name = "non_white_t0", 
-         which = "both")
-bal.plot(weightit_m, which.imp = 1, 
-         var.name = "rel_pov_t0", 
-         which = "both")
-
-## create love plot to visualise balance between unmatched and matched data across MIs
-tiff("./output/mi/sub_groups/sex/m_love_plot.tiff", width = 960)
-love.plot(weightit_m, thresholds = 0.1, stats = "m",
-          drop.distance = TRUE, binary = "std", continuous = "std",
-          sample.names = c("Unweighted","Inverse probability of treatment weighted")) 
-dev.off()
-# var.names() - to clean up names
-# https://www.rdocumentation.org/packages/cobalt/versions/3.4.1/topics/var.names
 
 ################################################################################
 #####                               Descriptives                           #####
@@ -369,8 +454,6 @@ weightit_pooled_ghq_df <- data.frame(summary(f_pooled_ghq, conf.int = TRUE)) %>%
   rename(lci = X2.5..,
          uci = X97.5..)
 
-#here <<<<<<<<<<<<<<<<<<< add ocde for males
-
 
 ################################################################################
 #####                   combine estimates into single df                   #####
@@ -402,9 +485,10 @@ ghq_df <- weightit_pooled_ghq_df %>%
 
 combined_df <- pcs_df %>% 
   bind_rows(mcs_df, srh_df, ghq_df) %>% 
-  dplyr::select(c(outcome,	est_type,	estimate,	std.error,	p.value,	lci,	uci))
+  dplyr::select(c(outcome,	est_type,	estimate,	std.error,	p.value,	lci,	uci)) %>% 
+  mutate(sub_group = "female")
 
-write.csv(combined_df, "./output/mi/weighted_outcomes/mi_dr_iptw_df.csv")
+write.csv(combined_df, "./output/mi/weighted_outcomes/mi_dr_iptw_df_sex_f.csv")
 
 
 ##################
