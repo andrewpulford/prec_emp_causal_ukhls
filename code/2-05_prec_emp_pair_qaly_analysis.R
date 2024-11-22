@@ -174,14 +174,14 @@ boxplot(unwtd_eq5d_df$eq5d_t1 ~ unwtd_eq5d_df$exposure1)
 #### calculate qalys -----------------------------------------------------------
 ## this is based on approx 12 months treatment
 
-unwtd_qaly_df <- unwtd_eq5d_df %>% mutate(qaly_t0 = 0.5 * eq5d_t0,
-                                          qaly_t1 = 0.5 * eq5d_t1,
-                                          qaly_total = qaly_t0+qaly_t1)
-
+unwtd_qaly_df <- unwtd_eq5d_df %>% 
+  mutate(qaly_t0 = eq5d_t0,
+         qaly_t1 = eq5d_t1,
+         qaly_diff = qaly_t1-qaly_t0) 
 
 ### compare qalys for treatment groups
 unwtd_qaly_grouped <- unwtd_qaly_df %>% group_by(exposure1) %>% 
-  summarise(qaly_total = sum(qaly_total))
+  summarise(qaly_diff_total = sum(qaly_diff))
 
 ### total number of participants
 unwtd_n_grouped <- unwtd_qaly_df %>% group_by(exposure1) %>% 
@@ -195,14 +195,14 @@ unwtd_qaly_grouped <- unwtd_qaly_grouped %>%
   left_join(unwtd_n_grouped)
 
 ## this was old qalys by standardised treatment group approach
-#unwtd_qaly_grouped <- unwtd_qaly_grouped %>% mutate(qaly_total_std=qaly_total/n*unwtd_n_treated)
+#unwtd_qaly_grouped <- unwtd_qaly_grouped %>% mutate(qaly_total_std=qaly_diff_total/n*unwtd_n_treated)
 
-unwtd_qaly_grouped <- unwtd_qaly_grouped %>% mutate(qaly_person=qaly_total/n)
+unwtd_qaly_grouped <- unwtd_qaly_grouped %>% mutate(qaly_diff_person=qaly_diff_total/n)
 
 
 ### calculate QALY gain
 ## per person
-unwtd_qaly_gain_person <-  unwtd_qaly_grouped$qaly_person[unwtd_qaly_grouped$exposure1=="exposed (employed at t1)"] - unwtd_qaly_grouped$qaly_person[unwtd_qaly_grouped$exposure1=="unexposed"]
+unwtd_qaly_gain_person <- unwtd_qaly_grouped$qaly_diff_person[unwtd_qaly_grouped$exposure1=="exposed (employed at t1)"] - unwtd_qaly_grouped$qaly_diff_person[unwtd_qaly_grouped$exposure1=="unexposed"]
 
 ## total for treated
 qualy_gain_total <- unwtd_qaly_gain_person*unwtd_n_treated
@@ -221,16 +221,16 @@ cost_job <- 6193
 ## total cost of intervention
 unwtd_cost_total <- unwtd_n_treated*cost_job
 
-## cost per qaly gained
-unwtd_cost_qaly <- cost_job/unwtd_qaly_gain_person
+## cost per qaly gained (ICER)
+unwtd_icer <- cost_job/unwtd_qaly_gain_person
 
 ### create summary df
 unwtd_df <- data.frame(type="unweighted",
                        measure=c("QALYs gained per person", "Treatment benefit per person", 
                                  "Cost per intervention", 
-                                 "Cost per qaly gained"),
+                                 "ICER"),
                        estimate=c(unwtd_qaly_gain_person, unwtd_benefit, 
-                                  cost_job, unwtd_cost_qaly))
+                                  cost_job, unwtd_icer))
 
 
 ################################################################################
