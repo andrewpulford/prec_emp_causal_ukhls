@@ -108,7 +108,36 @@ weightit_pooled_pcs_df <- data.frame(summary(weightit_pooled_pcs, conf.int = TRU
 
 
 write.csv(weightit_pooled_pcs_df, "./working_data/mi/weightit_pooled_pcs_df.csv")
+write_rds(weightit_mods_pcs, "./working_data/mi/weightit_mods_pcs.rds")
+write_rds(weightit_pooled_pcs, "./working_data/mi/weightit_pooled_pcs.rds")
 
 
-##################
+################## scrapbook #################
 
+weightit_mods_pcs <- readRDS("./working_data/mi/weightit_mods_pcs.rds")
+
+### try avg_comparisons for sub-group analysis
+library("marginaleffects")
+comp.imp <- lapply(weightit_mods_pcs, function(weightit_pooled_pcs) {
+  avg_comparisons(weightit_mods_pcs, 
+                  variables = "exposure1",
+                  by = "sex_dv_t0")
+})
+
+pooled.comp <- mice::pool(comp.imp, dfcom = Inf)
+
+### try setting weights to zero for one group
+
+
+complete_imp <- complete(weightit_df,action = "long", include = TRUE)
+sapply(complete_imp, function(x) sum(is.na(x)))
+
+head(complete_imp)
+summary(complete_imp$weights)
+
+
+complete_f <- complete_imp %>% 
+  mutate(weights = ifelse(sex_dv_t0=="Female",weights,0))
+
+
+wiminds_f <- as.mids(complete_f)
