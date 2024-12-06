@@ -54,7 +54,7 @@ extra_vars <- c("jbstat_t1", "nunmpsp_dv_t1",
 #rm(temp1,temp2)
 
 ####load eligible cases --------------------------------------------------------
-pair_cc_eligible <- readRDS("./working_data/pair_eligible.rds") #%>% 
+pair_no_att <- readRDS("./working_data/pair_no_att.rds") #%>% 
 #  dplyr::select(pidp, all_of(c(id_wt_vector, 
 #                         cov_vector, cov_vector2, 
 #                         outcome_vector2,
@@ -73,7 +73,7 @@ pair_cc_eligible <- readRDS("./working_data/pair_eligible.rds") #%>%
 #                    "don't know")
 #
 
-pair_cc_eligible_na <- pair_cc_eligible %>% 
+pair_no_att_na <- pair_no_att %>% 
 #  mutate(across(everything(), as.character)) %>% 
   mutate(across(.cols = everything(), 
                 .fns = ~ifelse(is.na(.x),1,0)))
@@ -83,9 +83,9 @@ pair_cc_eligible_na <- pair_cc_eligible %>%
 #####                       item missing descriptives                      #####
 ################################################################################
 
-n_row <- nrow(pair_cc_eligible_na)
+n_row <- nrow(pair_no_att_na)
 
-pair_cc_eligible_na <- pair_cc_eligible_na %>% 
+pair_no_att_na <- pair_no_att_na %>% 
   summarise(across(.cols=everything(),
                    .fns = ~sum(.x))) %>% 
   pivot_longer(cols=everything(), names_to = "variable", values_to = "n_NA") %>% 
@@ -97,16 +97,16 @@ pair_cc_eligible_na <- pair_cc_eligible_na %>%
 ################################################################################
 
 ## sort out baseline sf-12 vars to ID missing vars
-pair_cc_eligible$sf12pcs_dv_t0 <- as.character(pair_cc_eligible$sf12pcs_dv_t0)
-pair_cc_eligible$sf12pcs_dv_t0 <- as.numeric(pair_cc_eligible$sf12pcs_dv_t0)
+pair_no_att$sf12pcs_dv_t0 <- as.character(pair_no_att$sf12pcs_dv_t0)
+pair_no_att$sf12pcs_dv_t0 <- as.numeric(pair_no_att$sf12pcs_dv_t0)
 
-pair_cc_eligible$sf12mcs_dv_t0 <- as.character(pair_cc_eligible$sf12mcs_dv_t0)
-pair_cc_eligible$sf12mcs_dv_t0 <- as.numeric(pair_cc_eligible$sf12mcs_dv_t0)
+pair_no_att$sf12mcs_dv_t0 <- as.character(pair_no_att$sf12mcs_dv_t0)
+pair_no_att$sf12mcs_dv_t0 <- as.numeric(pair_no_att$sf12mcs_dv_t0)
 
 
 
 ### remove any incomplete cases for CC analysis
-pair_cc_analytic <- pair_cc_eligible %>% 
+pair_cc_analytic <- pair_no_att %>% 
   na.omit()
 
 
@@ -122,7 +122,7 @@ sapply(pair_cc_analytic, function(x) sum(is.na(x)))
 # missing outcomes - SRH, GHQ-12, SF-12 PCS, SF-12 MCS 
 
 # create flag for missing employment status at t1
-#pair_cc_analytic <- pair_cc_eligible  %>% 
+#pair_cc_analytic <- pair_no_att  %>% 
 #  mutate(exposure_na = ifelse(jbstat_t1%in%missing_vector,1,0)) 
 
 # number of cases excluded due to missing exposure at t1
@@ -159,14 +159,14 @@ sapply(pair_cc_analytic, function(x) sum(is.na(x)))
 ################################################################################
 
 ## paired eligible complete case df
-write_rds(pair_cc_eligible, "./working_data/pair_eligible.rds")
+write_rds(pair_no_att, "./working_data/pair_no_att.rds")
 
 
 ## paired analytic complete case df
 write_rds(pair_cc_analytic, "./working_data/cc/pair_cc_analytic.rds")
 
 ## exclusions
-write_rds(pair_cc_eligible_na, "./working_data/cc/pair_cc_eligible_na.rds")
+write_rds(pair_no_att_na, "./working_data/cc/pair_no_att_na.rds")
 
 ###### check for GHQ-12 scores
 
