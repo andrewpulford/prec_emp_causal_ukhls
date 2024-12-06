@@ -563,3 +563,50 @@ dr_iptw_ghq_scale_df <- dr_iptw_ghq_scale_df %>%
 glm(ghq_case4_t1 ~ exposure1 , family = binomial(link = "logit"), 
     data = iptw_df)
 exp(-1.1159)
+
+################################################################################
+#####                    GHQ-12 sub-group analyses                        ######
+################################################################################
+
+#### create df's ---------------------------------------------------------------
+female <- iptw_df %>% filter(sex_dv_t0_female==1)
+male <- iptw_df %>% filter(sex_dv_t0_male==1)
+
+#### sex -----------------------------------------------------------------------
+### female
+start_time <- Sys.time()
+dr_iptw_ghq_glmmTMB_mod <- glmmTMB( ghq_case4_t1 ~
+                                      exposure1 +
+ #                                     sex_dv_t0 +
+                                      age_dv_t0 +
+                                      age_dv_t1 +
+                                      non_white_t0 +
+                                      marital_status_t0 +
+                                      dep_child_bin_t0 +
+                                      degree_bin_t0 +
+                                      gor_dv_t0 +
+                                      sic2007_section_lab_t0 +
+                                      soc2000_major_group_title_t0 +
+                                      jbft_dv_t0 +
+                                      small_firm_t0 +
+                                      emp_contract_t0 +
+                                      broken_emp_t0 +
+                                      j2has_dv_t0 +
+                                      rel_pov_t0 +
+                                      health_t0 +
+                                      health_t1 +
+                                      ghq_case4_t0 +
+                                      # interaction terms
+ #                                     sex_dv_t0*age_dv_t0 +
+ #                                     sex_dv_t0*rel_pov_t0 +
+                                      age_dv_t0*rel_pov_t0 +
+                                      (1|pidp),
+                                    family = binomial(link="logit"),
+                                    weights = weightit_ipw,
+                                    data = female)
+end_time <- Sys.time()
+end_time-start_time
+
+dr_iptw_ghq_glmmTMB_summary <- summary(dr_iptw_ghq_glmmTMB_mod)
+
+
