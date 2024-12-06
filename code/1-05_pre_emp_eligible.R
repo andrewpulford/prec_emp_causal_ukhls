@@ -85,7 +85,8 @@ working_age <- pair_cc_raw  %>%
   filter(age_dv_t0>=16 &age_dv_t1<=64)
 
 # exclude
-temp_df <- pair_cc_raw  %>% filter(age_dv_t0<16 | age_dv_t1>64) 
+temp_df <- pair_cc_raw  %>% filter(age_dv_t0<16 | age_dv_t1>64 |
+                                     is.na(age_dv_t0) | is.na(age_dv_t1)) 
 temp2 <- temp_df %>% summarise(n=n()) %>% 
   mutate(exc_reason = "not working age (16-64 years)")
 pair_cc_exc <- temp2
@@ -104,32 +105,41 @@ pair_cc_exc <- pair_cc_exc %>%
   bind_rows(temp2)
 
 
-### valid employment response at t1
-# include
-#valid_emp_t1 <- in_emp_t0 %>% 
-#  filter(employ_t1=="yes" | employ_t1=="no") 
-#
-## exclude
-#temp_df <- in_emp_t0 %>%   filter(employ_t1%notin%c("yes", "no"))
-#temp2 <- temp_df %>% summarise(n=n()) %>% 
-#  mutate(exc_reason = "no valid employment response at t1")
-#pair_cc_exc <- pair_cc_exc %>% 
-#  bind_rows(temp2)
+################################################################################
+#####                       create exposure variables                      #####
+################################################################################
+
+pair_eligible <- in_emp_t0 %>%
+  # prevention of unemployment at t1
+  mutate(exposure1 = ifelse(jbstat_t1%in%c("unemployed","Unemployed"),
+                            "unexposed","exposed (employed at t1)")) %>% 
+  # prevention of job loss between t0 and t1
+  mutate(exposure2 = ifelse(jbstat_t1 %in% c("unemployed","unemployed"), 
+                            "exposed (no job loss between t0 and t1",
+                            ifelse(nunmpsp_dv_t1==0,
+                                   "exposed (no job loss between t0 and t1",
+                                   "unexposed"))) 
+
+
+################################################################################
+#####                               attrition                              #####
+################################################################################
 
 ## not self-employed or undertaking unpaid work for family business at T1
 # include
-not_self_emp <- in_emp_t0 %>% 
+not_self_emp <- pair_eligible %>% 
   filter(jbstat_t1%notin%c("Self employed", "self employed", 
                            "Unpaid, family business"))
 
 # exclude
-temp_df <- in_emp_t0 %>%  filter(jbstat_t1%in%c("Self employed", 
-                                                      "self employed", 
-                                                      "Unpaid, family business"))
-temp2 <- temp_df %>% summarise(n=n()) %>% 
+temp_df <- pair_eligible %>%  filter(jbstat_t1%in%c("Self employed", 
+                                                "self employed", 
+                                                "Unpaid, family business"))
+temp2 <- temp_df %>% 
+  group_by(exposure1) %>% 
+  summarise(n=n()) %>% 
   mutate(exc_reason = "self-employed or undertaking unpaid work for family business at t1")
-pair_cc_exc <- pair_cc_exc %>% 
-  bind_rows(temp2)
+pair_cc_att <- temp2
 
 
 ## not government training scheme or apprenticeship at T1 
@@ -138,11 +148,13 @@ not_training <- not_self_emp %>%
   filter(jbstat_t1%notin%c("Govt training scheme", "On apprenticeship"))
 
 # exclude
-temp_df <- in_emp_t0 %>%  filter(jbstat_t1%in%c("Govt training scheme", 
+temp_df <- not_self_emp %>%  filter(jbstat_t1%in%c("Govt training scheme", 
                                                 "On apprenticeship"))
-temp2 <- temp_df %>% summarise(n=n()) %>% 
+temp2 <- temp_df %>%   
+  group_by(exposure1) %>% 
+  summarise(n=n()) %>% 
   mutate(exc_reason = "government training scheme or apprenticeship at t1")
-pair_cc_exc <- pair_cc_exc %>% 
+pair_cc_att <- pair_cc_att %>% 
   bind_rows(temp2)
 
 ## not in full-time education at t1
@@ -152,10 +164,12 @@ not_fe <- not_training %>%
 
 # exclude
 temp_df <- not_training %>%  filter(jbstat_t1 %in% c("full-time student", 
-                                                       "Full-time student"))
-temp2 <- temp_df %>% summarise(n=n()) %>% 
+                                                     "Full-time student"))
+temp2 <- temp_df %>% 
+  group_by(exposure1) %>% 
+  summarise(n=n()) %>% 
   mutate(exc_reason = "full-time student at t1")
-pair_cc_exc <- pair_cc_exc %>% 
+pair_cc_att <- pair_cc_att %>% 
   bind_rows(temp2)
 
 ## not retired at t1
@@ -166,10 +180,12 @@ not_retired <- not_fe %>%
 
 # exclude
 temp_df <- not_fe %>% filter(retchk_flag_t1==1 | 
-                             jbstat_t1 %in% c("Retired","retired")) 
-temp2 <- temp_df %>% summarise(n=n()) %>% 
+                               jbstat_t1 %in% c("Retired","retired")) 
+temp2 <- temp_df %>% 
+  group_by(exposure1) %>% 
+  summarise(n=n()) %>% 
   mutate(exc_reason = "retired at t1")
-pair_cc_exc <- pair_cc_exc %>% 
+pair_cc_att <- pair_cc_att %>% 
   bind_rows(temp2)
 
 
@@ -180,10 +196,12 @@ not_mat <- not_retired %>%
 
 # exclude
 temp_df <- not_retired %>% filter(jbstat_t1 %in% c("on maternity leave",
-                                              "On maternity leave")) 
-temp2 <- temp_df %>% summarise(n=n()) %>% 
+                                                   "On maternity leave")) 
+temp2 <- temp_df %>% 
+  group_by(exposure1) %>% 
+  summarise(n=n()) %>% 
   mutate(exc_reason = "on maternity leave at t1")
-pair_cc_exc <- pair_cc_exc %>% 
+pair_cc_att <- pair_cc_att %>% 
   bind_rows(temp2)
 
 ## not caring for family or home
@@ -193,9 +211,11 @@ not_caring <- not_mat %>%
 
 # exclude
 temp_df <- not_mat %>% filter(jbstat_t1=="Family care or home") 
-temp2 <- temp_df %>% summarise(n=n()) %>% 
+temp2 <- temp_df %>% 
+  group_by(exposure1) %>% 
+  summarise(n=n()) %>% 
   mutate(exc_reason = "caring for family or home at t1")
-pair_cc_exc <- pair_cc_exc %>% 
+pair_cc_att <- pair_cc_att %>% 
   bind_rows(temp2)
 
 ## not long-term sick or disabled at t1
@@ -205,9 +225,11 @@ not_lts <- not_caring %>%
 
 # exclude
 temp_df <- not_caring %>% filter(jbstat_t1=="LT sick or disabled") 
-temp2 <- temp_df %>% summarise(n=n()) %>% 
+temp2 <- temp_df %>% 
+  group_by(exposure1) %>% 
+  summarise(n=n()) %>% 
   mutate(exc_reason = "long-term sick or disabled at t1")
-pair_cc_exc <- pair_cc_exc %>% 
+pair_cc_att <- pair_cc_att %>% 
   bind_rows(temp2)
 
 # not other unspecified employment status at t1
@@ -217,10 +239,12 @@ not_other <- not_lts %>%
 
 # exclude
 temp_df <- not_lts %>% filter(jbstat_t1%in%c("doing something else",
-                                                "Doing something else")) 
-temp2 <- temp_df %>% summarise(n=n()) %>% 
+                                             "Doing something else")) 
+temp2 <- temp_df %>% 
+  group_by(exposure1) %>% 
+  summarise(n=n()) %>% 
   mutate(exc_reason = "other unspecified employment status at t1")
-pair_cc_exc <- pair_cc_exc %>% 
+pair_cc_att <- pair_cc_att %>% 
   bind_rows(temp2)
 
 ## not inapplicable or proxy outcome measure at t0 or t1
@@ -237,63 +261,49 @@ valid_outcomes <- not_other %>%
 
 
 # exclude
-temp_df <- not_other %>% filter(sf12pcs_dv_t0=="inapplicable/proxy"|
-                                   sf12pcs_dv_t1=="inapplicable/proxy"|
-                                   sf12mcs_dv_t0=="inapplicable/proxy"|
-                                   sf12pcs_dv_t1=="inapplicable/proxy"|
-                                   srh_bin_t0=="inapplicable/proxy"|
-                                   srh_bin_t1=="inapplicable/proxy"|
-                                   ghq_case4_t0=="inapplicable/proxy"|
-                                   ghq_case4_t1=="inapplicable/proxy") 
-temp2 <- temp_df %>% summarise(n=n()) %>% 
+temp_df <- not_other %>% filter(sf12pcs_dv_t0%in%c("inapplicable/proxy","missing")|
+                                  sf12pcs_dv_t1%in%c("inapplicable/proxy","missing")|
+                                  sf12mcs_dv_t0%in%c("inapplicable/proxy","missing")|
+                                  sf12pcs_dv_t1%in%c("inapplicable/proxy","missing")|
+                                  srh_bin_t0%in%c("inapplicable/proxy","missing")|
+                                  srh_bin_t1%in%c("inapplicable/proxy","missing")|
+                                  ghq_case4_t0%in%c("inapplicable/proxy","missing")|
+                                  ghq_case4_t1%in%c("inapplicable/proxy","missing")) 
+temp2 <- temp_df %>% 
+  group_by(exposure1) %>% 
+  summarise(n=n()) %>% 
   mutate(exc_reason = "health outcomes not measured at t0 or t1")
-pair_cc_exc <- pair_cc_exc %>% 
+pair_cc_att <- pair_cc_att %>% 
   bind_rows(temp2)
-## valid weight at t1
-# include
-#valid_wt <- not_retired %>% 
-#  filter(wt_valid_flag==1)
-
-# exclude
-#temp_df <- not_retired %>% filter(wt_valid_flag!=1)
-#temp2 <- temp_df %>% summarise(n=n()) %>% 
-#  mutate(exc_reason = "no valid weight")
-#pair_cc_exc <- pair_cc_exc %>% 
-#  bind_rows(temp2)
-
 
 #### final df's
-pair_eligible <- valid_outcomes
+pair_no_att <- valid_outcomes
 
-################################################################################
-#####                       create exposure variables                      #####
-################################################################################
-
-pair_eligible <- pair_eligible %>%
-  # prevention of unemployment at t1
-  mutate(exposure1 = ifelse(jbstat_t1%in%c("unemployed","Unemployed"),
-                            "unexposed","exposed (employed at t1)")) %>% 
-  # prevention of job loss between t0 and t1
-  mutate(exposure2 = ifelse(jbstat_t1 %in% c("unemployed","unemployed"), 
-                            "exposed (no job loss between t0 and t1",
-                            ifelse(nunmpsp_dv_t1==0,
-                                   "exposed (no job loss between t0 and t1",
-                            "unexposed"))) 
 
 ### recode missing categories as NA
 
-pair_eligible <- pair_eligible %>% 
+pair_no_att <- pair_no_att %>% 
   mutate(across(.cols = everything(), 
                 .fns = ~ifelse(.x%in%c("missing","Missing"),NA,.x))) 
 
 # check
-sapply(pair_eligible, function(x) sum(is.na(x)))
+sapply(pair_no_att, function(x) sum(is.na(x)))
 
+################################################################################
+#####                                 save                                 #####
+################################################################################
 
-##save
-
-## eligible df for CC and MI analysis
+## eligible/no attrition df for CC and MI analysis
 write_rds(pair_eligible, "./working_data/pair_eligible.rds")
+write_rds(pair_no_att, "./working_data/pair_no_att.rds")
 
+## exclusion criteria
 write_rds(pair_cc_exc, "./working_data/pair_cc_exc.rds")
+write_csv(pair_cc_exc, "./output/cc/pair_cc_exc.csv")
+
+## attrition criteria
+write_rds(pair_cc_att, "./working_data/pair_cc_att.rds")
+write_csv(pair_cc_att, "./output/cc/pair_cc_att.csv")
+
+################################################################################
 
