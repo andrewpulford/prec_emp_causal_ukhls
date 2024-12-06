@@ -58,9 +58,6 @@ df_f_str <- df_f %>%
   dplyr::group_by(Var1) %>%  
   tidyr::spread(key = Var2, value = Freq)
 
-### males
-df_m <- subset(mi_subset2, mi_subset2$sex_dv_t0 == "Male")
-
 
 ################################################################################
 #####                  Female multiple imputation model                    #####
