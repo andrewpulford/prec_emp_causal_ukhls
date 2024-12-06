@@ -57,3 +57,6 @@ combined_df <- female %>%
          lci = ifelse(est_type=="OR", exp(lci),lci),
          uci= ifelse(est_type=="OR", exp(uci),uci))
 
+## save file
+
+write.csv(combined_df, "./output/mi/weighted_outcomes/sub_groups.csv")
