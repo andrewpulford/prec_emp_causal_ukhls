@@ -372,7 +372,6 @@ ps_df <- data.frame(type="propensity score matched",
 #####                                IPTW data                             #####
 ################################################################################
 
-
 #### t0 EQ-5D ------------------------------------------------------------------
 iptw_eq5d_df <- eq5d_mapper(data=iptw_df, 
                             pcs_var = iptw_df$sf12pcs_dv_t0,
@@ -511,3 +510,67 @@ qaly_df <- iptw_df %>%
 
 write.csv(qaly_df, "./output/cc/qaly_df.csv")
 
+################################################################################
+##### scrapbook ######
+################################################################################
+
+#### unweighted ----------------------------------------------------------------
+
+eq5d_test <- pair_cc_analytic %>% 
+  mutate(eq5d_t0 = 0.84690 + 
+         (sf12pcs_dv_t0-49.9)*0.01261 + 
+         (sf12mcs_dv_t0-51.5)*0.00759 -
+         (sf12pcs_dv_t0-49.9)^2*0.00009 - 
+         (sf12mcs_dv_t0-51.5)^2*0.00015 - 
+         (sf12pcs_dv_t0-49.9)*(sf12mcs_dv_t0-51.5)*0.00015) %>% 
+  mutate(eq5d_t1 = 0.84690 + 
+           (sf12pcs_dv_t1-49.9)*0.01261 + 
+           (sf12mcs_dv_t1-51.5)*0.00759 -
+           (sf12pcs_dv_t1-49.9)^2*0.00009 - 
+           (sf12mcs_dv_t1-51.5)^2*0.00015 - 
+           (sf12pcs_dv_t1-49.9)*(sf12mcs_dv_t1-51.5)*0.00015)
+
+
+lawrence_test <- pair_cc_analytic %>% 
+  mutate(eq5d_t0 = -1.6984 +
+           (sf12pcs_dv_t0-49.4)*0.07927 +
+           (sf12mcs_dv_t0-51.4)*0.02859 +
+           (sf12pcs_dv_t0-49.4)*(sf12mcs_dv_t0-51.4)*-0.000126 +
+           (sf12pcs_dv_t0-49.4)^2*-0.00141 +
+           (sf12mcs_dv_t0-51.4)^2*-0.00014 +
+           (sf12pcs_dv_t0-49.4)^3*0.0000107) %>% 
+  mutate(eq5d_t1 = -1.6984 +
+           (sf12pcs_dv_t1-49.4)*0.07927 +
+           (sf12mcs_dv_t1-51.4)*0.02859 +
+           (sf12pcs_dv_t1-49.4)*(sf12mcs_dv_t0-51.4)*-0.000126 +
+           (sf12pcs_dv_t1-49.4)^2*-0.00141 +
+           (sf12mcs_dv_t1-51.4)^2*-0.00014 +
+           (sf12pcs_dv_t1-49.4)^3*0.0000107) 
+
+
+summary(lawrence_test$eq5d_t0)
+hist(unwtd_eq5d_df$eq5d_t0, breaks = 200)
+
+
+plot(unwtd_eq5d_df$eq5d_t0,unwtd_eq5d_df$sf12pcs_dv_t0)
+
+unwtd_eq5d_df %>% group_by(exposure1) %>% summarise(mean(eq5d_t0))
+
+boxplot(unwtd_eq5d_df$eq5d_t0 ~ unwtd_eq5d_df$exposure1)
+
+
+#1.	Calculate total QALYs at T0 by exposure group
+#2.	Calculate total QALYs at T1 by exposure group
+unwtd_qaly_df2 <- eq5d_test %>% 
+  group_by(exposure1) %>% 
+  summarise(total_qaly_t0 = sum(eq5d_t0),
+            total_qaly_t1 = sum(eq5d_t1),
+            d = n()) %>% 
+#3.	Deduct 1 from 2 to give total QALY change by exposure group
+  mutate(total_qaly_diff = total_qaly_t0-total_qaly_t1,
+#4.	Divide 3 by the group size to give QALY change per person by exposure group
+         qaly_diff_person = total_qaly_diff/d)
+#5.	Compare 4 between exposure groups to give average treatment effect. 
+#ate <- 
+
+##  Be careful of negative numbers in any algebraic manipulations.
