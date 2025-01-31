@@ -36,6 +36,7 @@ library(survey)
 library(glmmTMB) # for multi-level modelling (faster than lme4)
 #remotes::install_github("ngreifer/MatchIt")
 library(miceadds) # for working with imputed dataset
+library(tableone) # for descriptive tables
 
 ################################################################################
 #####                         load and prepare data                        #####
@@ -120,6 +121,8 @@ myDefaultMethod <- as.vector(df_f_str$method)
 ## define a custom predictorMatrix
 # in matrix 1s are included in model; 0s are not
 myPredictorMatrix <- make.predictorMatrix(df_f)
+myPredictorMatrix[,"sex_dv_t0"] <- 0 # add sex in as it is constant
+myPredictorMatrix["sex_dv_t0",] <- 0 # add sex in as it is constant
 myPredictorMatrix[,"pidp"] <- 0
 myPredictorMatrix["pidp",] <- 0
 myPredictorMatrix[,"exp1_bin"] <- 0
@@ -151,8 +154,9 @@ set.seed(52267)
 start_time <- Sys.time()
 ### for final MI model run 25 imputations and 10 iterations
 ## run fewer when testing code
-imps2_f <- mice(df_f, m=25, maxit = 10,
-              #imps2 <- mice(df_f, m=15, maxit = 10,
+imps2_f <- mice(
+              df_f, m=25, maxit = 10, # full model
+              #df_f, m=10, maxit = 5, # short model for testing
               #defaultMethod=myDefaultMethod, 
               predictorMatrix=myPredictorMatrix,
               printFlag = FALSE)
@@ -265,14 +269,175 @@ dev.off()
 #####                               Descriptives                           #####
 ################################################################################
 
-### leave for now
-# use createtableone and leave SMDs for next script
-#table_one_ps <- with(weightit_df, CreateTableOne(
-#  vars = cov_vector,
-#  data=as.data.frame(mget(ls())), 
-#  factorVars=catVars_short_vec,
-#  strata = "exposure1", test =TRUE))
+## need to re-write for this script
 
+#### prep the data -------------------------------------------------------------
+
+### create complete df of all imputations
+weightit_f_complete <- complete(weightit_f, "long") %>% 
+  # rename weights as it throws an error otherwise
+  rename("ps_weights" = "weights") %>% 
+  mutate(dep_child_bin_t0 = ifelse(dep_child_bin_t0==1,"Yes","No"))
+
+### create IPTW weighted df
+svy_weightit_f_complete <- svydesign(ids = ~1,
+                                      data = weightit_f_complete,
+                                      weights = ~ps_weights)
+
+### create table one
+table_one_f <- svyCreateTableOne(vars = cov_vector,
+                               data=svy_weightit_f_complete, 
+                               #  factorVars=catVars_short_vec,
+                               strata = "exposure1", 
+                               test =FALSE)
+
+
+## non-normal numeric vector for table one
+# temp df with only numeric vars
+temp <- weightit_f_complete %>% dplyr::select(c(age_dv_t0,
+                                                 sf12pcs_dv_t0,
+                                                 sf12mcs_dv_t0))
+# vector for numeric vars
+nonnorm_vec <- colnames(temp)
+
+## printed version for saving
+table_one_f_sav <- print(table_one_f, showAllLevels = TRUE, smd = FALSE,
+                       nonnormal = nonnorm_vec,
+                       factorVars = c(catVars_vec),
+                       formatOptions = list(big.mark = ",",
+                                            scientific = FALSE))
+
+### save table one
+## NOTE: will have to divide number of cases by number of imputations to get pooled 
+## values; other stats should be correct
+write.csv(table_one_f_sav, "./output/mi/sub_groups/sex/table_one_unpooled_f.csv")
+
+################################################################################
+#####                           sort out table 1                           #####
+################################################################################
+
+table_one_f_sav <- read.csv("./output/mi/sub_groups/sex/table_one_unpooled_f.csv")
+
+#### unexposed -----------------------------------------------------------------
+
+## trim whitespace at both ends of strings
+table_one_f_sav$unexposed <- trimws(table_one_f_sav$unexposed)
+
+### extract first part of string
+table_one_f_sav$unexposed_temp <- sub("\\ .*","",table_one_f_sav$unexposed)
+## remove commas to allow conversion to numeric
+table_one_f_sav$unexposed_temp <- sub(",","",table_one_f_sav$unexposed_temp)
+## convert to numeric
+table_one_f_sav$unexposed_temp <- as.numeric(table_one_f_sav$unexposed_temp)
+
+## extract second part of string
+table_one_f_sav$unexposed_temp2 <- sub("^[^ ]+.","",table_one_f_sav$unexposed)
+
+## divide number of cases by number of imputations (n=25)
+table_one_f_sav <- table_one_f_sav %>% 
+  mutate(unexposed_temp = ifelse(X %in% c("age_dv_t0 (median [IQR])",
+                                          "sf12mcs_dv_t0 (median [IQR])",
+                                          "sf12pcs_dv_t0 (median [IQR])"),unexposed_temp,
+                                 unexposed_temp/25))
+
+## recreate unexposed var
+table_one_f_sav$unexposed <- paste(table_one_f_sav$unexposed_temp,table_one_f_sav$unexposed_temp2)
+
+#### exposed -------------------------------------------------------------------
+
+## trim whitespace at both ends of strings
+table_one_f_sav$exposed..employed.at.t1. <- trimws(table_one_f_sav$exposed..employed.at.t1.)
+
+### extract first part of string
+table_one_f_sav$exposed_temp <- sub("\\ .*","",table_one_f_sav$exposed..employed.at.t1.)
+## remove commas to allow conversion to numeric
+table_one_f_sav$exposed_temp <- sub(",","",table_one_f_sav$exposed_temp)
+table_one_f_sav$exposed_temp <- sub(",","",table_one_f_sav$exposed_temp)
+## convert to numeric
+table_one_f_sav$exposed_temp <- as.numeric(table_one_f_sav$exposed_temp)
+
+## extract second part of string
+table_one_f_sav$exposed_temp2 <- sub("^[^ ]+.","",table_one_f_sav$exposed..employed.at.t1)
+
+## divide number of cases by number of imputations (n=25)
+table_one_f_sav <-  table_one_f_sav %>% 
+  mutate(exposed_temp = ifelse(X %in% c("age_dv_t0 (median [IQR])",
+                                        "sf12mcs_dv_t0 (median [IQR])",
+                                        "sf12pcs_dv_t0 (median [IQR])"),exposed_temp,
+                               exposed_temp/25))
+
+## recreate exposed var
+table_one_f_sav$exposed..employed.at.t1. <- paste(table_one_f_sav$exposed_temp,table_one_f_sav$exposed_temp2)
+
+## keep only required cols
+table_one_f_sav  <-  table_one_f_sav %>% dplyr::select(c("X", "level", "unexposed", "exposed..employed.at.t1."))
+
+write.csv(table_one_f_sav, "./output/mi/sub_groups/sex/table_one_f_PAPER.csv")
+
+################################################################################
+#####                         outcome descriptives                         #####
+################################################################################
+
+#### prep the data -------------------------------------------------------------
+
+### create complete df of all imputations
+outcomes_f_complete <- weightit_f_complete %>% 
+  dplyr::select(c(exposure1, 
+                  sf12mcs_dv_t0, sf12mcs_dv_t1,
+                  sf12pcs_dv_t0, sf12pcs_dv_t1,
+                  ghq_case4_t0, ghq_case4_t1,
+                  srh_bin_t0, srh_bin_t1,
+                  ps_weights))
+
+### create IPTW weighted df
+svy_outcomes_f_complete <- svydesign(ids = ~1,
+                                     data = outcomes_f_complete,
+                                     weights = ~ps_weights)
+
+### create table one
+table_outcomes_f <- svyCreateTableOne(
+                                 vars = c("sf12mcs_dv_t0", "sf12mcs_dv_t1",
+                                          "sf12pcs_dv_t0", "sf12mcs_dv_t1",
+                                          "ghq_case4_t0", "ghq_case4_t1",
+                                          "srh_bin_t0", "srh_bin_t1"),
+                                 data=svy_outcomes_f_complete, 
+                                 #  factorVars=catVars_short_vec,
+                                 strata = "exposure1", 
+                                 test =FALSE)
+
+
+## printed version for saving
+table_outcomes_f_sav <- print(table_outcomes_f, showAllLevels = TRUE, smd = FALSE,
+#                         nonnormal = nonnorm_vec,
+#                         factorVars = c(catVars_vec),
+                         formatOptions = list(big.mark = ",",
+                                              scientific = FALSE))
+
+write.csv(table_outcomes_f_sav, "./output/mi/sub_groups/sex/table_outcomes_f.csv")
+
+
+################################################################################
+#####                    T0 and T1 outcome descriptives                    #####
+################################################################################
+#
+#outcomes_desc <- svyCreateTableOne(vars = c("sf12pcs_dv_t0","sf12pcs_dv_t1",
+#                                            "sf12mcs_dv_t0","sf12mcs_dv_t1",
+#                                            "srh_bin_t0","srh_bin_t1",
+#                                            "ghq_case4_t0", "ghq_case4_t1"),
+#                                   data=svy_weightit_df_complete, 
+#                                   #  factorVars=catVars_short_vec,
+#                                   strata = "exposure1", 
+#                                   test =FALSE)
+#
+## printed version for saving
+#outcomes_desc_sav <- print(outcomes_desc, showAllLevels = FALSE, smd = FALSE,
+#                           #                      nonnormal = nonnorm_vec,
+#                           factorVars = c(catVars_vec),
+#                           formatOptions = list(big.mark = ",",
+#                                                scientific = FALSE))
+#
+#write.csv(outcomes_desc_sav, "./output/mi/weighted_descriptives/outcomes_desc.csv")
+#
 
 ################################################################################
 #####                      IPTW double-robust model                        #####
@@ -369,7 +534,8 @@ iptw_dr_srh <- function(data){
                  #                                    sex_dv_t0*age_dv_t0 +
                  #                                    sex_dv_t0*rel_pov_t0 +
                  age_dv_t0*rel_pov_t0 +
-                 (1|pidp)))
+                 (1|pidp),
+               family=binomial(link="logit")))
 }
 
 ### ghq-12
@@ -400,7 +566,8 @@ iptw_dr_ghq <- function(data){
                  #                                    sex_dv_t0*age_dv_t0 +
                  #                                    sex_dv_t0*rel_pov_t0 +
                  age_dv_t0*rel_pov_t0 +
-                 (1|pidp)))
+                 (1|pidp),
+                 family=binomial(link="logit")))
 }
 
 #### females -------------------------------------------------------------------
@@ -491,4 +658,4 @@ write.csv(combined_df, "./output/mi/weighted_outcomes/mi_dr_iptw_df_sex_f.csv")
 ##################
 
 
-sapply(complete(imputed_data,"long"), function(x) sum(is.na(x)))
+sapply(complete(imps2_f,"long"), function(x) sum(is.na(x)))
