@@ -366,7 +366,8 @@ iptw_dr_srh <- function(data){
                  sex_dv_t0*age_dv_t0 +
                  #                                    sex_dv_t0*rel_pov_t0 +
                  #                                    age_dv_t0*rel_pov_t0 +
-                 (1|pidp)))
+                 (1|pidp),
+               family=binomial(link="logit")))
 }
 
 ### ghq-12
@@ -397,7 +398,8 @@ iptw_dr_ghq <- function(data){
                  sex_dv_t0*age_dv_t0 +
                  #                                    sex_dv_t0*rel_pov_t0 +
                  #                                    age_dv_t0*rel_pov_t0 +
-                 (1|pidp)))
+                 (1|pidp),
+               family=binomial(link="logit")))
 }
 
 #### females -------------------------------------------------------------------
@@ -487,4 +489,4 @@ write.csv(combined_df, "./output/mi/weighted_outcomes/mi_dr_iptw_df_rel_pov_n.cs
 ##################
 
 
-#sapply(complete(imputed_data,"long"), function(x) sum(is.na(x)))
+sapply(complete(imps2_not_rel_pov,"long"), function(x) sum(is.na(x)))
