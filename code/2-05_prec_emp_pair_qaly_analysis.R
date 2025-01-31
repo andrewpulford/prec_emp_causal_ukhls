@@ -516,6 +516,7 @@ write.csv(qaly_df, "./output/cc/qaly_df.csv")
 
 #### unweighted ----------------------------------------------------------------
 
+## Franks
 eq5d_test <- pair_cc_analytic %>% 
   mutate(eq5d_t0 = 0.84690 + 
          (sf12pcs_dv_t0-49.9)*0.01261 + 
@@ -530,35 +531,55 @@ eq5d_test <- pair_cc_analytic %>%
            (sf12mcs_dv_t1-51.5)^2*0.00015 - 
            (sf12pcs_dv_t1-49.9)*(sf12mcs_dv_t1-51.5)*0.00015)
 
-
+## Lawrence
 lawrence_test <- pair_cc_analytic %>% 
   mutate(eq5d_t0 = -1.6984 +
-           (sf12pcs_dv_t0-49.4)*0.07927 +
-           (sf12mcs_dv_t0-51.4)*0.02859 +
-           (sf12pcs_dv_t0-49.4)*(sf12mcs_dv_t0-51.4)*-0.000126 +
-           (sf12pcs_dv_t0-49.4)^2*-0.00141 +
-           (sf12mcs_dv_t0-51.4)^2*-0.00014 +
-           (sf12pcs_dv_t0-49.4)^3*0.0000107) %>% 
+           (sf12pcs_dv_t0)*0.07927 +
+           (sf12mcs_dv_t0)*0.02859 +
+           (sf12pcs_dv_t0)*(sf12mcs_dv_t0)*-0.000126 +
+           (sf12pcs_dv_t0)^2*-0.00141 +
+           (sf12mcs_dv_t0)^2*-0.00014 +
+           (sf12pcs_dv_t0)^3*0.0000107) %>% 
   mutate(eq5d_t1 = -1.6984 +
-           (sf12pcs_dv_t1-49.4)*0.07927 +
-           (sf12mcs_dv_t1-51.4)*0.02859 +
-           (sf12pcs_dv_t1-49.4)*(sf12mcs_dv_t0-51.4)*-0.000126 +
-           (sf12pcs_dv_t1-49.4)^2*-0.00141 +
-           (sf12mcs_dv_t1-51.4)^2*-0.00014 +
-           (sf12pcs_dv_t1-49.4)^3*0.0000107) 
+           (sf12pcs_dv_t1)*0.07927 +
+           (sf12mcs_dv_t1)*0.02859 +
+           (sf12pcs_dv_t1)*(sf12mcs_dv_t0)*-0.000126 +
+           (sf12pcs_dv_t1)^2*-0.00141 +
+           (sf12mcs_dv_t1)^2*-0.00014 +
+           (sf12pcs_dv_t1)^3*0.0000107) 
 
 
 summary(lawrence_test$eq5d_t0)
-hist(unwtd_eq5d_df$eq5d_t0, breaks = 200)
+hist(lawrence_test$eq5d_t0, breaks = 200)
 
 
-plot(unwtd_eq5d_df$eq5d_t0,unwtd_eq5d_df$sf12pcs_dv_t0)
+plot(lawrence_test$eq5d_t0,lawrence_test$sf12pcs_dv_t0)
 
-unwtd_eq5d_df %>% group_by(exposure1) %>% summarise(mean(eq5d_t0))
+lawrence_test %>% group_by(exposure1) %>% summarise(mean(eq5d_t0))
 
-boxplot(unwtd_eq5d_df$eq5d_t0 ~ unwtd_eq5d_df$exposure1)
+boxplot(lawrence_test$eq5d_t0 ~ lawrence_test$exposure1)
+
+# simpler Lawrence
+lawrence_test2 <- pair_cc_analytic %>% 
+  mutate(eq5d_t0 = -0.372 +
+           (sf12pcs_dv_t0)*0.01411 +
+           (sf12mcs_dv_t0)*0.00967) %>%  
+  mutate(eq5d_t1 = -0.372 +
+           (sf12pcs_dv_t1)*0.01411 +
+           (sf12mcs_dv_t1)*0.00967)
+
+summary(lawrence_test2$eq5d_t0)
+hist(lawrence_test2$eq5d_t0, breaks = 200)
 
 
+plot(lawrence_test2$eq5d_t0,lawrence_test2$sf12pcs_dv_t0)
+
+lawrence_test2 %>% group_by(exposure1) %>% summarise(mean(eq5d_t0))
+
+boxplot(lawrence_test2$eq5d_t0 ~ lawrence_test2$exposure1)
+
+### qaly calculations
+## Franks 
 #1.	Calculate total QALYs at T0 by exposure group
 #2.	Calculate total QALYs at T1 by exposure group
 unwtd_qaly_df2 <- eq5d_test %>% 
@@ -567,10 +588,31 @@ unwtd_qaly_df2 <- eq5d_test %>%
             total_qaly_t1 = sum(eq5d_t1),
             d = n()) %>% 
 #3.	Deduct 1 from 2 to give total QALY change by exposure group
-  mutate(total_qaly_diff = total_qaly_t0-total_qaly_t1,
+  mutate(total_qaly_diff = total_qaly_t1-total_qaly_t0,
 #4.	Divide 3 by the group size to give QALY change per person by exposure group
          qaly_diff_person = total_qaly_diff/d)
 #5.	Compare 4 between exposure groups to give average treatment effect. 
-#ate <- 
+ate <- unwtd_qaly_df2$qaly_diff_person[unwtd_qaly_df2$exposure1=="exposed (employed at t1)"] - unwtd_qaly_df2$qaly_diff_person[unwtd_qaly_df2$exposure1=="unexposed"]
 
-##  Be careful of negative numbers in any algebraic manipulations.
+## Lawrence 
+#1.	Calculate total QALYs at T0 by exposure group
+#2.	Calculate total QALYs at T1 by exposure group
+unwtd_qaly_df3 <- lawrence_test %>% 
+  group_by(exposure1) %>% 
+  summarise(total_qaly_t0 = sum(eq5d_t0),
+            total_qaly_t1 = sum(eq5d_t1),
+            d = n()) %>% 
+  #3.	Deduct 1 from 2 to give total QALY change by exposure group
+  mutate(total_qaly_diff = total_qaly_t1-total_qaly_t0,
+         #4.	Divide 3 by the group size to give QALY change per person by exposure group
+         qaly_diff_person = total_qaly_diff/d)
+#5.	Compare 4 between exposure groups to give average treatment effect. 
+ate2 <- unwtd_qaly_df3$qaly_diff_person[unwtd_qaly_df3$exposure1=="exposed (employed at t1)"] - unwtd_qaly_df3$qaly_diff_person[unwtd_qaly_df3$exposure1=="unexposed"]
+
+max(lawrence_test$eq5d_t0)
+max(lawrence_test$eq5d_t1)
+
+lawrence_test2 %>% filter(eq5d_t0>1) %>% 
+  dplyr::select(sf12pcs_dv_t0,sf12mcs_dv_t0,eq5d_t0)
+
+    
