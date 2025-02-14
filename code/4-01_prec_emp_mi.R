@@ -99,9 +99,22 @@ rm(temp)
 #                    "don't know")
 #
 
+# check
 sapply(pair_eligible, function(x) sum(is.na(x)))
 
+### convert string missing terms into NAs
+pair_eligible <- pair_eligible %>% mutate(across(.cols = everything(),
+                                        .fns = ~ifelse(.%in% c("missing", "Missing",
+                                                 "inapplicable", "proxy",
+                                                 "refusal", 
+                                                 "Only available for IEMB", 
+                                                 "Not available for IEMB",
+                                                 "don't know"),NA,.x)))
 
+# check again
+sapply(pair_eligible, function(x) sum(is.na(x)))
+
+### create NA df
 pair_eligible_na <- pair_eligible %>% 
   #  mutate(across(everything(), as.character)) %>% 
   mutate(across(.cols = everything(), 
@@ -238,24 +251,24 @@ pair_eligible <- pair_eligible %>%
 #### sex -----------------------------------------------------------------------
 
 pair_eligible <- pair_eligible %>% 
-  mutate(sex_pcs = sex_bin*sf12pcs_dv_t1, ### SF-12 PCS
-         sex_mcs = sex_bin*sf12mcs_dv_t1,### SF-12 MCS
+  mutate(sex_pcs = sex_bin*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)), ### SF-12 PCS
+         sex_mcs = sex_bin*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1, na.rm = TRUE)),### SF-12 MCS
          sex_srh = sex_bin*srh_bin2, ### SRH
          sex_ghq = sex_bin*ghq_bin) ### GHQ-12
 
 #### age -----------------------------------------------------------------------
 
 pair_eligible <- pair_eligible %>% 
-  mutate(age_pcs = age_dv_t0*sf12pcs_dv_t1, ### SF-12 PCS
-         age_mcs = age_dv_t0*sf12mcs_dv_t1,### SF-12 MCS
-         age_srh = age_dv_t0*srh_bin2, ### SRH
-         age_ghq = age_dv_t0*ghq_bin) ### GHQ-12
+  mutate(age_pcs = age_bin*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)), ### SF-12 PCS
+         age_mcs = age_bin*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1, na.rm = TRUE)),### SF-12 MCS
+         age_srh = age_bin*srh_bin2, ### SRH
+         age_ghq = age_bin*ghq_bin) ### GHQ-12
 
 #### relative poverty ----------------------------------------------------------
 
 pair_eligible <- pair_eligible %>% 
-  mutate(rel_pov_pcs = rel_pov_bin*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)), ### SF-12 PCS
-         rel_pov_mcs = rel_pov_bin*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1)),### SF-12 MCS
+  mutate(rel_pov_pcs = rel_pov_bin*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)), ### SF-12 PCS
+         rel_pov_mcs = rel_pov_bin*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1, na.rm = TRUE)),### SF-12 MCS
          rel_pov_srh = rel_pov_bin*srh_bin2, ### SRH
          rel_pov_ghq = rel_pov_bin*ghq_bin) ### GHQ-12
 
@@ -656,16 +669,16 @@ mi_subset2_str$method[mi_subset2_str$Var1=="age_dv_t1"] <- "norm" # norm if incl
 mi_subset2_str$method[mi_subset2_str$Var1=="marital_status_t1"] <- "polyreg" #polyreg if including
 mi_subset2_str$method[mi_subset2_str$Var1=="health_t1"] <- "logreg"
 mi_subset2_str$method[mi_subset2_str$Var1=="exp1_bin"] <- ""
-mi_subset2_str$method[mi_subset2_str$Var1=="sex_pcs"] <- "~I(sex_dv_t0*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)))"
-mi_subset2_str$method[mi_subset2_str$Var1=="sex_mcs"] <- "~I(sex_dv_t0*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1)))"
+mi_subset2_str$method[mi_subset2_str$Var1=="sex_pcs"] <- "~I(sex_dv_t0*sf12pcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)))"
+mi_subset2_str$method[mi_subset2_str$Var1=="sex_mcs"] <- "~Isf12pcs_dv_t1-mean(sf12mcs_dv_t1, na.rm = TRUE)))"
 mi_subset2_str$method[mi_subset2_str$Var1=="sex_srh"] <- "~I(sex_dv_t0*srh_bin2)"
 mi_subset2_str$method[mi_subset2_str$Var1=="sex_ghq"] <- "~I(sex_dv_t0*ghq_bin)"
-mi_subset2_str$method[mi_subset2_str$Var1=="age_pcs"] <- "~I(age_dv_t0*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)))"
-mi_subset2_str$method[mi_subset2_str$Var1=="age_mcs"] <- "~I(age_dv_t0*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1)))"
-mi_subset2_str$method[mi_subset2_str$Var1=="age_srh"] <- "~I(age_dv_t0*srh_bin2)"
-mi_subset2_str$method[mi_subset2_str$Var1=="age_ghq"] <- "~I(age_dv_t0*ghq_bin)"
-mi_subset2_str$method[mi_subset2_str$Var1=="rel_pov_pcs"] <- "~I(rel_pov_t0*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)))"
-mi_subset2_str$method[mi_subset2_str$Var1=="rel_pov_mcs"] <- "~I(rel_pov_t0*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1)))"
+mi_subset2_str$method[mi_subset2_str$Var1=="age_pcs"] <- "~I(age_bin*sf12pcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)))"
+mi_subset2_str$method[mi_subset2_str$Var1=="age_mcs"] <- "~I(age_bin*sf12mcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)))"
+mi_subset2_str$method[mi_subset2_str$Var1=="age_srh"] <- "~I(age_bin*srh_bin2)"
+mi_subset2_str$method[mi_subset2_str$Var1=="age_ghq"] <- "~I(age_bin*ghq_bin)"
+mi_subset2_str$method[mi_subset2_str$Var1=="rel_pov_pcs"] <- "~I(rel_pov_t0*sf12pcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)))"
+mi_subset2_str$method[mi_subset2_str$Var1=="rel_pov_mcs"] <- "~I(rel_pov_t0*sf12mcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)))"
 mi_subset2_str$method[mi_subset2_str$Var1=="rel_pov_srh"] <- "~I(rel_pov_t0*srh_bin2)"
 mi_subset2_str$method[mi_subset2_str$Var1=="rel_pov_ghq"] <- "~I(rel_pov_t0*ghq_bin)"
 
