@@ -603,7 +603,7 @@ mi_subset2$health_t1 <- factor(mi_subset2$health_t1,
 
 ## reverse binary exposure var for matching 3:1
 mi_subset2 <- mi_subset2 %>% 
-  mutate(exp1_bin = ifelse(exposure2=="exposed (no job loss between t0 and t1",
+  mutate(exp2_bin = ifelse(exposure2=="exposed (no job loss between t0 and t1",
                            0,1)) # 1 = unexposed as in PS matching
 
 
@@ -655,7 +655,7 @@ mi_subset2_str$method[mi_subset2_str$Var1=="dep_child_bin_t0"] <- "logreg"
 mi_subset2_str$method[mi_subset2_str$Var1=="age_dv_t1"] <- "norm" # norm if including
 mi_subset2_str$method[mi_subset2_str$Var1=="marital_status_t1"] <- "polyreg" #polyreg if including
 mi_subset2_str$method[mi_subset2_str$Var1=="health_t1"] <- "logreg"
-mi_subset2_str$method[mi_subset2_str$Var1=="exp1_bin"] <- ""
+mi_subset2_str$method[mi_subset2_str$Var1=="exp2_bin"] <- ""
 mi_subset2_str$method[mi_subset2_str$Var1=="sex_pcs"] <- "~I(sex_dv_t0*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)))"
 mi_subset2_str$method[mi_subset2_str$Var1=="sex_mcs"] <- "~I(sex_dv_t0*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1)))"
 mi_subset2_str$method[mi_subset2_str$Var1=="sex_srh"] <- "~I(sex_dv_t0*srh_bin2)"
@@ -680,8 +680,8 @@ myDefaultMethod <- as.vector(mi_subset2_str$method)
 myPredictorMatrix <- make.predictorMatrix(mi_subset2)
 myPredictorMatrix[,"pidp"] <- 0
 myPredictorMatrix["pidp",] <- 0
-myPredictorMatrix[,"exp1_bin"] <- 0
-myPredictorMatrix["exp1_bin",] <- 0
+myPredictorMatrix[,"exp2_bin"] <- 0
+myPredictorMatrix["exp2_bin",] <- 0
 # these are needed for interaction term calculation in passive imps but should be ignored otherwise
 myPredictorMatrix[,"srh_bin2"] <- 0
 myPredictorMatrix["srh_bin2",] <- 0
