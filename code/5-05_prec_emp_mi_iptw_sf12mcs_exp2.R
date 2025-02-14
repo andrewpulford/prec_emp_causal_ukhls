@@ -68,7 +68,7 @@ sapply(complete(weightit_df,"long"), function(x) sum(is.na(x)))
 weightit_mods_mcs <- with(data = weightit_df, 
                           exp = glmmTMB(sf12mcs_dv_t1 ~
                                               # exposure
-                                              exposure1 +
+                                              exposure2 +
                                               # t0 outcome measure
                                               sf12mcs_dv_t1 +
                                               # t0 covariates
@@ -107,7 +107,7 @@ weightit_pooled_mcs <- pool(weightit_mods_mcs)
 weightit_pooled_mcs_df <- data.frame(summary(weightit_pooled_mcs, conf.int = TRUE)) %>% 
   rename(lci = X2.5..,
          uci = X97.5..)  %>% 
-  mutate(term = str_remove(term, "exposure1"),
+  mutate(term = str_remove(term, "exposure2"),
          outcome = "SF-12 MCS",
          est_type = "coefficient",
          p.value = ifelse(p.value<0.001,"<0.001",
