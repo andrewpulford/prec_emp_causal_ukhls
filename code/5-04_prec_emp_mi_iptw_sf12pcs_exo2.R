@@ -66,7 +66,7 @@ sapply(complete(weightit_df,"long"), function(x) sum(is.na(x)))
 
 weightit_mods_pcs <- with(data = weightit_df,
                           exp = glmmTMB(sf12pcs_dv_t1 ~
-                                    exposure1 +
+                                    exposure2 +
                                     sf12pcs_dv_t0 +
                                     sex_dv_t0 +
                                     age_dv_t0 +
@@ -97,7 +97,7 @@ weightit_pooled_pcs <- pool(weightit_mods_pcs)
 weightit_pooled_pcs_df <- data.frame(summary(weightit_pooled_pcs, conf.int = TRUE)) %>% 
   rename(lci = X2.5..,
          uci = X97.5..)  %>% 
-  mutate(term = str_remove(term, "exposure1"),
+  mutate(term = str_remove(term, "exposure2"),
          outcome = "SF-12 PCS",
          est_type = "coefficient",
          p.value = ifelse(p.value<0.001,"<0.001",
@@ -114,30 +114,31 @@ write_rds(weightit_pooled_pcs, "./working_data/mi/weightit_pooled_pcs_exp2.rds")
 
 ################## scrapbook #################
 
-weightit_mods_pcs <- readRDS("./working_data/mi/weightit_mods_pcs_exp2.rds")
-
-### try avg_comparisons for sub-group analysis
-library("marginaleffects")
-comp.imp <- lapply(weightit_mods_pcs, function(weightit_pooled_pcs) {
-  avg_comparisons(weightit_mods_pcs, 
-                  variables = "exposure1",
-                  by = "sex_dv_t0")
-})
-
-pooled.comp <- mice::pool(comp.imp, dfcom = Inf)
-
-### try setting weights to zero for one group
-
-
-complete_imp <- complete(weightit_df,action = "long", include = TRUE)
-sapply(complete_imp, function(x) sum(is.na(x)))
-
-head(complete_imp)
-summary(complete_imp$weights)
-
-
-complete_f <- complete_imp %>% 
-  mutate(weights = ifelse(sex_dv_t0=="Female",weights,0))
-
-
-wiminds_f <- as.mids(complete_f)
+#weightit_mods_pcs <- readRDS("./working_data/mi/weightit_mods_pcs_exp2.rds")#
+#
+#### try avg_comparisons for sub-group analysis
+#library("marginaleffects")
+#comp.imp <- lapply(weightit_mods_pcs, function(weightit_pooled_pcs) {
+#  avg_comparisons(weightit_mods_pcs, 
+#                  variables = "exposure2",
+#                  by = "sex_dv_t0")
+#})
+#
+#pooled.comp <- mice::pool(comp.imp, dfcom = Inf)
+#
+#### try setting weights to zero for one group
+#
+#
+#complete_imp <- complete(weightit_df,action = "long", include = TRUE)
+#sapply(complete_imp, function(x) sum(is.na(x)))#
+#
+#head(complete_imp)
+#summary(complete_imp$weights)
+#
+#
+#complete_df <- complete_imp %>% 
+#  mutate(weights = ifelse(sex_dv_t0=="Female",weights,0))
+#
+#
+#wiminds_df <- as.mids(complete_df)
+#
