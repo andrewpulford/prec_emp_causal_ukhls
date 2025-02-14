@@ -63,7 +63,7 @@ sapply(complete(imputed_data,"long"), function(x) sum(is.na(x)))
 ################################################################################
 
 start_time <- Sys.time()
-weightit_df <- weightthem(exp1_bin ~
+weightit_df <- weightthem(exp2_bin ~
                             sex_dv_t0 +
                             age_dv_t0 +
                             non_white_t0 +
