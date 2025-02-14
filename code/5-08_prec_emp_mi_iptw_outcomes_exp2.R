@@ -1,7 +1,7 @@
 ################################################################################
 
 # Precarious employment and health - Understanding Society
-# 5-08 - IPTW multiple imputed outcome models (combined df) - alternate exposure definition 
+# 6-08 - IPTW multiple imputed outcome models (combined df) - full-time only 
 # Andrew Pulford
 
 # Data source:
@@ -57,6 +57,6 @@ mi_iptw_df <- weightit_pooled_pcs_df %>%
   mutate(uci = ifelse(outcome %in% c("Poor self-rated health",
                                       "GHQ-12 caseness"), exp(uci),uci))
 
-write.csv(mi_iptw_df, "./output/mi/sensitivity_analyses/exposure2/weighted_outcomes/mi_iptw_df_exp2.csv")
+write.csv(mi_iptw_df, "./output/mi/sensitivity_analyses/full-time/exposure2/mi_iptw_df_exp2.csv")
 
 
