@@ -58,6 +58,9 @@ df_not_rel_pov_str <- df_not_rel_pov %>%
   dplyr::group_by(Var1) %>%  
   tidyr::spread(key = Var2, value = Freq)
 
+# check
+sapply(df_not_rel_pov, function(x) sum(is.na(x)))
+
 ################################################################################
 #####                  Younger multiple imputation model                   #####
 ################################################################################
@@ -98,15 +101,15 @@ df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="marital_status_t1"] <- "poly
 df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="health_t1"] <- "logreg"
 df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="exp1_bin"] <- ""
 df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="sex_pcs"] <- "~I(sex_dv_t0*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)))"
-df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="sex_mcs"] <- "~I(sex_dv_t0*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1)))"
+df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="sex_mcs"] <- "~Isf12pcs_dv_t1-mean(sf12mcs_dv_t1, na.rm = TRUE)))"
 df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="sex_srh"] <- "~I(sex_dv_t0*srh_bin2)"
 df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="sex_ghq"] <- "~I(sex_dv_t0*ghq_bin)"
-df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="age_pcs"] <- "~I(age_dv_t0*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)))"
-df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="age_mcs"] <- "~I(age_dv_t0*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1)))"
-df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="age_srh"] <- "~I(age_dv_t0*srh_bin2)"
-df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="age_ghq"] <- "~I(age_dv_t0*ghq_bin)"
-df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="rel_pov_pcs"] <- "~I(rel_pov_t0*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)))"
-df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="rel_pov_mcs"] <- "~I(rel_pov_t0*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1)))"
+df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="age_pcs"] <- "~I(age_bin*sf12pcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)))"
+df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="age_mcs"] <- "~I(age_bin*sf12mcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)))"
+df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="age_srh"] <- "~I(age_bin*srh_bin2)"
+df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="age_ghq"] <- "~I(age_bin*ghq_bin)"
+df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="rel_pov_pcs"] <- "~I(rel_pov_t0*sf12pcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)))"
+df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="rel_pov_mcs"] <- "~I(rel_pov_t0*sf12mcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)))"
 df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="rel_pov_srh"] <- "~I(rel_pov_t0*srh_bin2)"
 df_not_rel_pov_str$method[df_not_rel_pov_str$Var1=="rel_pov_ghq"] <- "~I(rel_pov_t0*ghq_bin)"
 
