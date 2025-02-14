@@ -255,8 +255,8 @@ pair_eligible <- pair_eligible %>%
 #### relative poverty ----------------------------------------------------------
 
 pair_eligible <- pair_eligible %>% 
-  mutate(rel_pov_pcs = rel_pov_bin*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)), ### SF-12 PCS
-         rel_pov_mcs = rel_pov_bin*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1)),### SF-12 MCS
+  mutate(rel_pov_pcs = rel_pov_bin*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)), ### SF-12 PCS
+         rel_pov_mcs = rel_pov_bin*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1, na.rm = TRUE)),### SF-12 MCS
          rel_pov_srh = rel_pov_bin*srh_bin2, ### SRH
          rel_pov_ghq = rel_pov_bin*ghq_bin) ### GHQ-12
 
