@@ -68,7 +68,7 @@ sapply(complete(weightit_df,"long"), function(x) sum(is.na(x)))
 weightit_mods_ghq <- with(data = weightit_df, 
                           exp = glmmTMB(ghq_case4_t1 ~
                                           # exposure
-                                          exposure1 +
+                                          exposure2 +
                                           # t0 outcome measure
                                           ghq_case4_t0 +
                                           # t0 covariates
@@ -103,7 +103,7 @@ weightit_pooled_ghq <- pool(weightit_mods_ghq)
 weightit_pooled_ghq_df <- data.frame(summary(weightit_pooled_ghq, conf.int = TRUE)) %>% 
   rename(lci = X2.5..,
          uci = X97.5..)  %>% 
-  mutate(term = str_remove(term, "exposure1"),
+  mutate(term = str_remove(term, "exposure2"),
          outcome = "GHQ-12 caseness",
          est_type = "coefficient",
          p.value = ifelse(p.value<0.001,"<0.001",
