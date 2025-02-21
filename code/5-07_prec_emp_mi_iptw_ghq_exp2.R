@@ -95,7 +95,7 @@ weightit_mods_ghq <- with(data = weightit_df,
                                           sex_dv_t0*age_dv_t0 +
                                           sex_dv_t0*rel_pov_t0 +
                                           age_dv_t0*rel_pov_t0 +
-                                          (1|pidp)
+                                          (1|pidp),
                                         family=binomial(link="logit")))
 
 weightit_pooled_ghq <- pool(weightit_mods_ghq)
