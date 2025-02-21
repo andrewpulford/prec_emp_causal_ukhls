@@ -114,30 +114,30 @@ write_rds(weightit_pooled_pcs, "./working_data/mi/weightit_pooled_pcs_ft.rds")
 
 ################## scrapbook #################
 
-weightit_mods_pcs <- readRDS("./working_data/mi/weightit_mods_pcs_ft.rds")
-
-### try avg_comparisons for sub-group analysis
-library("marginaleffects")
-comp.imp <- lapply(weightit_mods_pcs, function(weightit_pooled_pcs) {
-  avg_comparisons(weightit_mods_pcs, 
-                  variables = "exposure1",
-                  by = "sex_dv_t0")
-})
-
-pooled.comp <- mice::pool(comp.imp, dfcom = Inf)
-
-### try setting weights to zero for one group
-
-
-complete_imp <- complete(weightit_df,action = "long", include = TRUE)
-sapply(complete_imp, function(x) sum(is.na(x)))
-
-head(complete_imp)
-summary(complete_imp$weights)
-
-
-complete_f <- complete_imp %>% 
-  mutate(weights = ifelse(sex_dv_t0=="Female",weights,0))
-
-
-wiminds_f <- as.mids(complete_f)
+#weightit_mods_pcs <- readRDS("./working_data/mi/weightit_mods_pcs_ft.rds")#
+#
+#### try avg_comparisons for sub-group analysis
+#library("marginaleffects")
+#comp.imp <- lapply(weightit_mods_pcs, function(weightit_pooled_pcs) {
+#  avg_comparisons(weightit_mods_pcs, 
+#                  variables = "exposure1",
+#                  by = "sex_dv_t0")
+#})
+#
+#pooled.comp <- mice::pool(comp.imp, dfcom = Inf)
+#
+#### try setting weights to zero for one group
+#
+#
+#complete_imp <- complete(weightit_df,action = "long", include = TRUE)
+#sapply(complete_imp, function(x) sum(is.na(x)))
+#
+#head(complete_imp)
+#summary(complete_imp$weights)
+#
+#
+#complete_f <- complete_imp %>% 
+#  mutate(weights = ifelse(sex_dv_t0=="Female",weights,0))
+#
+#
+#wiminds_f <- as.mids(complete_f)
