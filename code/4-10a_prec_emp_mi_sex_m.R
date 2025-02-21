@@ -492,4 +492,4 @@ write.csv(combined_df, "./output/mi/weighted_outcomes/mi_dr_iptw_df_sex_m.csv")
 ##################
 
 
-sapply(complete(imputed_data,"long"), function(x) sum(is.na(x)))
+#sapply(complete(imputed_data,"long"), function(x) sum(is.na(x)))
