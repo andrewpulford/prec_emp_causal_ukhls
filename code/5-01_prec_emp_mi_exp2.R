@@ -107,6 +107,27 @@ pair_eligible_na <- pair_eligible %>%
   mutate(across(.cols = everything(), 
                 .fns = ~ifelse(is.na(.x),1,0)))
 
+# check
+sapply(pair_eligible, function(x) sum(is.na(x)))
+
+### convert string missing terms into NAs
+pair_eligible <- pair_eligible %>% mutate(across(.cols = everything(),
+                                                 .fns = ~ifelse(.%in% c("missing", "Missing",
+                                                                        "inapplicable", "proxy",
+                                                                        "refusal", 
+                                                                        "Only available for IEMB", 
+                                                                        "Not available for IEMB",
+                                                                        "don't know"),NA,.x)))
+
+# check again
+sapply(pair_eligible, function(x) sum(is.na(x)))
+
+### create NA df
+pair_eligible_na <- pair_eligible %>% 
+  #  mutate(across(everything(), as.character)) %>% 
+  mutate(across(.cols = everything(), 
+                .fns = ~ifelse(is.na(.x),1,0)))
+
 
 
 ################################################################################
