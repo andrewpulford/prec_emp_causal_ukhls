@@ -139,72 +139,86 @@ eq5d_mapper <- function(data, pcs_var, mcs_var){
 ################################################################################
 
 #### t0 EQ-5D ------------------------------------------------------------------
+### call function
 unwtd_eq5d_df <- eq5d_mapper(data=pair_cc_analytic, 
                              pcs_var = pair_cc_analytic$sf12pcs_dv_t0,
                              mcs_var = pair_cc_analytic$sf12mcs_dv_t0) %>% 
   rename(eq5d_t0=eq5d_temp)
 
+### summary stats
 summary(unwtd_eq5d_df$eq5d_t0)
+
+### check distribution with histogram
 hist(unwtd_eq5d_df$eq5d_t0, breaks = 200)
 
+### plot E8-5D scores against S-12 PCS and MCS
+plot(unwtd_eq5d_df$sf12pcs_dv_t0,unwtd_eq5d_df$eq5d_t0)
+plot(unwtd_eq5d_df$sf12mcs_dv_t0,unwtd_eq5d_df$eq5d_t0)
 
-plot(unwtd_eq5d_df$eq5d_t0,unwtd_eq5d_df$sf12pcs_dv_t0)
-
+### calculate mean EQ-5D by treatment group
 unwtd_eq5d_df %>% group_by(exposure1) %>% summarise(mean(eq5d_t0))
 
+### EQ-5D distribution by treatment group
 boxplot(unwtd_eq5d_df$eq5d_t0 ~ unwtd_eq5d_df$exposure1)
 
 #### t1 EQ-5D ------------------------------------------------------------------
+### call function
 unwtd_eq5d_df <- eq5d_mapper(data=unwtd_eq5d_df, 
                              pcs_var = pair_cc_analytic$sf12pcs_dv_t1,
                              mcs_var = pair_cc_analytic$sf12mcs_dv_t1) %>% 
   rename(eq5d_t1=eq5d_temp)
 
+### summary stats
 summary(unwtd_eq5d_df$eq5d_t1)
+
+### check distribution with histogram
 hist(unwtd_eq5d_df$eq5d_t1, breaks = 200)
 
+### plot E8-5D scores against S-12 PCS and MCS
+plot(unwtd_eq5d_df$sf12pcs_dv_t1,unwtd_eq5d_df$eq5d_t1)
+plot(unwtd_eq5d_df$sf12mcs_dv_t1,unwtd_eq5d_df$eq5d_t1)
 
-plot(unwtd_eq5d_df$eq5d_t1,unwtd_eq5d_df$sf12pcs_dv_t1)
-
+### calculate mean EQ-5D by treatment group
 unwtd_eq5d_df %>% group_by(exposure1) %>% summarise(mean(eq5d_t1))
 
+### EQ-5D distribution by treatment group
 boxplot(unwtd_eq5d_df$eq5d_t1 ~ unwtd_eq5d_df$exposure1)
 
 
 #### calculate qalys -----------------------------------------------------------
 ## this is based on approx 12 months treatment
-
+## QALY at single time-point is equal to EQ-5D score at same time-point
+## for analysis we calculate the difference between QALY at t1 and t0
 unwtd_qaly_df <- unwtd_eq5d_df %>% 
   mutate(qaly_t0 = eq5d_t0,
          qaly_t1 = eq5d_t1,
          qaly_diff = qaly_t1-qaly_t0) 
 
-### compare qalys for treatment groups
+#### compare qalys for treatment groups
+### total difference in QALYs by treatment group
 unwtd_qaly_grouped <- unwtd_qaly_df %>% group_by(exposure1) %>% 
   summarise(qaly_diff_total = sum(qaly_diff))
 
-### total number of participants
+### total number of participants with treatment group
 unwtd_n_grouped <- unwtd_qaly_df %>% group_by(exposure1) %>% 
   summarise(n = n())
 
-## number treated
+## total number in treatment group
 unwtd_n_treated <- sum(unwtd_qaly_df$exposure1=="exposed (employed at t1)")
 
 ## calculate qalys per person to get comparable values
 unwtd_qaly_grouped <- unwtd_qaly_grouped %>% 
-  left_join(unwtd_n_grouped)
-
-## this was old qalys by standardised treatment group approach
-#unwtd_qaly_grouped <- unwtd_qaly_grouped %>% mutate(qaly_total_std=qaly_diff_total/n*unwtd_n_treated)
+  left_join(unwtd_n_grouped) %>% 
+  mutate(qaly_total_std=qaly_diff_total/n*unwtd_n_treated)
 
 unwtd_qaly_grouped <- unwtd_qaly_grouped %>% mutate(qaly_diff_person=qaly_diff_total/n)
 
 
 ### calculate QALY gain
-## per person
+## QALY gain per treated person
 unwtd_qaly_gain_person <- unwtd_qaly_grouped$qaly_diff_person[unwtd_qaly_grouped$exposure1=="exposed (employed at t1)"] - unwtd_qaly_grouped$qaly_diff_person[unwtd_qaly_grouped$exposure1=="unexposed"]
 
-## total for treated
+## total QALYs gained for treatment group
 qualy_gain_total <- unwtd_qaly_gain_person*unwtd_n_treated
 
 ### calculate treatment benefit (based on £70k per QALY - UK Govt Green Book)
