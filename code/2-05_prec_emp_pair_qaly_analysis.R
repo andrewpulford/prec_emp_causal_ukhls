@@ -431,9 +431,9 @@ svyboxplot(eq5d_t1~exposure1,svy_iptw_eq5d_df)
 #### calculate qalys -----------------------------------------------------------
 ## this is based on approx 12 months treatment
 
-iptw_qaly_df <- iptw_eq5d_df %>% mutate(qaly_t0 = 0.5 * eq5d_t0,
-                                        qaly_t1 = 0.5 * eq5d_t1,
-                                        qaly_total = qaly_t0+qaly_t1)
+iptw_qaly_df <- iptw_eq5d_df %>% mutate(qaly_t0 = eq5d_t0,
+                                        qaly_t1 = eq5d_t1,
+                                        qaly_diff = qaly_t1-qaly_t0)
 
 
 
@@ -442,8 +442,9 @@ svy_iptw_qaly_df <- svydesign(ids = ~1,
                               data = iptw_qaly_df,
                               weights = ~weightit_ipw)
 
-### compare qalys for treatment groups
-iptw_qaly_grouped <- svyby(~qaly_total, ~exposure1, svy_iptw_qaly_df, svytotal)
+#### compare qalys for treatment groups
+### total difference in QALYs by treatment group
+iptw_qaly_grouped <- svyby(~qaly_diff, ~exposure1, svy_iptw_qaly_df, svytotal)
 
 ## add confidence intervals
 #iptw_qaly_ci <- confint(iptw_qaly)
@@ -452,22 +453,19 @@ iptw_qaly_grouped <- svyby(~qaly_total, ~exposure1, svy_iptw_qaly_df, svytotal)
 #
 #iptw_qaly <- iptw_qaly %>% rename("lci"=`2.5 %`,"uci"=`97.5 %`)
 
-## check qaly totals by group
-svy_qaly_t0 <- svyby(~qaly_t0, ~exposure1, svy_iptw_qaly_df, svytotal) %>% dplyr::select(-se)
-svy_qaly_t1 <- svyby(~qaly_t1, ~exposure1, svy_iptw_qaly_df, svytotal) %>% dplyr::select(-se)
-
-## total weighted number of participants
+## total weighted number of participants by treatment group
 weighted_n_grouped <- svytotal(~exposure1, svy_iptw_qaly_df)
 weighted_n_grouped <- data.frame(weighted_n_grouped) %>% dplyr::select(-SE)
 
 ## calcuate qalys per person
 iptw_qaly_grouped <- iptw_qaly_grouped %>% 
-  bind_cols(weighted_n_grouped) %>% dplyr::select(-se)
+  bind_cols(weighted_n_grouped)
 
-
-iptw_qaly_grouped <- iptw_qaly_grouped %>% mutate(qaly_person=qaly_total/total)
+## calculate average qalys per person per group to get comparable values
+iptw_qaly_grouped <- iptw_qaly_grouped %>% mutate(qaly_person=qaly_diff/total)
 
 ### calculate QALY gain
+## QALY gain per treated person
 iptw_qaly_gain_person <-  iptw_qaly_grouped$qaly_person[iptw_qaly_grouped$exposure1=="exposed (employed at t1)"] - iptw_qaly_grouped$qaly_person[iptw_qaly_grouped$exposure1=="unexposed"]
 
 ### calculate treatment benefit (based on £70k per QALY - UK Govt Green Book)
@@ -485,18 +483,18 @@ cost_job <- 6193
 ## number treated
 iptw_n_treated <- weighted_n_grouped[2,1]
 
-## total cost of intervention (standardised to unweighted n treated)
-iptw_cost_total <- unwtd_n_treated*cost_job
+## total cost of intervention
+iptw_cost_total <- iptw_n_treated*cost_job
 
-## cost per qaly gained
+## cost per qaly gained (ICER)
 iptw_cost_qaly <- cost_job/iptw_qaly_gain_person
 
 ### create summary df
 iptw_df <- data.frame(type="IPTW",
-                      measure=c("QALYs gained per person", "Treatment benefit per person", 
+                      measure=c("QALYs gained per person", 
                                 "Cost per intervention", 
-                                "Cost per qaly gained"),
-                      estimate=c(iptw_qaly_gain_person, iptw_benefit, 
+                                "ICER"),
+                      estimate=c(iptw_qaly_gain_person, 
                                  cost_job, iptw_cost_qaly))
 
 
@@ -509,8 +507,7 @@ qaly_df <- iptw_df %>%
   bind_rows(ps_df, unwtd_df) %>% 
   pivot_wider(names_from = measure, values_from = estimate) %>% 
   janitor::clean_names() %>% 
-  mutate(n_treated = c(iptw_n_treated,ps_n_treated,unwtd_n_treated),
-         n_treated_std = unwtd_n_treated) %>% 
+  mutate(n_treated = c(iptw_n_treated,ps_n_treated,unwtd_n_treated)) %>% 
   dplyr::select(type, n_treated, everything())
 
 write.csv(qaly_df, "./output/cc/qaly_df.csv")
