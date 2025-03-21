@@ -124,8 +124,8 @@ eq5d_mapper <- function(data, pcs_var, mcs_var){
   data %>% 
     mutate(pcs_para = (pcs_var-49.9)*PCS,
            mcs_para = (mcs_var-51.5)*MCS,
-           pcsxpcs_para = (pcs_var-49.9)^2*PCSxPCS,
-           mcsxmcs_para = (mcs_var-51.5)^2*MCSxMCS,
+           pcsxpcs_para = ((pcs_var-49.9)^2)*PCSxPCS,
+           mcsxmcs_para = ((mcs_var-51.5)^2)*MCSxMCS,
            pcsxmcs = (pcs_var-49.9)*(mcs_var-51.5),
            pcsxmcs_para = pcsxmcs*PCSxMCS) %>% 
     mutate(eq5d_temp = intercept + pcs_para + mcs_para +
@@ -206,12 +206,10 @@ unwtd_n_grouped <- unwtd_qaly_df %>% group_by(exposure1) %>%
 ## total number in treatment group
 unwtd_n_treated <- sum(unwtd_qaly_df$exposure1=="exposed (employed at t1)")
 
-## calculate qalys per person to get comparable values
+## calculate average qalys per person per group to get comparable values
 unwtd_qaly_grouped <- unwtd_qaly_grouped %>% 
   left_join(unwtd_n_grouped) %>% 
-  mutate(qaly_total_std=qaly_diff_total/n*unwtd_n_treated)
-
-unwtd_qaly_grouped <- unwtd_qaly_grouped %>% mutate(qaly_diff_person=qaly_diff_total/n)
+  mutate(qaly_diff_person=qaly_diff_total/n)
 
 
 ### calculate QALY gain
@@ -240,10 +238,10 @@ unwtd_icer <- cost_job/unwtd_qaly_gain_person
 
 ### create summary df
 unwtd_df <- data.frame(type="unweighted",
-                       measure=c("QALYs gained per person", "Treatment benefit per person", 
+                       measure=c("QALYs gained per person", 
                                  "Cost per intervention", 
                                  "ICER"),
-                       estimate=c(unwtd_qaly_gain_person, unwtd_benefit, 
+                       estimate=c(unwtd_qaly_gain_person, 
                                   cost_job, unwtd_icer))
 
 
