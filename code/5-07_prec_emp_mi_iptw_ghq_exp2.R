@@ -124,7 +124,7 @@ write.csv(weightit_pooled_ghq_df, "./working_data/mi/weightit_pooled_ghq_df_exp2
 test <- with(data = weightit_df, 
                           exp = glmmTMB(ghq_case4_t1 ~
                                           # exposure
-                                          exposure1 +
+                                          exposure2 +
                                           # t0 outcome measure
 #                                          ghq_case4_t0 +
                                           # t0 covariates
@@ -159,7 +159,7 @@ test_pooled <- pool(test)
 test_pooled_df <- data.frame(summary(test_pooled, conf.int = TRUE)) %>% 
   rename(lci = X2.5..,
          uci = X97.5..)  %>% 
-  mutate(term = str_remove(term, "exposure1"),
+  mutate(term = str_remove(term, "exposure2"),
          outcome = "GHQ-12 caseness",
          est_type = "coefficient",
          p.value = ifelse(p.value<0.001,"<0.001",
