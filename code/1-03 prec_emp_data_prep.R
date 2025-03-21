@@ -481,10 +481,10 @@ master_raw1 <- master_raw1 %>%
            
 ## binary version for outcome analysis
 master_raw1 <- master_raw1 %>% 
-  mutate(srh_bin = ifelse(srh_dv %in% c("excellent","very good"),
-                          "excellent/very good",
-                   ifelse(srh_dv %in% c("good","fair","poor"),
-                          "good/fair/poor",
+  mutate(srh_bin = ifelse(srh_dv %in% c("excellent","very good","good"),
+                          "excellent/very good/good",
+                   ifelse(srh_dv %in% c("fair","poor"),
+                          "fair/poor",
                           srh_dv)))
 
 
