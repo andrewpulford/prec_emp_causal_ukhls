@@ -79,11 +79,11 @@ df_matched <- df_matched %>% janitor::clean_names()
 
 ### convert binary outcome and exposure vars to factors and relevel to allow svyglm to work
 df_matched$srh_bin_t0 <- factor(df_matched$srh_bin_t0,
-                                levels = c("excellent/very good", 
-                                           "good/fair/poor"))
+                                levels = c("excellent/very good/good", 
+                                           "fair/poor"))
 df_matched$srh_bin_t1 <- factor(df_matched$srh_bin_t1,
-                                levels = c("excellent/very good", 
-                                           "good/fair/poor"))
+                                levels = c("excellent/very good/good", 
+                                           "fair/poor"))
 
 df_matched$ghq_case4_t0 <- factor(df_matched$ghq_case4_t0,
                                   levels = c("0-3", "4 or more"))
@@ -111,11 +111,11 @@ matchit_df <- readRDS("working_data/cc/matchit_df.rds") # analytic df with IPTW 
 
 ### convert binary outcome and exposure vars to factors and relevel to allow svyglm to work
 matchit_df$srh_bin_t0 <- factor(matchit_df$srh_bin_t0,
-                                      levels = c("good/fair/poor", 
-                                                 "excellent/very good"))
+                                      levels = c("fair/poor", 
+                                                 "excellent/very good/good"))
 matchit_df$srh_bin_t1 <- factor(matchit_df$srh_bin_t1,
-                                      levels = c("good/fair/poor", 
-                                                 "excellent/very good"))
+                                      levels = c("fair/poor", 
+                                                 "excellent/very good/good"))
 
 matchit_df$ghq_case4_t0 <- factor(matchit_df$ghq_case4_t0,
                                         levels = c("0-3", "4 or more"))
