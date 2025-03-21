@@ -62,11 +62,11 @@ pair_cc_analytic <- readRDS("./working_data/cc/pair_cc_analytic.rds")
 
 ### convert binary outcome and exposure vars to factors and relevel to allow svyglm to work
 pair_cc_analytic$srh_bin_t0 <- factor(pair_cc_analytic$srh_bin_t0,
-                                      levels = c("excellent/very good", 
-                                                 "good/fair/poor"))
+                                      levels = c("excellent/very good/good", 
+                                                 "fair/poor"))
 pair_cc_analytic$srh_bin_t1 <- factor(pair_cc_analytic$srh_bin_t1,
-                                      levels = c("excellent/very good", 
-                                                 "good/fair/poor"))
+                                      levels = c("excellent/very good/good", 
+                                                 "fair/poor"))
 
 pair_cc_analytic$ghq_case4_t0 <- factor(pair_cc_analytic$ghq_case4_t0,
                                         levels = c("0-3", "4 or more"))
@@ -931,8 +931,8 @@ dr_iptw_mcs_rel_pov_df <- dr_iptw_mcs_rel_pov_df %>%
 ### poor self-rated health -------------------
 
 rel_pov_weightit_df$srh_bin_t1 <- factor(rel_pov_weightit_df$srh_bin_t1,
-                                levels = c("excellent/very good", 
-                                           "good/fair/poor"))
+                                levels = c("excellent/very good/good", 
+                                           "fair/poor"))
 
 
 start_time <- Sys.time()
@@ -1330,8 +1330,8 @@ dr_iptw_mcs_not_pov_df <- dr_iptw_mcs_not_pov_df %>%
 ### poor self-rated health -------------------
 
 not_pov_weightit_df$srh_bin_t1 <- factor(not_pov_weightit_df$srh_bin_t1,
-                                levels = c("excellent/very good", 
-                                           "good/fair/poor"))
+                                levels = c("excellent/very good/good", 
+                                           "fair/poor"))
 
 
 start_time <- Sys.time()
