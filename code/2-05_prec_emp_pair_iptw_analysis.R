@@ -67,11 +67,11 @@ iptw_df <- iptw_df %>% janitor::clean_names()
 
 ### convert binary outcome and exposure vars to factors and relevel to allow svyglm to work
 iptw_df$srh_bin_t0 <- factor(iptw_df$srh_bin_t0,
-                                levels = c("excellent/very good", 
-                                           "good/fair/poor"))
+                                levels = c("excellent/very good/good", 
+                                           "fair/poor"))
 iptw_df$srh_bin_t1 <- factor(iptw_df$srh_bin_t1,
-                                levels = c("excellent/very good", 
-                                           "good/fair/poor"))
+                                levels = c("excellent/very good/good", 
+                                           "fair/poor"))
 
 
 iptw_df$ghq_case4_t0 <- factor(iptw_df$ghq_case4_t0,
