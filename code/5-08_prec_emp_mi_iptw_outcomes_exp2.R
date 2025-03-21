@@ -44,7 +44,7 @@ mi_iptw_df <- weightit_pooled_pcs_df %>%
   bind_rows(weightit_pooled_mcs_df,
             weightit_pooled_srh_df,  
             weightit_pooled_ghq_df) %>% 
-  filter(term=="exposed (employed at t1)") %>% 
+  filter(term=="exposed (no job loss between t0 and t1") %>% 
   #  dplyr::select(-c(term, Estimate, group, component)) %>% 
   dplyr::select(outcome, est_type, estimate, std.error, p.value, lci, uci) %>% 
   # change binary outcomes to odds ratios
@@ -57,6 +57,6 @@ mi_iptw_df <- weightit_pooled_pcs_df %>%
   mutate(uci = ifelse(outcome %in% c("Poor self-rated health",
                                       "GHQ-12 caseness"), exp(uci),uci))
 
-write.csv(mi_iptw_df, "./output/mi/sensitivity_analyses/full-time/exposure2/mi_iptw_df_exp2.csv")
+write.csv(mi_iptw_df, "./output/mi/sensitivity_analyses/exposure2/mi_iptw_df_exp2.csv")
 
 
