@@ -228,8 +228,8 @@ pair_eligible$sf12mcs_dv_t1 <- as.numeric(pair_eligible$sf12mcs_dv_t1)
 
 ## SRH
 pair_eligible <- pair_eligible %>% 
-  mutate(srh_bin2 = ifelse(srh_bin_t1 == "excellent/very good",0,
-                          ifelse(srh_bin_t1 == "good/fair/poor",1,-99)))
+  mutate(srh_bin2 = ifelse(srh_bin_t1 == "excellent/very good/good",0,
+                          ifelse(srh_bin_t1 == "fair/poor",1,-99)))
 
 ## GHQ-12
 pair_eligible <- pair_eligible %>% 
@@ -412,7 +412,7 @@ str(mi_subset_srh)
 
 # change outcome var to factor
 mi_subset_srh$srh_bin_t1 <- factor(mi_subset_srh$srh_bin_t1,
-                                   levels = c("excellent/very good","good/fair/poor"))
+                                   levels = c("excellent/very good/good","fair/poor"))
 # change exposure to factor so it is ordered correctly for model
 mi_subset_srh$exposure1 <- factor(mi_subset_srh$exposure1,
                                levels = c("unexposed",
@@ -525,11 +525,11 @@ mi_subset2$sf12mcs_dv_t1 <- as.numeric(mi_subset2$sf12mcs_dv_t1)
 
 ## make sure binary outcomes are in the right order
 mi_subset2$srh_bin_t0 <- factor(mi_subset2$srh_bin_t0,
-                             levels = c("excellent/very good", 
-                                        "good/fair/poor"))
+                             levels = c("excellent/very good/good", 
+                                        "fair/poor"))
 mi_subset2$srh_bin_t1 <- factor(mi_subset2$srh_bin_t1,
-                             levels = c("excellent/very good", 
-                                        "good/fair/poor"))
+                             levels = c("excellent/very good/good", 
+                                        "fair/poor"))
 
 mi_subset2$ghq_case4_t0 <- factor(mi_subset2$ghq_case4_t0,
                                levels = c("0-3", "4 or more"))
