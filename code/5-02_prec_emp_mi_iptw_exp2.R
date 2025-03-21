@@ -53,6 +53,7 @@ imputed_data <- readRDS("./working_data/mi/imputed_data_exp2.rds")
 
 ## check forNAs in imputed data
 sapply(complete(imputed_data,"long"), function(x) sum(is.na(x)))
+sapply(complete(imputed_data,"long"), function(x) sum(x=="missing"))
 
 
 #### prepare data -------------------------------------------------------------- 
