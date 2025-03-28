@@ -183,3 +183,18 @@ pair_cc_analytic %>%
 
 table(pair_cc_analytic$scghq2_dv_t0)
 table(pair_cc_analytic$scghq2_dv_t1)
+
+
+################################################################################
+##### scrapbook #####
+################################################################################
+
+test2 <- pair_no_att %>% filter(pidp=="816041487")
+
+test2_na <- test2 %>% 
+  #  mutate(across(everything(), as.character)) %>% 
+  mutate(across(.cols = everything(), 
+                .fns = ~ifelse(is.na(.x),1,0)))
+
+
+
