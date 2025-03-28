@@ -294,8 +294,8 @@ sapply(pair_no_att, function(x) sum(is.na(x)))
 ################################################################################
 
 ## eligible/no attrition df for CC and MI analysis
-write_rds(pair_eligible, "./working_data/pair_eligible.rds")
 write_rds(pair_no_att, "./working_data/pair_no_att.rds")
+write_rds(pair_no_att, "./working_data/pair_mi.rds")
 
 ## exclusion criteria
 write_rds(pair_cc_exc, "./working_data/pair_cc_exc.rds")
