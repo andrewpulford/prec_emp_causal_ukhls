@@ -45,18 +45,18 @@ source("./look_ups/variable_vectors.r")
 
 
 ####load eligible cases --------------------------------------------------------
-pair_eligible <- readRDS("./working_data/pair_eligible.rds") %>% 
+pair_mi <- readRDS("./working_data/pair_mi.rds") %>% 
     dplyr::select(pidp, exposure1, all_of(c(cov_vector, cov_vector2, 
                            outcome_vector2)))
 
 
 
 # check number of missing cases by variable
-sapply(pair_eligible, function(x) sum(is.na(x)))
+sapply(pair_mi, function(x) sum(is.na(x)))
 
 # check number of missing cases by row
 
-temp <- pair_eligible %>% 
+temp <- pair_mi %>% 
   dplyr::select(# person identifier
     pidp,
     # outcomes vars
@@ -79,9 +79,9 @@ table(temp$na_count)
 
 
 ## calculate propotion of rows with missing data - use for number of imputations
-df_rows <- nrow(pair_eligible)
+df_rows <- nrow(pair_mi)
 
-cc_rows <- nrow(na.omit(pair_eligible))
+cc_rows <- nrow(na.omit(pair_mi))
 
 1-cc_rows/df_rows
 
@@ -100,10 +100,10 @@ rm(temp)
 #
 
 # check
-sapply(pair_eligible, function(x) sum(is.na(x)))
+sapply(pair_mi, function(x) sum(is.na(x)))
 
 ### convert string missing terms into NAs
-pair_eligible <- pair_eligible %>% mutate(across(.cols = everything(),
+pair_mi <- pair_mi %>% mutate(across(.cols = everything(),
                                         .fns = ~ifelse(.%in% c("missing", "Missing",
                                                  "inapplicable", "proxy",
                                                  "refusal", 
@@ -112,10 +112,10 @@ pair_eligible <- pair_eligible %>% mutate(across(.cols = everything(),
                                                  "don't know"),NA,.x)))
 
 # check again
-sapply(pair_eligible, function(x) sum(is.na(x)))
+sapply(pair_mi, function(x) sum(is.na(x)))
 
 ### create NA df
-pair_eligible_na <- pair_eligible %>% 
+pair_mi_na <- pair_mi %>% 
   #  mutate(across(everything(), as.character)) %>% 
   mutate(across(.cols = everything(), 
                 .fns = ~ifelse(is.na(.x),1,0)))
@@ -127,17 +127,17 @@ pair_eligible_na <- pair_eligible %>%
 ################################################################################
 
 #### calculate total number of missing cases by variable -----------------------
-n_row <- nrow(pair_eligible_na)
+n_row <- nrow(pair_mi_na)
 
-na_by_var <- pair_eligible_na %>% 
+na_by_var <- pair_mi_na %>% 
   summarise(across(.cols=everything(),
                    .fns = ~sum(.x))) %>% 
   pivot_longer(cols=everything(), names_to = "variable", values_to = "n_NA") %>% 
   mutate(pc_NA = n_NA/n_row*100) 
 
 #### calculate total number of missing items per case --------------------------
-na_by_case <- pair_eligible
-na_by_case$n_NA <- apply(X = is.na(pair_eligible), MARGIN = 1, FUN = sum)
+na_by_case <- pair_mi
+na_by_case$n_NA <- apply(X = is.na(pair_mi), MARGIN = 1, FUN = sum)
 na_by_case <- na_by_case %>% dplyr::select(pidp, n_NA)
 
 summary(na_by_case$n_NA)
@@ -146,7 +146,7 @@ hist(na_by_case$n_NA)
 
 #### visualise missingness -----------------------------------------------------
 ### create a dataframe with only vars that have NAs
-incomplete_vars <- pair_eligible[,colSums(is.na(pair_eligible))>0]
+incomplete_vars <- pair_mi[,colSums(is.na(pair_mi))>0]
 
 ### create missingness pattern plot
 tiff("./output/mi/mi_descriptives/md_pattern.tiff",
@@ -157,7 +157,7 @@ plot_pattern( incomplete_vars, vrb="all", square=TRUE,
 dev.off()
 
 ### create missingness correlation matrix
-cormat <- round(cor(pair_eligible_na),2)
+cormat <- round(cor(pair_mi_na),2)
 
 # Get lower triangle of the correlation matrix
 get_lower_tri<-function(cormat){
@@ -207,37 +207,37 @@ ggplot(data = cor_melt, aes(x=Var1, y=Var2, fill=value)) +
 
 ### convert outcomes to numeric
 ## SF-12 PCS
-pair_eligible$sf12pcs_dv_t0 <- as.character(pair_eligible$sf12pcs_dv_t0)
-pair_eligible$sf12mcs_dv_t0 <- as.character(pair_eligible$sf12mcs_dv_t0)
-pair_eligible$sf12pcs_dv_t1 <- as.character(pair_eligible$sf12pcs_dv_t1)
-pair_eligible$sf12mcs_dv_t1 <- as.character(pair_eligible$sf12mcs_dv_t1)
+pair_mi$sf12pcs_dv_t0 <- as.character(pair_mi$sf12pcs_dv_t0)
+pair_mi$sf12mcs_dv_t0 <- as.character(pair_mi$sf12mcs_dv_t0)
+pair_mi$sf12pcs_dv_t1 <- as.character(pair_mi$sf12pcs_dv_t1)
+pair_mi$sf12mcs_dv_t1 <- as.character(pair_mi$sf12mcs_dv_t1)
 
 # t1 score - mean for interaction term
-#pair_eligible <- pair_eligible %>% 
+#pair_mi <- pair_mi %>% 
 #  mutate(sf12pcs_dv_t1i = sf12pcs_dv_t1-mean(sf12pcs_dv_t1))
 
 ## SF-12 MCS
-pair_eligible$sf12pcs_dv_t0 <- as.numeric(pair_eligible$sf12pcs_dv_t0)
-pair_eligible$sf12mcs_dv_t0 <- as.numeric(pair_eligible$sf12mcs_dv_t0)
-pair_eligible$sf12pcs_dv_t1 <- as.numeric(pair_eligible$sf12pcs_dv_t1)
-pair_eligible$sf12mcs_dv_t1 <- as.numeric(pair_eligible$sf12mcs_dv_t1)
+pair_mi$sf12pcs_dv_t0 <- as.numeric(pair_mi$sf12pcs_dv_t0)
+pair_mi$sf12mcs_dv_t0 <- as.numeric(pair_mi$sf12mcs_dv_t0)
+pair_mi$sf12pcs_dv_t1 <- as.numeric(pair_mi$sf12pcs_dv_t1)
+pair_mi$sf12mcs_dv_t1 <- as.numeric(pair_mi$sf12mcs_dv_t1)
 
 # t1 score - mean for interaction term
-#pair_eligible <- pair_eligible %>% 
+#pair_mi <- pair_mi %>% 
 #  mutate(sf12mcs_dv_t1i = sf12mcs_dv_t1-mean(sf12mcs_dv_t1))
 
 ## SRH
-pair_eligible <- pair_eligible %>% 
+pair_mi <- pair_mi %>% 
   mutate(srh_bin2 = ifelse(srh_bin_t1 == "excellent/very good/good",0,
                           ifelse(srh_bin_t1 == "fair/poor",1,-99)))
 
 ## GHQ-12
-pair_eligible <- pair_eligible %>% 
+pair_mi <- pair_mi %>% 
   mutate(ghq_bin = ifelse(ghq_case4_t1 == "0-3",0,
                           ifelse(ghq_case4_t1 == "4 or more",1,-99)))
 
 ### covert sub-group vars to bin vars
-pair_eligible <- pair_eligible %>% 
+pair_mi <- pair_mi %>% 
   ## sex
   mutate(sex_bin = ifelse(sex_dv_t0=="Female",0,
                           ifelse(sex_dv_t0=="Male",1,-99))) %>% 
@@ -250,7 +250,7 @@ pair_eligible <- pair_eligible %>%
 
 #### sex -----------------------------------------------------------------------
 
-pair_eligible <- pair_eligible %>% 
+pair_mi <- pair_mi %>% 
   mutate(sex_pcs = sex_bin*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)), ### SF-12 PCS
          sex_mcs = sex_bin*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1, na.rm = TRUE)),### SF-12 MCS
          sex_srh = sex_bin*srh_bin2, ### SRH
@@ -258,7 +258,7 @@ pair_eligible <- pair_eligible %>%
 
 #### age -----------------------------------------------------------------------
 
-pair_eligible <- pair_eligible %>% 
+pair_mi <- pair_mi %>% 
   mutate(age_pcs = age_bin*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)), ### SF-12 PCS
          age_mcs = age_bin*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1, na.rm = TRUE)),### SF-12 MCS
          age_srh = age_bin*srh_bin2, ### SRH
@@ -266,7 +266,7 @@ pair_eligible <- pair_eligible %>%
 
 #### relative poverty ----------------------------------------------------------
 
-pair_eligible <- pair_eligible %>% 
+pair_mi <- pair_mi %>% 
   mutate(rel_pov_pcs = rel_pov_bin*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)), ### SF-12 PCS
          rel_pov_mcs = rel_pov_bin*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1, na.rm = TRUE)),### SF-12 MCS
          rel_pov_srh = rel_pov_bin*srh_bin2, ### SRH
@@ -284,7 +284,7 @@ interactions_vars <- c("srh_bin2","ghq_bin",
 ################################################################################
 
 #### create sub-set of variables and cases -------------------------------------
-mi_subset1 <- pair_eligible %>% 
+mi_subset1 <- pair_mi %>% 
   dplyr::select(sf12pcs_dv_t1, sex_dv_t0, age_dv_t0, rel_pov_bin,
                 rel_pov_pcs, exposure1)
 
@@ -379,9 +379,9 @@ temp_pcs %>% head()
 
 #### check ---------------------------------------------------------------------
 
-check_pcs_df1 <- pair_eligible %>% filter(is.na(rel_pov_bin))
+check_pcs_df1 <- pair_mi %>% filter(is.na(rel_pov_bin))
 
-check_pcs_df2 <- pair_eligible  %>% 
+check_pcs_df2 <- pair_mi  %>% 
   filter(exposure1=="exposed (employed at t1)" & age_dv_t0%in%c(54) & 
            sf12pcs_dv_t1%in%c(47.37))
 
@@ -403,7 +403,7 @@ temp_pcs %>%
 #### SRH -----------------------------------------------------------------------
 
 #### create sub-set of variables and cases -------------------------------------
-mi_subset_srh <- pair_eligible %>% 
+mi_subset_srh <- pair_mi %>% 
   dplyr::select(srh_bin_t1, sex_dv_t0, age_dv_t0, rel_pov_bin,
                 rel_pov_srh, exposure1)
 
@@ -469,9 +469,9 @@ temp_srh %>% head()
 
 #### check ---------------------------------------------------------------------
 
-check_srh_df1 <- pair_eligible %>% filter(is.na(rel_pov_bin))
+check_srh_df1 <- pair_mi %>% filter(is.na(rel_pov_bin))
 
-check_srh_df2 <- pair_eligible  %>% 
+check_srh_df2 <- pair_mi  %>% 
   filter(exposure1=="exposed (employed at t1)" & age_dv_t0%in%c(54) & 
            sf12pcs_dv_t1%in%c(47.37))
 
@@ -493,7 +493,7 @@ temp_srh %>%
 ################################################################################
 
 #### create sub-set of variables and cases -------------------------------------
-mi_subset2 <- pair_eligible %>% 
+mi_subset2 <- pair_mi %>% 
   dplyr::select(# person identifier
                 pidp,
                 # outcomes vars
