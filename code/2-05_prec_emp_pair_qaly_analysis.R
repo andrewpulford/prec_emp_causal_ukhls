@@ -617,4 +617,8 @@ max(lawrence_test$eq5d_t1)
 lawrence_test2 %>% filter(eq5d_t0>1) %>% 
   dplyr::select(sf12pcs_dv_t0,sf12mcs_dv_t0,eq5d_t0)
 
-    
+
+#### checking against MI dataset -----------------------------------------------
+
+test2 <- pair_cc_analytic %>% filter(pidp=="816041487")
+
