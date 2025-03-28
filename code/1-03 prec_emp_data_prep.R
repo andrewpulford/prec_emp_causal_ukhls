@@ -67,6 +67,8 @@ master_raw1 <- master_raw1 %>%
   mutate(sex_dv = as.character(sex_dv)) %>% 
   mutate(sex_dv = ifelse(sex_dv=="inconsistent","missing",sex_dv))
 
+table(master_raw1$sex_dv)
+
 ### recode age as numeric
 master_raw1 <- master_raw1 %>% 
   mutate(age_dv=as.character(age_dv)) %>% 
@@ -81,6 +83,8 @@ master_raw1 <- master_raw1 %>%
                                           ifelse(ethn_dv=="missing", "missing",
                                                  "Non-white")))))
 
+
+table(master_raw1$non_white)
 
 ### marital status
 master_raw1$marstat <- as.character(master_raw1$marstat)
@@ -127,6 +131,8 @@ master_raw1 <- master_raw1 %>%
                                   "divorced/separated/widowed",
                                   "check")))))
 
+table(master_raw1$marital_status)
+
 ### dependent children
 # note inapplicable (-8) is for respondents living alone - code as 0 children
 
@@ -154,6 +160,9 @@ master_raw1 <- master_raw1 %>%
                                               "3 or more dependent children"))))
 
 
+table(master_raw1$dep_child_bin)
+table(master_raw1$dep_child_cat)
+
 ### educational attainment
 
 master_raw1$hiqual_dv <- as.character(master_raw1$hiqual_dv)
@@ -172,10 +181,15 @@ master_raw1 <- master_raw1 %>%
                              "Degree or higher",
                              ifelse(hiqual_dv=="missing", "missing",
                                     "No degree")))
-  
+
+table(master_raw1$hiqual_dv)
+table(master_raw1$degree_bin)
+
 ### region
 master_raw1 <- master_raw1 %>% 
   mutate(gor_dv = tolower(gor_dv))
+
+table(master_raw1$gor_dv)
            
 ### perceived job security
 master_raw1 <- master_raw1 %>% 
@@ -203,6 +217,7 @@ master_raw1 <- master_raw1 %>%
                                 "missing"))))))
   
 
+table(master_raw1$jbsec_dv)
 
 ### employment
 
@@ -212,17 +227,34 @@ master_raw1 <- master_raw1 %>%
   mutate(employ = ifelse(employ %in% "employer moved job to another workplace",
                          "yes",
                          ifelse(employ %in% "got a different job with the same employer which meant movin",
-                                "no",employ)))
+                                "no",
+                                ifelse(employ %in% c("missing",                 
+                                              "inapplicable",            
+                                              "proxy",                   
+                                              "refusal",                
+                                              "don't know",            
+                                              "Only available for IEMB", 
+                                              "Not available for IEMB"),
+                                       "missing",
+                                employ))))
 
 
+table(master_raw1$employ)
  
 ### long-standing condition
 master_raw1 <- master_raw1 %>% 
   mutate(health = ifelse(health %in% c("yes","Yes"),"yes",
                   ifelse(health %in% c("no","No"),"no",
-                  ifelse(health %in% c("missing","refusal",
-                                       "don't know","inapplicable"),"missing",
+                  ifelse(health %in% c("missing",                 
+                                       "inapplicable",            
+                                       "proxy",                   
+                                       "refusal",                
+                                       "don't know",            
+                                       "Only available for IEMB", 
+                                       "Not available for IEMB"),"missing",
                          "check"))))
+
+table(master_raw1$health)
 
 ### industry (SIC-2007)
 master_raw1 <- sic2007f()
@@ -252,15 +284,20 @@ master_raw1 %>%
 ### occupation (SOC-2000)
 master_raw1 <- soc2000f()
 
+table(master_raw1$soc2000_major_group_title)
+
 ### normal weekly hours
 ## convert to character rather than factor
 master_raw1$jbhrs <- as.character(master_raw1$jbhrs)
+
 
 ## change missing categories to NA then convert to numeric
 master_raw1 <- master_raw1 %>% 
   mutate(jbhrs = ifelse(jbhrs %in% c("missing", "inapplicable", "proxy", 
                                      "refusal", "don't know"),NA, jbhrs))
 master_raw1$jbhrs <- as.numeric(master_raw1$jbhrs)
+
+table(master_raw1$jbhrs)
 
 ### income
 master_raw1$fihhmnnet1_dv <- as.character(master_raw1$fihhmnnet1_dv)
@@ -325,6 +362,8 @@ master_raw1 <- master_raw1 %>%
                                                            "Doing something else"), 
                                                     "unemployed/not in employment",
                                                     "missing"))))
+
+table(master_raw1$emp_contract)
 
 #### recode employment spells vars to create a broken employment variable
 ### employment spells -----
@@ -396,6 +435,8 @@ master_raw1 <- master_raw1 %>%
                                                 unemp_spells_bin=="yes"),
                                            "Broken employment","missing"))))
 
+table(master_raw1$broken_emp)
+
 #### recode multiple jobs var for analysis
 
 ## collapse missing categories
@@ -424,6 +465,7 @@ master_raw1 <- master_raw1 %>%
                                    "unemployed/not in employment",
                                    "missing")))))
 
+table(master_raw1$j2has_dv2)
 
 #### full/part-time employment recode
 master_raw1$jbft_dv <- as.character(master_raw1$jbft_dv)
@@ -432,6 +474,8 @@ master_raw1 <- master_raw1 %>%
   mutate(jbft_dv = ifelse(jbft_dv %in% c("proxy","missing","refusal","don't know", "inapplicable"),
                           "missing",
                           jbft_dv))
+
+table(master_raw1$jbft_dv)
 
 #### employer size recode
 master_raw1$jbsize <- as.character(master_raw1$jbsize)
@@ -448,7 +492,7 @@ master_raw1 <- master_raw1 %>%
                                     "under 50 employees",
                                     "over 50 employees")))
 
-
+table(master_raw1$jbsize)
 
 ################################################################################
 #####                            health outcomes                           #####
@@ -487,6 +531,7 @@ master_raw1 <- master_raw1 %>%
                           "fair/poor",
                           srh_dv)))
 
+table(master_raw1$srh_bin)
 
 #### recode GHQ-12 caseness for analysis
 ## calculate caseness for main analysis (cut point = 4)
