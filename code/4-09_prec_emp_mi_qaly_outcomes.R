@@ -98,14 +98,15 @@ eq5d_mapper <- function(data, pcs_var, mcs_var){
   data %>% 
     mutate(pcs_para = (pcs_var-49.9)*PCS,
            mcs_para = (mcs_var-51.5)*MCS,
-           pcsxpcs_para = (pcs_var-49.9)^2*PCSxPCS,
-           mcsxmcs_para = (mcs_var-51.5)^2*MCSxMCS,
+           pcsxpcs_para = ((pcs_var-49.9)^2)*PCSxPCS,
+           mcsxmcs_para = ((mcs_var-51.5)^2)*MCSxMCS,
            pcsxmcs = (pcs_var-49.9)*(mcs_var-51.5),
            pcsxmcs_para = pcsxmcs*PCSxMCS) %>% 
     mutate(eq5d_temp = intercept + pcs_para + mcs_para +
              pcsxpcs_para + mcsxmcs_para + pcsxmcs_para)  %>% 
     dplyr::select(-c(pcs_para,mcs_para,pcsxpcs_para,mcsxmcs_para,pcsxmcs,pcsxmcs_para))
 }
+
 
 
 ################################################################################
@@ -147,34 +148,33 @@ boxplot(weightit_df_complete$eq5d_t1 ~ weightit_df_complete$exposure1)
 
 #### calculate qalys -----------------------------------------------------------
 ## this is based on approx 12 months treatment
-
-qaly_df <- weightit_df_complete %>% mutate(qaly_t0 = 0.5 * eq5d_t0,
-                                          qaly_t1 = 0.5 * eq5d_t1,
-                                          qaly_total = qaly_t0+qaly_t1)
+## QALY at single time-point is equal to EQ-5D score at same time-point
+## for analysis we calculate the difference between QALY at t1 and t0
+qaly_df <- weightit_df_complete %>% mutate(qaly_t0 = eq5d_t0,
+                                          qaly_t1 = eq5d_t1,
+                                          qaly_diff = qaly_t1-qaly_t0)
 
 
 ### compare qalys for treatment groups (divide by 25 to pool MI data)
 qaly_grouped <- qaly_df %>% group_by(exposure1) %>% 
-  summarise(qaly_total = sum(qaly_total)/25)
+  summarise(qaly_diff = sum(qaly_diff)/25)
 
-### total number of participants
+### total number of participants by treatment group
 n_grouped <- qaly_df %>% group_by(exposure1) %>% 
   summarise(n = n()/25)
 
-## number treated
+## total number in treatment group
 n_treated <- sum(qaly_df$exposure1=="exposed (employed at t1)")/25
 
-## calculate qalys per person to get comparable values
+## calculate average qalys per person per group to get comparable values
 qaly_grouped <- qaly_grouped %>% 
-  left_join(n_grouped)
-
-qaly_grouped <- qaly_grouped %>% mutate(qaly_person=qaly_total/n)
+  left_join(n_grouped) %>% mutate(qaly_person=qaly_diff/n)
 
 ### calculate QALY gain
-## per person
+## QALY gain per treated person
 qaly_gain_person <-  qaly_grouped$qaly_person[qaly_grouped$exposure1=="exposed (employed at t1)"] - qaly_grouped$qaly_person[qaly_grouped$exposure1=="unexposed"]
 
-## total for treated
+## total for treated for treatment group
 qualy_gain_total <- qaly_gain_person*n_treated
 
 ### calculate treatment benefit (based on £70k per QALY - UK Govt Green Book)
@@ -196,10 +196,10 @@ cost_qaly <- cost_job/qaly_gain_person
 
 ### create summary df
 unwtd_df <- data.frame(type="unweighted",
-                       measure=c("QALYs gained per person", "Treatment benefit per person", 
+                       measure=c("QALYs gained per person",
                                  "Cost per intervention", 
-                                 "Cost per qaly gained"),
-                       estimate=c(qaly_gain_person, benefit, 
+                                 "ICER"),
+                       estimate=c(qaly_gain_person, 
                                   cost_job, cost_qaly))
 
 
@@ -384,9 +384,9 @@ svyboxplot(eq5d_t1~exposure1,svy_iptw_weightit_df_complete)
 #### calculate qalys -----------------------------------------------------------
 ## this is based on approx 12 months treatment
 
-iptw_qaly_df <- weightit_df_complete %>% mutate(qaly_t0 = 0.5 * eq5d_t0,
-                                        qaly_t1 = 0.5 * eq5d_t1,
-                                        qaly_total = (qaly_t0+qaly_t1))
+iptw_qaly_df <- weightit_df_complete %>% mutate(qaly_t0 = eq5d_t0,
+                                        qaly_t1 = eq5d_t1,
+                                        qaly_diff = (qaly_t1-qaly_t0))
 
 
 
@@ -395,10 +395,11 @@ svy_iptw_qaly_df <- svydesign(ids = ~1,
                               data = iptw_qaly_df,
                               weights = ~ps_weights)
 
-### compare qalys for treatment groups
-iptw_qaly_grouped <- svyby(~qaly_total, ~exposure1, svy_iptw_qaly_df, svytotal)
+#### compare qalys for treatment groups
+### total difference in QALYs by treatment group
+iptw_qaly_grouped <- svyby(~qaly_diff, ~exposure1, svy_iptw_qaly_df, svytotal)
 iptw_qaly_grouped <- iptw_qaly_grouped %>% 
-  mutate(qaly_total = qaly_total/25) %>% dplyr::select(-se)
+  mutate(qaly_diff = qaly_diff/25) %>% dplyr::select(-se)
 
 ## add confidence intervals
 #iptw_qaly_ci <- confint(iptw_qaly)
@@ -407,11 +408,8 @@ iptw_qaly_grouped <- iptw_qaly_grouped %>%
 #
 #iptw_qaly <- iptw_qaly %>% rename("lci"=`2.5 %`,"uci"=`97.5 %`)
 
-## check qaly totals by group
-#svy_qaly_t0 <- svyby(~qaly_t0, ~exposure1, svy_iptw_qaly_df, svytotal) %>% dplyr::select(-se)
-#svy_qaly_t1 <- svyby(~qaly_t1, ~exposure1, svy_iptw_qaly_df, svytotal) %>% dplyr::select(-se)
 
-## total weighted number of participants
+## total weighted number of participants by treatment group
 weighted_n_grouped <- svytotal(~exposure1, svy_iptw_qaly_df)
 weighted_n_grouped <- data.frame(weighted_n_grouped) %>% 
   mutate(total = total/25) %>% dplyr::select(-SE)
@@ -420,8 +418,8 @@ weighted_n_grouped <- data.frame(weighted_n_grouped) %>%
 iptw_qaly_grouped <- iptw_qaly_grouped %>% 
   bind_cols(weighted_n_grouped)
 
-
-iptw_qaly_grouped <- iptw_qaly_grouped %>% mutate(qaly_person=qaly_total/total)
+## calculate average qalys per person per group to get comparable values
+iptw_qaly_grouped <- iptw_qaly_grouped %>% mutate(qaly_person=qaly_diff/total)
 
 ### calculate QALY gain
 iptw_qaly_gain_person <-  iptw_qaly_grouped$qaly_person[iptw_qaly_grouped$exposure1=="exposed (employed at t1)"] - iptw_qaly_grouped$qaly_person[iptw_qaly_grouped$exposure1=="unexposed"]
@@ -444,20 +442,20 @@ iptw_n_treated <- weighted_n_grouped[2,1]
 ## total cost of intervention (standardised to unweighted n treated)
 iptw_cost_total <- n_treated*cost_job
 
-## cost per qaly gained
+## calculate average qalys per person per group to get comparable values
 iptw_cost_qaly <- cost_job/iptw_qaly_gain_person
 
 ### create summary df
 iptw_df <- data.frame(type="IPTW",
-                      measure=c("QALYs gained per person", "Treatment benefit per person", 
+                      measure=c("QALYs gained per person", 
                                 "Cost per intervention", 
-                                "Cost per qaly gained"),
-                      estimate=c(iptw_qaly_gain_person, iptw_benefit, 
+                                "ICER"),
+                      estimate=c(iptw_qaly_gain_person, 
                                  cost_job, iptw_cost_qaly))
 
 
 ################################################################################
-##### create qalys df #####
+#####                            create qalys df                           #####
 ################################################################################
 
 qaly_df <- iptw_df %>% 
@@ -472,3 +470,13 @@ qaly_df <- iptw_df %>%
 
 write.csv(qaly_df, "./output/mi/qaly_df.csv")
 
+################################################################################
+#####                               scrapbook                              #####
+################################################################################
+
+eq5d_min <- −0.148
+
+test <- weightit_df_complete %>% filter(eq5d_t1< eq5d_min)
+
+test2 <- weightit_df_complete %>% filter(pidp=="816041487")
+  
