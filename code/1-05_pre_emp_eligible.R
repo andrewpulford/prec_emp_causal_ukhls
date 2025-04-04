@@ -112,13 +112,15 @@ pair_cc_exc <- pair_cc_exc %>%
 pair_eligible <- in_emp_t0 %>%
   # prevention of unemployment at t1
   mutate(exposure1 = ifelse(jbstat_t1%in%c("unemployed","Unemployed"),
-                            "unexposed","exposed (employed at t1)")) %>% 
+                            "unexposed",
+                            ifelse(jbstat_t1=="Paid employment(ft/pt)",
+                                   "exposed (employed at t1)" ,
+                                   "CHECK"))) %>% 
   # prevention of job loss between t0 and t1
-  mutate(exposure2 = ifelse(jbstat_t1 %in% c("unemployed","unemployed"), 
-                            "exposed (no job loss between t0 and t1",
-                            ifelse(nunmpsp_dv_t1==0,
-                                   "exposed (no job loss between t0 and t1",
-                                   "unexposed"))) 
+  mutate(exposure2 = ifelse(jbstat_t1 %in% c("unemployed","unemployed") | nunmpsp_dv_t1>0, 
+                            "unexposed",
+                            ifelse(jbstat_t1=="Paid employment(ft/pt)" & nunmpsp_dv_t1==0,
+  "exposed (no job loss between t0 and t1", "CHECK")))
 
 
 ################################################################################
@@ -235,11 +237,20 @@ pair_cc_att <- pair_cc_att %>%
 # not other unspecified employment status at t1
 # include 
 not_other <- not_lts %>% 
-  filter(jbstat_t1%notin%c("doing something else","Doing something else"))
+  filter(jbstat_t1%notin%c("doing something else","Doing something else",
+                           "Missing", "missing",                                                     
+                           "inapplicable",  "proxy",                                                       
+                           "refusal", "don't know",                                                  
+                           "Only available for IEMB",                                     
+                           "Not available for IEMB"))
 
 # exclude
-temp_df <- not_lts %>% filter(jbstat_t1%in%c("doing something else",
-                                             "Doing something else")) 
+temp_df <- not_lts %>% filter(jbstat_t1%in%c("doing something else","Doing something else",
+                                             "Missing", "missing",                                                     
+                                             "inapplicable",  "proxy",                                                       
+                                             "refusal", "don't know",                                                  
+                                             "Only available for IEMB",                                     
+                                             "Not available for IEMB")) 
 temp2 <- temp_df %>% 
   group_by(exposure1) %>% 
   summarise(n=n()) %>% 
@@ -284,7 +295,14 @@ pair_no_att <- valid_outcomes
 
 pair_no_att <- pair_no_att %>% 
   mutate(across(.cols = everything(), 
-                .fns = ~ifelse(.x%in%c("missing","Missing"),NA,.x))) 
+                .fns = ~ifelse(.x%in%c("Missing",
+                                       "missing",                                                     
+                                       "inapplicable",                                                
+                                       "proxy",                                                       
+                                       "refusal",                                                     
+                                       "don't know",                                                  
+                                       "Only available for IEMB",                                     
+                                       "Not available for IEMB"),NA,.x))) 
 
 # check
 sapply(pair_no_att, function(x) sum(is.na(x)))
@@ -306,4 +324,14 @@ write_rds(pair_cc_att, "./working_data/pair_cc_att.rds")
 write_csv(pair_cc_att, "./output/cc/pair_cc_att.csv")
 
 ################################################################################
+#####                            scrapbook                                 #####
+################################################################################
+
+table(pair_no_att$exposure1)
+table(pair_no_att$exposure2)
+
+exp1_check <- pair_no_att %>% filter(exposure1=="CHECK")
+
+table(exp1_check$jbstat_t1)
+table(exp1_check$nunmpsp_dv_t1, exp1_check$exposure1)
 
