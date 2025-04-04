@@ -340,6 +340,15 @@ summary(dr_ghq_glmmTMB_mod)
 ##### scrapbook #####
 ################################################################################
 
+### work out proportion of samle that lose job for qalys extrapolation
+
+table(pair_cc_analytic$exposure1)
+
+pair_cc_analytic %>% group_by(exposure1) %>% summarise(n=n()) %>% 
+  mutate(d=sum(n),
+         p=n/d*100)
+
+
 ##### sankeys GHQ-12 -----------------------------------------------------------
 #
 #### exposed group
