@@ -57,6 +57,26 @@ sapply(complete(imputed_data,"long"), function(x) sum(is.na(x)))
 
 #### prepare data -------------------------------------------------------------- 
 
+### check data
+test_df <- complete(imputed_data,"long")
+
+table(test_df$sex_dv_t0)
+
+summary(test_df$sf12mcs_dv_t1)
+
+sum(test_df$sex_pcs==-99)
+sum(test_df$sex_mcs==-99)
+table(test_df$sex_srh)
+table(test_df$sex_ghq)
+
+test_df %>% filter(sex_srh==-99) %>% head()
+
+
+sum(test_df$rel_pov_pcs==-99)
+sum(test_df$rel_pov_mcs==-99)
+table(test_df$rel_pov_srh)
+table(test_df$rel_pov_ghq)
+
 
 ################################################################################
 #####               inverse probability of treatment weighting             #####
