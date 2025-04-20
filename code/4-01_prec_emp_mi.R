@@ -309,7 +309,7 @@ mi_subset1$sex_dv_t0 <- factor(mi_subset1$sex_dv_t0,
                                           "Male"))
 
 # take a random sample for testing code (if it's running slow)
-mi_subset1 <- sample_n(mi_subset1, 3000)
+#mi_subset1 <- sample_n(mi_subset1, 3000)
 
 
 ### create imputations
@@ -361,7 +361,7 @@ mi_subset1a$sex_dv_t0 <- factor(mi_subset1a$sex_dv_t0,
                                           "Male"))
 
 # take a random sample for testing code (if it's running slow)
-mi_subset1a <- sample_n(mi_subset1a, 3000)
+#mi_subset1a <- sample_n(mi_subset1a, 3000)
 
 
 #### create imputations --------------------------------------------------------
@@ -492,7 +492,7 @@ mi_subset_srh$sex_dv_t0 <- factor(mi_subset_srh$sex_dv_t0,
                                           "Male"))
 
 # take a random sample for testing code (if it's running slow)
-mi_subset_srh <- sample_n(mi_subset_srh, 3000)
+#mi_subset_srh <- sample_n(mi_subset_srh, 3000)
 
 ## imputations
 imps_passive_srh <- mice(mi_subset_srh,maxit=0)
@@ -521,7 +521,7 @@ visit_srh2 <- c("pidp", "sex_dv_t0", "age_dv_t0", "exposure1", "rel_pov_bin",
 imps_passive_srh <- mice(mi_subset_srh, 
                          pred = pred_passive_srh, 
                          meth = meth_srh, 
-                         maxit = 20, 
+                         maxit = 10, 
                       visitSequence = visit_srh2)
 
 ## log reg on SRH with one covariate
@@ -576,9 +576,10 @@ mi_subset2 <- pair_mi %>%
                 marital_status_t1,
                 health_t1, 
                 rel_pov_bin,
+                sex_bin,
                 # sub-group interaction vars
                 all_of(interactions_vars)) %>% 
-  dplyr::select(-rel_pov_t0)
+  dplyr::select(-c(sex_dv_t0,rel_pov_t0))
 
 # check var structure is OK for glm
 str(mi_subset2)
@@ -611,9 +612,9 @@ mi_subset2$exposure1 <- factor(mi_subset2$exposure1,
 
 ### reorder covariates as required
 ## sex
-mi_subset2$sex_dv_t0 <- factor(mi_subset2$sex_dv_t0,
-levels = c("Female",
-           "Male"))
+#mi_subset2$sex_dv_t0 <- factor(mi_subset2$sex_dv_t0,
+#levels = c("Female",
+#           "Male"))
 
 ## ethnicity
 mi_subset2$non_white_t0 <- factor(mi_subset2$non_white_t0,
@@ -716,13 +717,12 @@ summary(imps2)
 # ("norm", "logreg", "polyreg", "polr")
 mi_subset2_meth <- imps2$meth
 
-#mi_subset2_str$method[mi_subset2_str$Var1=="pidp"] <- ""
 mi_subset2_meth["sf12pcs_dv_t1"] <- "norm"
 mi_subset2_meth["sf12mcs_dv_t1"] <- "norm"
 mi_subset2_meth["srh_bin_t1"] <- "logreg"
 mi_subset2_meth["ghq_case4_t1"] <- "logreg"
 mi_subset2_meth["exposure1"] <- "logreg"
-mi_subset2_meth["sex_dv_t0"] <- "logreg"
+mi_subset2_meth["sex_bin"] <- "pmm"
 mi_subset2_meth["age_dv_t0"] <- "norm"
 mi_subset2_meth["non_white_t0"] <- "logreg"
 mi_subset2_meth["marital_status_t0"] <- "polyreg"
@@ -747,10 +747,10 @@ mi_subset2_meth["marital_status_t1"] <- "polyreg" #polyreg if including
 mi_subset2_meth["health_t1"] <- "logreg"
 mi_subset2_meth["rel_pov_bin"] <- "pmm"
 mi_subset2_meth["exp1_bin"] <- ""
-mi_subset2_meth["sex_pcs"] <- "~I(sex_dv_t0*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)))"
-mi_subset2_meth["sex_mcs"] <- "~I(sex_dv_t0*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1)))"
-mi_subset2_meth["sex_srh"] <- "~I(sex_dv_t0*srh_bin2)"
-mi_subset2_meth["sex_ghq"] <- "~I(sex_dv_t0*ghq_bin)"
+mi_subset2_meth["sex_pcs"] <- "~I(sex_bin*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)))"
+mi_subset2_meth["sex_mcs"] <- "~I(sex_bin*(sf12mcs_dv_t1-mean(sf12mcs_dv_t1)))"
+mi_subset2_meth["sex_srh"] <- "~I(sex_bin*srh_bin2)"
+mi_subset2_meth["sex_ghq"] <- "~I(sex_bin*ghq_bin)"
 mi_subset2_meth["age_pcs"] <- "~I(age_bin*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)))"
 mi_subset2_meth["age_mcs"] <- "~I(age_bin*(sf12mcs_dv_t1-mean(sf12pcs_dv_t1)))"
 mi_subset2_meth["age_srh"] <- "~I(age_bin*srh_bin2)"
@@ -760,8 +760,6 @@ mi_subset2_meth["rel_pov_mcs"] <- "~I(rel_pov_bin*(sf12mcs_dv_t1-mean(sf12pcs_dv
 mi_subset2_meth["rel_pov_srh"] <- "~I(rel_pov_bin*srh_bin2)"
 mi_subset2_meth["rel_pov_ghq"] <- "~I(rel_pov_bin*ghq_bin)"
 
-## create vector to set new default methods methods for MI
-#myDefaultMethod <- as.vector(mi_subset2_meth$method)
 
 ## define a custom predictorMatrix
 # in matrix 1s are included in model; 0s are not
@@ -780,11 +778,11 @@ myPredictorMatrix["srh_bin2",] <- 0
 myPredictorMatrix[,"ghq_bin"] <- 0
 myPredictorMatrix["ghq_bin",] <- 0
 # constituent parts of interaction terms shouldn't predict interaction term
-myPredictorMatrix[c("sex_dv_t0","sf12pcs_dv_t1"),"sex_pcs"] <- 0
-myPredictorMatrix[c("sex_dv_t0","sf12mcs_dv_t1"),"sex_pcs"] <- 0
-myPredictorMatrix[c("sex_dv_t0","srh_bin_t1"),"sex_srh"] <- 0
-myPredictorMatrix[c("sex_dv_t0","ghq_case4_t1"),"sex_ghq"] <- 0
-myPredictorMatrix[c("age_dv_t0","sf12pcs_dv_t1"),"age_pcs"] <- 0
+myPredictorMatrix[c("sex_bin","sf12pcs_dv_t1"),"sex_pcs"] <- 0
+myPredictorMatrix[c("sex_bin","sf12mcs_dv_t1"),"sex_pcs"] <- 0
+myPredictorMatrix[c("sex_bin","srh_bin_t1"),"sex_srh"] <- 0
+myPredictorMatrix[c("sex_bin","ghq_case4_t1"),"sex_ghq"] <- 0
+myPredictorMatrix[c("sex_bin","sf12pcs_dv_t1"),"age_pcs"] <- 0
 myPredictorMatrix[c("age_dv_t0","sf12mcs_dv_t1"),"age_pcs"] <- 0
 myPredictorMatrix[c("age_dv_t0","srh_bin_t1"),"age_srh"] <- 0
 myPredictorMatrix[c("age_dv_t0","ghq_case4_t1"),"age_ghq"] <- 0
