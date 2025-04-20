@@ -513,7 +513,24 @@ qaly_df <- iptw_df %>%
 write.csv(qaly_df, "./output/cc/qaly_df.csv")
 
 ################################################################################
-##### scrapbook ######
+#####                      extrapolation of QALYs data                    ######
+################################################################################
+
+#### calculate proportion of cases that become unemployed between t0 and t1 ----
+temp <- iptw_qaly_df %>% group_by(exposure1) %>% summarise(n=n()) %>% 
+  mutate(d=sum(n),
+         prop_unemp=n/d)
+
+unemp_prop <- temp$prop_unemp[temp$exposure1=="unexposed"]
+
+#### estimate number treated across ten years ----------------------------------
+
+treat_1 <- temp$n[temp$exposure1=="exposed (employed at t1)"]
+treat_2 <- treat_1-(treat_1*unemp_prop)
+
+
+################################################################################
+#####                                scrapbook                            ######
 ################################################################################
 
 #### unweighted ----------------------------------------------------------------
