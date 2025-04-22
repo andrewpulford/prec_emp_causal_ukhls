@@ -527,7 +527,22 @@ unemp_prop <- temp$prop_unemp[temp$exposure1=="unexposed"]
 
 treat_1 <- temp$n[temp$exposure1=="exposed (employed at t1)"]
 treat_2 <- treat_1-(treat_1*unemp_prop)
+treat_3 <- treat_2-(treat_2*unemp_prop)
+treat_4 <- treat_3-(treat_3*unemp_prop)
+treat_5 <- treat_4-(treat_4*unemp_prop)
+treat_6 <- treat_5-(treat_5*unemp_prop)
+treat_7 <- treat_6-(treat_6*unemp_prop)
+treat_8 <- treat_7-(treat_7*unemp_prop)
+treat_9 <- treat_8-(treat_8*unemp_prop)
+treat_10 <- treat_9-(treat_9*unemp_prop)
 
+n_treated <- c(treat_1, treat_2, treat_3, treat_4, treat_5, 
+               treat_6, treat_7, treat_8, treat_9, treat_10)
+
+#### create dataframe ----------------------------------------------------------
+
+qaly_extrap <- data.frame(year = c(1:10),
+                            n_treated = n_treated)
 
 ################################################################################
 #####                                scrapbook                            ######
