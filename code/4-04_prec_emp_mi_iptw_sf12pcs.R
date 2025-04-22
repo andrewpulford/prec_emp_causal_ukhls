@@ -68,7 +68,7 @@ weightit_mods_pcs <- with(data = weightit_df,
                           exp = glmmTMB(sf12pcs_dv_t1 ~
                                     exposure1 +
                                     sf12pcs_dv_t0 +
-                                    sex_dv_t0 +
+                                    sex_bin +
                                     age_dv_t0 +
                                     age_dv_t1 +
                                     non_white_t0 +
@@ -83,13 +83,13 @@ weightit_mods_pcs <- with(data = weightit_df,
                                     emp_contract_t0 +
                                     broken_emp_t0 +
                                     j2has_dv_t0 +
-                                    rel_pov_t0 +
+                                    rel_pov_bin +
                                     health_t0 +
                                     health_t1 +
                                     # interaction terms
-                                    sex_dv_t0*age_dv_t0 +
-                                    sex_dv_t0*rel_pov_t0 +
-                                    age_dv_t0*rel_pov_t0 +
+                                    sex_bin*age_dv_t0 +
+                                    sex_bin*rel_pov_bin +
+                                    age_dv_t0*rel_pov_bin +
                                     (1|pidp)))
 
 weightit_pooled_pcs <- pool(weightit_mods_pcs)
@@ -121,7 +121,7 @@ write_rds(weightit_pooled_pcs, "./working_data/mi/weightit_pooled_pcs.rds")
 #comp.imp <- lapply(weightit_mods_pcs, function(weightit_pooled_pcs) {
 #  avg_comparisons(weightit_mods_pcs, 
 #                  variables = "exposure1",
-#                  by = "sex_dv_t0")
+#                  by = "sex_bin")
 #})
 #
 #pooled.comp <- mice::pool(comp.imp, dfcom = Inf)
@@ -137,7 +137,7 @@ write_rds(weightit_pooled_pcs, "./working_data/mi/weightit_pooled_pcs.rds")
 #
 #
 #complete_f <- complete_imp %>% 
-#  mutate(weights = ifelse(sex_dv_t0=="Female",weights,0))
+#  mutate(weights = ifelse(sex_bin=="Female",weights,0))
 #
 #
 #wiminds_f <- as.mids(complete_f)
