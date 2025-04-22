@@ -73,7 +73,7 @@ test2 <- test$Balance.Across.Imputations
 
 ## probably don't need these....
 bal.plot(weightit_df, which.imp = 1, 
-         var.name = "sex_dv_t0", 
+         var.name = "sex_bin", 
          which = "both")
 bal.plot(weightit_df, which.imp = 1, 
          var.name = "age_dv_t0", 
