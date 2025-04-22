@@ -60,7 +60,7 @@ sapply(complete(imputed_data,"long"), function(x) sum(is.na(x)))
 ### check data
 test_df <- complete(imputed_data,"long")
 
-table(test_df$sex_dv_t0)
+table(test_df$sex_bin)
 
 summary(test_df$sf12mcs_dv_t1)
 
@@ -84,7 +84,7 @@ table(test_df$rel_pov_ghq)
 
 start_time <- Sys.time()
 weightit_df <- weightthem(exp1_bin ~
-                            sex_dv_t0 +
+                            sex_bin +
                             age_dv_t0 +
                             non_white_t0 +
                             marital_status_t0 +
@@ -98,7 +98,7 @@ weightit_df <- weightthem(exp1_bin ~
                             emp_contract_t0 +
                             broken_emp_t0 +
                             j2has_dv_t0 +
-                            rel_pov_t0 +
+                            rel_pov_bin +
                             health_t0 +
                             srh_bin_t0 +
                             ghq_case4_t0 +
