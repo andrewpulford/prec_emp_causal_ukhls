@@ -72,7 +72,7 @@ weightit_mods_mcs <- with(data = weightit_df,
                                               # t0 outcome measure
                                               sf12mcs_dv_t1 +
                                               # t0 covariates
-                                              sex_dv_t0 +
+                                              sex_bin +
                                               age_dv_t0 +
                                               non_white_t0 +
                                               marital_status_t0 +
@@ -86,7 +86,7 @@ weightit_mods_mcs <- with(data = weightit_df,
                                               emp_contract_t0 +
                                               broken_emp_t0 +
                                               j2has_dv_t0 +
-                                              rel_pov_t0 +
+                                              rel_pov_bin +
                                               health_t0 +
                                               srh_bin_t0 +
                                               ghq_case4_t0 +
@@ -96,9 +96,9 @@ weightit_mods_mcs <- with(data = weightit_df,
                                               marital_status_t1 +
                                               health_t1 +
                                               # interaction terms
-                                              sex_dv_t0*age_dv_t0 +
-                                              sex_dv_t0*rel_pov_t0 +
-                                              age_dv_t0*rel_pov_t0 +
+                                              sex_bin*age_dv_t0 +
+                                              sex_bin*rel_pov_bin +
+                                              age_dv_t0*rel_pov_bin +
                                               (1|pidp), 
                                             family="gaussian"))
 
