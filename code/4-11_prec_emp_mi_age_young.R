@@ -78,7 +78,7 @@ df_y_str$method[df_y_str$Var1=="sf12mcs_dv_t1"] <- "norm"
 df_y_str$method[df_y_str$Var1=="srh_bin_t1"] <- "logreg"
 df_y_str$method[df_y_str$Var1=="ghq_case4_t1"] <- "logreg"
 df_y_str$method[df_y_str$Var1=="exposure1"] <- "logreg"
-df_y_str$method[df_y_str$Var1=="sex_dv_t0"] <- "logreg"
+df_y_str$method[df_y_str$Var1=="sex_bin"] <- "pmm"
 df_y_str$method[df_y_str$Var1=="age_dv_t0"] <- "norm"
 df_y_str$method[df_y_str$Var1=="non_white_t0"] <- "logreg"
 df_y_str$method[df_y_str$Var1=="marital_status_t0"] <- "polyreg"
@@ -91,7 +91,7 @@ df_y_str$method[df_y_str$Var1=="small_firm_t0"] <- "logreg"
 df_y_str$method[df_y_str$Var1=="emp_contract_t0"] <- "logreg"
 df_y_str$method[df_y_str$Var1=="broken_emp_t0"] <- "polr" 
 df_y_str$method[df_y_str$Var1=="j2has_dv_t0"] <- "logreg"
-df_y_str$method[df_y_str$Var1=="rel_pov_t0"] <- "logreg"
+df_y_str$method[df_y_str$Var1=="rel_pov_bin"] <- "pmm"
 df_y_str$method[df_y_str$Var1=="health_t0"] <- "logreg"
 df_y_str$method[df_y_str$Var1=="sf12pcs_dv_t0"] <- "norm"
 df_y_str$method[df_y_str$Var1=="sf12mcs_dv_t0"] <- "norm"
@@ -102,18 +102,18 @@ df_y_str$method[df_y_str$Var1=="age_dv_t1"] <- "norm" # norm if including
 df_y_str$method[df_y_str$Var1=="marital_status_t1"] <- "polyreg" #polyreg if including
 df_y_str$method[df_y_str$Var1=="health_t1"] <- "logreg"
 df_y_str$method[df_y_str$Var1=="exp1_bin"] <- ""
-df_y_str$method[df_y_str$Var1=="sex_pcs"] <- "~I(sex_dv_t0*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)))"
+df_y_str$method[df_y_str$Var1=="sex_pcs"] <- "~I(sex_bin*(sf12pcs_dv_t1-mean(sf12pcs_dv_t1)))"
 df_y_str$method[df_y_str$Var1=="sex_mcs"] <- "~Isf12pcs_dv_t1-mean(sf12mcs_dv_t1, na.rm = TRUE)))"
-df_y_str$method[df_y_str$Var1=="sex_srh"] <- "~I(sex_dv_t0*srh_bin2)"
-df_y_str$method[df_y_str$Var1=="sex_ghq"] <- "~I(sex_dv_t0*ghq_bin)"
+df_y_str$method[df_y_str$Var1=="sex_srh"] <- "~I(sex_bin*srh_bin2)"
+df_y_str$method[df_y_str$Var1=="sex_ghq"] <- "~I(sex_bin*ghq_bin)"
 df_y_str$method[df_y_str$Var1=="age_pcs"] <- "~I(age_bin*sf12pcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)))"
 df_y_str$method[df_y_str$Var1=="age_mcs"] <- "~I(age_bin*sf12mcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)))"
 df_y_str$method[df_y_str$Var1=="age_srh"] <- "~I(age_bin*srh_bin2)"
 df_y_str$method[df_y_str$Var1=="age_ghq"] <- "~I(age_bin*ghq_bin)"
-df_y_str$method[df_y_str$Var1=="rel_pov_pcs"] <- "~I(rel_pov_t0*sf12pcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)))"
-df_y_str$method[df_y_str$Var1=="rel_pov_mcs"] <- "~I(rel_pov_t0*sf12mcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)))"
-df_y_str$method[df_y_str$Var1=="rel_pov_srh"] <- "~I(rel_pov_t0*srh_bin2)"
-df_y_str$method[df_y_str$Var1=="rel_pov_ghq"] <- "~I(rel_pov_t0*ghq_bin)"
+df_y_str$method[df_y_str$Var1=="rel_pov_pcs"] <- "~I(rel_pov_bin*sf12pcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)))"
+df_y_str$method[df_y_str$Var1=="rel_pov_mcs"] <- "~I(rel_pov_bin*sf12mcs_dv_t1-mean(sf12pcs_dv_t1, na.rm = TRUE)))"
+df_y_str$method[df_y_str$Var1=="rel_pov_srh"] <- "~I(rel_pov_bin*srh_bin2)"
+df_y_str$method[df_y_str$Var1=="rel_pov_ghq"] <- "~I(rel_pov_bin*ghq_bin)"
 
 ## check df_y_str order matches vars in df_y
 sum(as.vector(df_y_str$Var1)!=as.vector(names(df_y)))
@@ -134,18 +134,18 @@ myPredictorMatrix["srh_bin2",] <- 0
 myPredictorMatrix[,"ghq_bin"] <- 0
 myPredictorMatrix["ghq_bin",] <- 0
 # constituent parts of interaction terms shouldn't predict interaction term
-myPredictorMatrix[c("sex_dv_t0","sf12pcs_dv_t1"),"sex_pcs"] <- 0
-myPredictorMatrix[c("sex_dv_t0","sf12mcs_dv_t1"),"sex_pcs"] <- 0
-myPredictorMatrix[c("sex_dv_t0","srh_bin_t1"),"sex_srh"] <- 0
-myPredictorMatrix[c("sex_dv_t0","ghq_case4_t1"),"sex_ghq"] <- 0
+myPredictorMatrix[c("sex_bin","sf12pcs_dv_t1"),"sex_pcs"] <- 0
+myPredictorMatrix[c("sex_bin","sf12mcs_dv_t1"),"sex_pcs"] <- 0
+myPredictorMatrix[c("sex_bin","srh_bin_t1"),"sex_srh"] <- 0
+myPredictorMatrix[c("sex_bin","ghq_case4_t1"),"sex_ghq"] <- 0
 myPredictorMatrix[c("age_dv_t0","sf12pcs_dv_t1"),"age_pcs"] <- 0
 myPredictorMatrix[c("age_dv_t0","sf12mcs_dv_t1"),"age_pcs"] <- 0
 myPredictorMatrix[c("age_dv_t0","srh_bin_t1"),"age_srh"] <- 0
 myPredictorMatrix[c("age_dv_t0","ghq_case4_t1"),"age_ghq"] <- 0
-myPredictorMatrix[c("rel_pov_t0","sf12pcs_dv_t1"),"rel_pov_pcs"] <- 0
-myPredictorMatrix[c("rel_pov_t0","sf12mcs_dv_t1"),"rel_pov_pcs"] <- 0
-myPredictorMatrix[c("rel_pov_t0","srh_bin_t1"),"rel_pov_srh"] <- 0
-myPredictorMatrix[c("rel_pov_t0","ghq_case4_t1"),"rel_pov_ghq"] <- 0
+myPredictorMatrix[c("rel_pov_bin","sf12pcs_dv_t1"),"rel_pov_pcs"] <- 0
+myPredictorMatrix[c("rel_pov_bin","sf12mcs_dv_t1"),"rel_pov_pcs"] <- 0
+myPredictorMatrix[c("rel_pov_bin","srh_bin_t1"),"rel_pov_srh"] <- 0
+myPredictorMatrix[c("rel_pov_bin","ghq_case4_t1"),"rel_pov_ghq"] <- 0
 
 myPredictorMatrix
 
@@ -204,7 +204,7 @@ write_rds(imps2_y, "./working_data/mi/imputed_data_y.rds")
 
 iptw_func_sex <- function(data){
   weightthem(exp1_bin ~
-               sex_dv_t0 +
+               sex_bin +
 #               age_dv_t0 +
                non_white_t0 +
                marital_status_t0 +
@@ -218,7 +218,7 @@ iptw_func_sex <- function(data){
                emp_contract_t0 +
                broken_emp_t0 +
                j2has_dv_t0 +
-               rel_pov_t0 +
+               rel_pov_bin +
                health_t0 +
                srh_bin_t0 +
                ghq_case4_t0 +
@@ -241,16 +241,16 @@ test2 <- test$Balance.Across.Imputations
 
 ## probably don't need these....
 #bal.plot(weightit_y, which.imp = 1, 
-#         var.name = "sex_dv_t0", 
+#         var.name = "sex_bin", 
 #         which = "both")
 bal.plot(weightit_y, which.imp = 1, 
-         var.name = "sex_dv_t0", 
+         var.name = "sex_bin", 
          which = "both")
 bal.plot(weightit_y, which.imp = 1, 
          var.name = "non_white_t0", 
          which = "both")
 bal.plot(weightit_y, which.imp = 1, 
-         var.name = "rel_pov_t0", 
+         var.name = "rel_pov_bin", 
          which = "both")
 
 ## create love plot to visualise balance between unmatched and matched data across MIs
@@ -287,7 +287,7 @@ iptw_dr_pcs <- function(data){
        glmmTMB(sf12pcs_dv_t1 ~
                  exposure1 +
                  sf12pcs_dv_t0 +
-                 sex_dv_t0 +
+                 sex_bin +
 #                 age_dv_t0 +
 #                 age_dv_t1 +
                  non_white_t0 +
@@ -302,13 +302,13 @@ iptw_dr_pcs <- function(data){
                  emp_contract_t0 +
                  broken_emp_t0 +
                  j2has_dv_t0 +
-                 rel_pov_t0 +
+                 rel_pov_bin +
                  health_t0 +
                  health_t1 +
                  # interaction terms
-                 #                                    sex_dv_t0*age_dv_t0 +
-                 sex_dv_t0*rel_pov_t0 +
-  #                                    age_dv_t0*rel_pov_t0 +
+                 #                                    sex_bin*age_dv_t0 +
+                 sex_bin*rel_pov_bin +
+  #                                    age_dv_t0*rel_pov_bin +
                  (1|pidp)))
 }
 
@@ -318,7 +318,7 @@ iptw_dr_mcs <- function(data){
        glmmTMB(sf12mcs_dv_t1 ~
                  exposure1 +
                  sf12mcs_dv_t0 +
-                 sex_dv_t0 +
+                 sex_bin +
                  #                                    age_dv_t0 +
                  #                                    age_dv_t1 +
                  non_white_t0 +
@@ -333,13 +333,13 @@ iptw_dr_mcs <- function(data){
                  emp_contract_t0 +
                  broken_emp_t0 +
                  j2has_dv_t0 +
-                 rel_pov_t0 +
+                 rel_pov_bin +
                  health_t0 +
                  health_t1 +
                  # interaction terms
-                 #                                    sex_dv_t0*age_dv_t0 +
-                 sex_dv_t0*rel_pov_t0 +
-                 #                                    age_dv_t0*rel_pov_t0 +
+                 #                                    sex_bin*age_dv_t0 +
+                 sex_bin*rel_pov_bin +
+                 #                                    age_dv_t0*rel_pov_bin +
                  (1|pidp)))
 }
 
@@ -349,7 +349,7 @@ iptw_dr_srh <- function(data){
        glmmTMB(srh_bin_t1 ~
                  exposure1 +
                  srh_bin_t0 +
-                 sex_dv_t0 +
+                 sex_bin +
                  #                                    age_dv_t0 +
                  #                                    age_dv_t1 +
                  non_white_t0 +
@@ -364,13 +364,13 @@ iptw_dr_srh <- function(data){
                  emp_contract_t0 +
                  broken_emp_t0 +
                  j2has_dv_t0 +
-                 rel_pov_t0 +
+                 rel_pov_bin +
                  health_t0 +
                  health_t1 +
                  # interaction terms
-                 #                                    sex_dv_t0*age_dv_t0 +
-                 sex_dv_t0*rel_pov_t0 +
-                 #                                    age_dv_t0*rel_pov_t0 +
+                 #                                    sex_bin*age_dv_t0 +
+                 sex_bin*rel_pov_bin +
+                 #                                    age_dv_t0*rel_pov_bin +
                  (1|pidp),
                family=binomial(link="logit")))
 }
@@ -381,7 +381,7 @@ iptw_dr_ghq <- function(data){
        glmmTMB(ghq_case4_t1 ~
                  exposure1 +
                  ghq_case4_t0 +
-                 sex_dv_t0 +
+                 sex_bin +
                  #                                    age_dv_t0 +
                  #                                    age_dv_t1 +
                  non_white_t0 +
@@ -396,13 +396,13 @@ iptw_dr_ghq <- function(data){
                  emp_contract_t0 +
                  broken_emp_t0 +
                  j2has_dv_t0 +
-                 rel_pov_t0 +
+                 rel_pov_bin +
                  health_t0 +
                  health_t1 +
                  # interaction terms
-                 #                                    sex_dv_t0*age_dv_t0 +
-                 sex_dv_t0*rel_pov_t0 +
-                 #                                    age_dv_t0*rel_pov_t0 +
+                 #                                    sex_bin*age_dv_t0 +
+                 sex_bin*rel_pov_bin +
+                 #                                    age_dv_t0*rel_pov_bin +
                  (1|pidp),
                family=binomial(link="logit")))
 }
