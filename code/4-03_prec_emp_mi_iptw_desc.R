@@ -107,7 +107,9 @@ dev.off()
 weightit_df_complete <- complete(weightit_df, "long") %>% 
 # rename weights as it throws an error otherwise
     rename("ps_weights" = "weights") %>% 
-  mutate(dep_child_bin_t0 = ifelse(dep_child_bin_t0==1,"Yes","No"))
+  mutate(dep_child_bin_t0 = ifelse(dep_child_bin_t0==1,"Yes","No"),
+         sex_bin = ifelse(sex_bin==0, "Female","Male"),
+         rel_pov_bin = ifelse(rel_pov_bin==0,"No","Yes"))
 
 ### create IPTW weighted df
 svy_weightit_df_complete <- svydesign(ids = ~1,
@@ -115,7 +117,7 @@ svy_weightit_df_complete <- svydesign(ids = ~1,
                       weights = ~ps_weights)
 
 ### create table one
-table_one <- svyCreateTableOne(vars = c(cov_vector),
+table_one <- svyCreateTableOne(vars = c("sex_bin", cov_vector, "rel_pov_bin"),
   data=svy_weightit_df_complete, 
 #  factorVars=catVars_short_vec,
   strata = "exposure1", 
@@ -133,7 +135,7 @@ nonnorm_vec <- colnames(temp)
 ## printed version for saving
 table_one_sav <- print(table_one, showAllLevels = TRUE, smd = FALSE,
                        nonnormal = "age_dv_t0",
-                       factorVars = c(catVars_vec),
+                       factorVars = c(catVars_vec, "sex_bin", "rel_pov_bin"),
                        formatOptions = list(big.mark = ",",
                                             scientific = FALSE))
 
@@ -154,8 +156,8 @@ nonnorm_vec2 <- c("sf12pcs_dv_t0","sf12pcs_dv_t1",
 ## create table
 outcomes_desc <- svyCreateTableOne(vars = c("sf12pcs_dv_t0","sf12pcs_dv_t1",
                                             "sf12mcs_dv_t0","sf12mcs_dv_t1",
-                                            "srh_bin_t0","srh_bin_t1",
-                                            "ghq_case4_t0", "ghq_case4_t1"),
+                                            "srh_bin_t0","srh_bin2",
+                                            "ghq_case4_t0", "ghq_bin"),
                                                data=svy_weightit_df_complete, 
                                    #  factorVars=catVars_short_vec,
                                                strata = "exposure1", 
