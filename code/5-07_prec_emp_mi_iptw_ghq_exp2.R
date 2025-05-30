@@ -72,7 +72,7 @@ weightit_mods_ghq <- with(data = weightit_df,
                                           # t0 outcome measure
                                           ghq_case4_t0 +
                                           # t0 covariates
-                                          sex_dv_t0 +
+                                          sex_bin +
                                           age_dv_t0 +
                                           non_white_t0 +
                                           marital_status_t0 +
@@ -85,16 +85,16 @@ weightit_mods_ghq <- with(data = weightit_df,
                                           emp_contract_t0 +
                                           broken_emp_t0 +
                                           j2has_dv_t0 +
-                                          rel_pov_t0 +
+                                          rel_pov_bin +
                                           health_t0 +
                                           # t1 covariates
                                           age_dv_t1 +
                                           marital_status_t1 +
                                           health_t1 +
                                           # interaction terms
-                                          sex_dv_t0*age_dv_t0 +
-                                          sex_dv_t0*rel_pov_t0 +
-                                          age_dv_t0*rel_pov_t0 +
+                                          sex_bin*age_dv_t0 +
+                                          sex_bin*rel_pov_bin +
+                                          age_dv_t0*rel_pov_bin +
                                           (1|pidp),
                                         family=binomial(link="logit")))
 
@@ -121,50 +121,50 @@ write.csv(weightit_pooled_ghq_df, "./working_data/mi/weightit_pooled_ghq_df_exp2
 
 
 ## fit model to the imputations and pool the results:
-test <- with(data = weightit_df, 
-                          exp = glmmTMB(ghq_case4_t1 ~
-                                          # exposure
-                                          exposure2 +
-                                          # t0 outcome measure
-#                                          ghq_case4_t0 +
-                                          # t0 covariates
- #                                         sex_dv_t0 +
-  #                                        age_dv_t0 +
-   #                                       non_white_t0 +
-    #                                      marital_status_t0 +
-     #                                     degree_bin_t0 +
-      #                                    gor_dv_t0 +
-       #                                   sic2007_section_lab_t0 +
-        #                                  soc2000_major_group_title_t0 +
-         #                                 jbft_dv_t0 +
-          #                                small_firm_t0 +
-           #                               emp_contract_t0 +
-            #                              broken_emp_t0 +
-             #                             j2has_dv_t0 +
-              #                            rel_pov_t0 +
-               #                           health_t0 +
-                                          # t1 covariates
-                #                          age_dv_t1 +
-                 #                         marital_status_t1 +
-                  #                        health_t1 +
-                                          # interaction terms
-                   #                       sex_dv_t0*age_dv_t0 +
-                    #                      sex_dv_t0*rel_pov_t0 +
-                     #                     age_dv_t0*rel_pov_t0 +
-                                          (1|pidp), 
-                                        family=binomial(link="logit")))
-
-test_pooled <- pool(test)
-
-test_pooled_df <- data.frame(summary(test_pooled, conf.int = TRUE)) %>% 
-  rename(lci = X2.5..,
-         uci = X97.5..)  %>% 
-  mutate(term = str_remove(term, "exposure2"),
-         outcome = "GHQ-12 caseness",
-         est_type = "coefficient",
-         p.value = ifelse(p.value<0.001,"<0.001",
-                          ifelse(p.value<0.01,"<0.01",
-                                 ifelse(p.value<0.05,"<0.05",       
-                                        p.value)))) %>% 
-  dplyr::select("outcome", "term",	"est_type",	"estimate",	"std.error",	"p.value",	"lci",	"uci")
+#test <- with(data = weightit_df, 
+#                          exp = glmmTMB(ghq_case4_t1 ~
+#                                          # exposure
+#                                          exposure2 +
+#                                          # t0 outcome measure
+##                                          ghq_case4_t0 +
+#                                          # t0 covariates
+# #                                         sex_bin +
+#  #                                        age_dv_t0 +
+#   #                                       non_white_t0 +
+#    #                                      marital_status_t0 +
+#     #                                     degree_bin_t0 +
+#      #                                    gor_dv_t0 +
+#       #                                   sic2007_section_lab_t0 +
+#        #                                  soc2000_major_group_title_t0 +
+#         #                                 jbft_dv_t0 +
+#          #                                small_firm_t0 +
+#           #                               emp_contract_t0 +
+#            #                              broken_emp_t0 +
+#             #                             j2has_dv_t0 +
+#              #                            rel_pov_bin +
+#               #                           health_t0 +
+#                                          # t1 covariates
+#                #                          age_dv_t1 +
+#                 #                         marital_status_t1 +
+#                  #                        health_t1 +
+#                                          # interaction terms
+#                   #                       sex_bin*age_dv_t0 +
+#                    #                      sex_bin*rel_pov_bin +
+#                     #                     age_dv_t0*rel_pov_bin +
+#                                          (1|pidp), 
+#                                        family=binomial(link="logit")))#
+#
+#test_pooled <- pool(test)#
+#
+#test_pooled_df <- data.frame(summary(test_pooled, conf.int = TRUE)) %>% 
+#  rename(lci = X2.5..,
+#         uci = X97.5..)  %>% 
+#  mutate(term = str_remove(term, "exposure2"),
+#         outcome = "GHQ-12 caseness",
+#         est_type = "coefficient",
+#         p.value = ifelse(p.value<0.001,"<0.001",
+#                          ifelse(p.value<0.01,"<0.01",
+#                                 ifelse(p.value<0.05,"<0.05",       
+#                                        p.value)))) %>% 
+#  dplyr::select("outcome", "term",	"est_type",	"estimate",	"std.error",	"p.value",	"lci",	"uci")#
 
