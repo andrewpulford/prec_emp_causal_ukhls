@@ -577,6 +577,7 @@ mi_subset2 <- pair_mi %>%
                 health_t1, 
                 rel_pov_bin,
                 sex_bin,
+                age_bin,
                 # sub-group interaction vars
                 all_of(interactions_vars)) %>% 
   dplyr::select(-c(sex_dv_t0,rel_pov_t0))
