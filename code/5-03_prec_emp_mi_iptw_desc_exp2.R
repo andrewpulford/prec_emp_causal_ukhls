@@ -69,7 +69,7 @@ test2 <- test$Balance.Across.Imputations
 
 ## probably don't need these....
 bal.plot(weightit_df, which.imp = 1, 
-         var.name = "sex_dv_t0", 
+         var.name = "sex_bin", 
          which = "both")
 bal.plot(weightit_df, which.imp = 1, 
          var.name = "age_dv_t0", 
@@ -103,8 +103,9 @@ dev.off()
 weightit_df_complete <- complete(weightit_df, "long") %>% 
   # rename weights as it throws an error otherwise
   rename("ps_weights" = "weights") %>% 
-  mutate(dep_child_bin_t0 = ifelse(dep_child_bin_t0==1,"Yes","No"))
-
+  mutate(dep_child_bin_t0 = ifelse(dep_child_bin_t0==1,"Yes","No"),
+         sex_bin = ifelse(sex_bin==0, "Female","Male"),
+         rel_pov_bin = ifelse(rel_pov_bin==0,"No","Yes"))
 ### create IPTW weighted df
 svy_weightit_df_complete <- svydesign(ids = ~1,
                                       data = weightit_df_complete,
