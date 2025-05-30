@@ -65,7 +65,7 @@ sapply(complete(imputed_data,"long"), function(x) sum(x=="missing"))
 
 start_time <- Sys.time()
 weightit_df <- weightthem(exp2_bin ~
-                            sex_dv_t0 +
+                            sex_bin +
                             age_dv_t0 +
                             non_white_t0 +
                             marital_status_t0 +
@@ -79,7 +79,7 @@ weightit_df <- weightthem(exp2_bin ~
                             emp_contract_t0 +
                             broken_emp_t0 +
                             j2has_dv_t0 +
-                            rel_pov_t0 +
+                            rel_pov_bin +
                             health_t0 +
                             srh_bin_t0 +
                             ghq_case4_t0 +
