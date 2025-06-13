@@ -159,14 +159,14 @@ outcomes_desc <- svyCreateTableOne(vars = c("sf12pcs_dv_t0","sf12pcs_dv_t1",
                                             "srh_bin_t0","srh_bin2",
                                             "ghq_case4_t0", "ghq_bin"),
                                                data=svy_weightit_df_complete, 
-                                   #  factorVars=catVars_short_vec,
-                                               strata = "exposure1", 
+                                   factorVars = c("srh_bin_t0", "srh_bin2", "ghq_bin"),
+                                   strata = "exposure1", 
                                                test =FALSE)
 
 ## printed version for saving
 outcomes_desc_sav <- print(outcomes_desc, showAllLevels = FALSE, smd = FALSE,
 #                           nonnormal = nonnorm_vec2,
-#                           factorVars = c(catVars_vec),
+                           factorVars = c("srh_bin_t0", "srh_bin2", "ghq_bin"),
                        formatOptions = list(big.mark = ",",
                                             scientific = FALSE))
 
@@ -233,3 +233,67 @@ table_one_sav$exposed..employed.at.t1. <- paste(table_one_sav$exposed_temp,table
 table_one_sav  <-  table_one_sav %>% dplyr::select(c("X", "level", "unexposed", "exposed..employed.at.t1."))
 
 write.csv(table_one_sav, "./output/mi/weighted_descriptives/table_one_PAPER.csv")
+
+################################################################################
+#####                        sort out outcomes table                       #####
+################################################################################
+
+outcomes_desc_sav <- read.csv("./output/mi/weighted_descriptives/outcomes_desc.csv")
+
+#### unexposed -----------------------------------------------------------------
+
+## trim whitespace at both ends of strings
+outcomes_desc_sav$unexposed <- trimws(outcomes_desc_sav$unexposed)
+
+### extract first part of string
+outcomes_desc_sav$unexposed_temp <- sub("\\ .*","",outcomes_desc_sav$unexposed)
+## remove commas to allow conversion to numeric
+outcomes_desc_sav$unexposed_temp <- sub(",","",outcomes_desc_sav$unexposed_temp)
+## convert to numeric
+outcomes_desc_sav$unexposed_temp <- as.numeric(outcomes_desc_sav$unexposed_temp)
+
+## extract second part of string
+outcomes_desc_sav$unexposed_temp2 <- sub("^[^ ]+.","",outcomes_desc_sav$unexposed)
+
+## divide number of cases by number of imputations (n=25)
+outcomes_desc_sav <- outcomes_desc_sav %>% 
+  mutate(unexposed_temp = ifelse(X %in% c("sf12mcs_dv_t0 (mean (SD))",
+                                          "sf12mcs_dv_t1 (mean (SD))",
+                                          "sf12pcs_dv_t0 (mean (SD))",
+                                          "sf12pcs_dv_t1 (mean (SD))"),unexposed_temp,
+                                 unexposed_temp/25))
+
+## recreate unexposed var
+outcomes_desc_sav$unexposed <- paste(outcomes_desc_sav$unexposed_temp,outcomes_desc_sav$unexposed_temp2)
+
+#### exposed -------------------------------------------------------------------
+
+## trim whitespace at both ends of strings
+outcomes_desc_sav$exposed..employed.at.t1. <- trimws(outcomes_desc_sav$exposed..employed.at.t1.)
+
+### extract first part of string
+outcomes_desc_sav$exposed_temp <- sub("\\ .*","",outcomes_desc_sav$exposed..employed.at.t1.)
+## remove commas to allow conversion to numeric
+outcomes_desc_sav$exposed_temp <- sub(",","",outcomes_desc_sav$exposed_temp)
+outcomes_desc_sav$exposed_temp <- sub(",","",outcomes_desc_sav$exposed_temp)
+## convert to numeric
+outcomes_desc_sav$exposed_temp <- as.numeric(outcomes_desc_sav$exposed_temp)
+
+## extract second part of string
+outcomes_desc_sav$exposed_temp2 <- sub("^[^ ]+.","",outcomes_desc_sav$exposed..employed.at.t1)
+
+## divide number of cases by number of imputations (n=25)
+outcomes_desc_sav <-  outcomes_desc_sav %>% 
+  mutate(exposed_temp = ifelse(X %in% c("sf12mcs_dv_t0 (mean (SD))",
+                                          "sf12mcs_dv_t1 (mean (SD))",
+                                          "sf12pcs_dv_t0 (mean (SD))",
+                                          "sf12pcs_dv_t1 (mean (SD))"),exposed_temp,
+                                 exposed_temp/25))
+
+## recreate exposed var
+outcomes_desc_sav$exposed..employed.at.t1. <- paste(outcomes_desc_sav$exposed_temp,outcomes_desc_sav$exposed_temp2)
+
+## keep only required cols
+outcomes_desc_sav  <-  outcomes_desc_sav %>% dplyr::select(c("X", "unexposed", "exposed..employed.at.t1."))
+
+write.csv(outcomes_desc_sav, "./output/mi/weighted_descriptives/outcomes_desc_PAPER.csv")
