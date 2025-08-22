@@ -1,0 +1,41 @@
+Variable,Label,Datafile,Waves,Type
+pidp,cross-wave person identifier (public release),all,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",id
+indinus_lw,longitudinal adult main interview weight,indresp,"2, 3, 4, 5, 6, 7, 8, 9, 10",wt
+indinub_lw,longitudinal adult main interview weight (sample A),indresp,"2, 3, 4, 5, 6, 7, 8, 9, 10",wt
+indinui_lw,longitudinal adult main interview weight (sample B),indresp,"6, 7, 8, 9, 10",wt
+psu,primary sampling unit,"xwaveid, hhsamp, empstat, indresp, xwavedat, natchild, cohab, indsamp, child, parstyle, marriage, youth, income, egoalt, newborn, chmain, hhresp, callrec, adopt, indall, xwaveid_bh","1, 2, 3, 4, 5, 6, 7, 8, 9, 10",wt
+strata,strata,"egoalt, natchild, hhresp, chmain, xwavedat, adopt, xwaveid, child, youth, income, empstat, newborn, callrec, indsamp, indresp, xwaveid_bh, indall, marriage, cohab, hhsamp, parstyle","1, 2, 3, 4, 5, 6, 7, 8, 9, 10",wt
+finloc,final sample location identification,indsamp,"2, 3, 4, 5, 6, 7, 8, 9, 10",exp
+retchk,retired check,indresp,"2, 3, 4, 5, 6, 7, 8, 9, 10",exp
+employ,in paid employment,"indresp, indall","1, 2, 3, 4, 5, 6, 7, 8, 9, 10",exp
+jbstat,Current labour force status,indresp,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",exp
+nmpsp_dv,No. employment spells since last interview,indresp,"2, 3, 4, 5, 6, 7, 8, 9, 10",exp
+nnmpsp_dv,No. non-employment spells since last interview,indresp,"2, 3, 4, 5, 6, 7, 8, 9, 10",exp
+nunmpsp_dv,No. unemployment spells since last interview,indresp,"2, 3, 4, 5, 6, 7, 8, 9, 10",exp
+jbterm1,current job: permanent or temporary,indresp,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",exp
+jbterm2,type of non-permanent job,indresp,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",exp
+jbsec,job security in next 12 months,indresp,"2, 4, 6, 8, 10",exp
+j2has,has a second paid job,indresp,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",exp
+sf1,general health,indresp,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",out
+scsf1,general health,indresp,"2, 3, 4, 5, 6, 7, 8, 9, 10",out
+scghq1_dv,Subjective wellbeing (GHQ): Likert,indresp,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",out
+scghq2_dv,Subjective wellbeing (GHQ): Caseness,indresp,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",out
+sf12mcs_dv,SF-12 Mental Component Summary (MCS),indresp,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",out
+sf12pcs_dv,SF-12 Physical Component Summary (PCS),indresp,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",out
+age_dv,"Age, derived from dob_dv and intdat_dv","indall, youth, child, indresp","1, 2, 3, 4, 5, 6, 7, 8, 9, 10",cov
+sex_dv,"Sex, derived","indall, youth, indresp, child, xwavedat","1, 2, 3, 4, 5, 6, 7, 8, 9, 10",cov
+ethn_dv,Ethnic group (derived from multiple sources),"youth, indall, xwavedat, indresp","1, 2, 3, 4, 5, 6, 7, 8, 9, 10",cov
+marstat,legal marital status,indresp,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",cov
+health,long-standing illness or impairment,indresp,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",cov
+hiqual_dv,"Highest qualification, UKHLS & BHPS samples",indresp,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",cov
+fimnnet_dv,total net personal income - no deductions,indresp,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",cov
+gor_dv,government office region,"child, youth, indall, hhsamp, indresp, hhresp","1, 2, 3, 4, 5, 6, 7, 8, 9, 10",cov
+ndepchl_dv,Number of own dependent children in household,"indresp, indall","1, 2, 3, 4, 5, 6, 7, 8, 9, 10",cov
+jbsoc00_cc,"Current job: SOC 2000, condensed",indresp,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",cov
+jbsic07_cc,"Current job: SIC 2007, condensed",indresp,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",cov
+jbhrs,no. of hours normally worked per week,indresp,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",cov
+jbft_dv,Full or part-time employee,indresp,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",cov
+jbsize,Number employed at workplace: current job,indresp,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",cov
+fihhmnnet1_dv,total household net income - no deductions,hhresp,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",cov
+ieqmoecd_dv,Modified OECD equivalence scale,hhresp,"1, 2, 3, 4, 5, 6, 7, 8, 9, 10",wt
+hidp,household identifier (public release),"youth, indresp, chmain, chcare, indall, cohabit, child, lifejob, indsamp, childad, hhresp, marriage, parstyle, empstat, natchild, jobhstd, jobhist, cohab, egoalt, issue, marriag, hhsamp, childnt, lifemst, adopt, callrec, income, newborn","1, 2, 3, 4, 5, 6, 7, 8, 9, 10",id
