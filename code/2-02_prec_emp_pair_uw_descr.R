@@ -337,16 +337,49 @@ summary(dr_ghq_glmmTMB_mod)
 
 
 ################################################################################
-##### scrapbook #####
+#####                        SF-12 binary estimates                        #####
+################################################################################
+
+# 30-day depressive	disorders MCS-12≤45.6
+# 12-month depressive disorders	MCS-12≤48.9
+# From <https://www.sciencedirect.com/science/article/pii/S1098301513000168> 
+
+##### calculate binary vars ----------------------------------------------------
+
+### 30-day depressive	disorders MCS-12≤45.6
+iptw_df <- iptw_df %>% mutate(mcs_30d_dep_t0 = ifelse(sf12mcs_dv_t0 <= 45.6,1,0),
+                  mcs_30d_dep_t1 = ifelse(sf12mcs_dv_t1 <= 45.6,1,0),
+### 12-month depressive disorders	MCS-12≤48.9                  
+                  mcs_12mo_dep_t0 = ifelse(sf12mcs_dv_t0<=48.9,1,0),
+                  mcs_12mo_dep_t1 = ifelse(sf12mcs_dv_t1<=48.9,1,0))
+
+
+
+table(iptw_df$mcs_30d_dep_t0, iptw_df$exposure1)
+table(iptw_df$mcs_30d_dep_t1, iptw_df$exposure1)
+table(iptw_df$mcs_12mo_dep_t0, iptw_df$exposure1)
+table(iptw_df$mcs_12mo_dep_t1, iptw_df$exposure1)
+
+
+CreateTableOne(vars = c("mcs_30d_dep_t0", "mcs_30d_dep_t1", 
+                        "mcs_12mo_dep_t0", "mcs_12mo_dep_t1"),
+               strata = "exposure1",
+               data = iptw_df,
+               factorVars = c("mcs_30d_dep_t0", "mcs_30d_dep_t1", 
+                              "mcs_12mo_dep_t0", "mcs_12mo_dep_t1"),
+               test = FALSE)
+
+################################################################################
+#####                               scrapbook                              #####
 ################################################################################
 
 ### work out proportion of samle that lose job for qalys extrapolation
 
-table(pair_cc_analytic$exposure1)
+#table(pair_cc_analytic$exposure1)
 
-pair_cc_analytic %>% group_by(exposure1) %>% summarise(n=n()) %>% 
-  mutate(d=sum(n),
-         p=n/d*100)
+#pair_cc_analytic %>% group_by(exposure1) %>% summarise(n=n()) %>% 
+#  mutate(d=sum(n),
+#         p=n/d*100)
 
 
 ##### sankeys GHQ-12 -----------------------------------------------------------
