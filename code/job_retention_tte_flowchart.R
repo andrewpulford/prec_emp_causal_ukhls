@@ -38,14 +38,14 @@ digraph {
     71,960 not working-age\\n
     91,522 not employee at t0']
     C [label = '136,927 eligible potential person-trials']
-    D [label = '134,243 allocated to treatment group']
+    D [label = '134,243 allocated to intervention group']
     E [label = '2,684 allocated to control group']
     
     G [label = '641 lost to follow-up:\\n
     5	retired at t1\\n
     636	health outcomes not measured at t0 or t1']
-    H[label = '104,787 potential-person trial outcomes assessed']
-    I[label = '2,043 potential-person trial outcomes assessed']
+    H[label = '104,787 potential person-trial outcomes assessed']
+    I[label = '2,043 potential person-trial outcomes assessed']
 
   edge [minlen = 2]
     A->B
